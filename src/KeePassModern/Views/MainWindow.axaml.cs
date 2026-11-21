@@ -18,6 +18,7 @@ public partial class MainWindow : Window
     private PointerPressedEventArgs? _entryDragPressedEvent;
     private EntryItemViewModel? _entryDragCandidate;
     private KeePassModern.Services.GlobalHotKeyService? _globalHotKeyService;
+    private KeePassModern.Services.SystemSleepLockService? _sleepLockService;
 
     public MainWindow()
     {
@@ -53,12 +54,17 @@ public partial class MainWindow : Window
 
         vm.CopyToClipboardAsync = async text =>
         {
-            if (Clipboard is null) return;
             if (string.IsNullOrEmpty(text))
             {
-                await Clipboard.ClearAsync();
+                if (Clipboard is not null) await Clipboard.ClearAsync();
                 return;
             }
+
+            // 优先使用防剪贴板历史留痕的原生写入（macOS ConcealedType/TransientType · Windows ExcludeFromHistory）
+            if (KeePassModern.Services.NativeClipboardSecurityService.TrySetConcealedText(text))
+                return;
+
+            if (Clipboard is null) return;
             var data = new DataTransfer();
             data.Add(DataTransferItem.CreateText(text));
             await Clipboard.SetDataAsync(data);
@@ -214,7 +220,26 @@ public partial class MainWindow : Window
             });
         };
         _globalHotKeyService.TryRegisterDefault();
-        Closed += (_, _) => _globalHotKeyService?.Dispose();
+
+        // 注册系统休眠与锁屏自动锁定监听
+        _sleepLockService?.Dispose();
+        _sleepLockService = new KeePassModern.Services.SystemSleepLockService();
+        _sleepLockService.LockRequested += reason =>
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                if (!vm.IsUnlocked) return;
+                vm.LockVaultCommand.Execute(null);
+                vm.ShowToast(reason);
+                KeePassModern.Services.NativeNotificationService.Send("KeePassModern", reason);
+            });
+        };
+
+        Closed += (_, _) =>
+        {
+            _globalHotKeyService?.Dispose();
+            _sleepLockService?.Dispose();
+        };
     }
 
     private void OnWindowDragOver(object? sender, DragEventArgs e)

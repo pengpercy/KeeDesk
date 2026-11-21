@@ -62,6 +62,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public bool IsMacOS { get; } = OperatingSystem.IsMacOS();
     public bool IsWindows { get; } = OperatingSystem.IsWindows();
     public bool IsWindowsOrLinux => !IsMacOS;
+    public bool IsTouchIdSupported { get; } = MacTouchIdService.IsSupported();
     public string SearchShortcutHint => IsMacOS ? "⌘K" : "Ctrl+K";
     public string LockShortcutHint => IsMacOS ? "⌘L" : "Ctrl+L";
 
@@ -90,7 +91,13 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private string _unlockKeyFilePath = string.Empty;
     [ObservableProperty] private string _unlockMasterPassword = string.Empty;
     [ObservableProperty] private bool _unlockUseWindowsUserAccount;
+    [ObservableProperty] private bool _rememberForTouchId;
     [ObservableProperty] private string _unlockError = string.Empty;
+
+    public bool CanUnlockWithTouchId =>
+        IsTouchIdSupported &&
+        !string.IsNullOrWhiteSpace(UnlockVaultPath) &&
+        MacTouchIdService.HasSavedPassword(UnlockVaultPath);
     [ObservableProperty] private string _newVaultName = "个人密码库";
     [ObservableProperty] private RecentVaultItem? _selectedRecentVault;
     public ObservableCollection<RecentVaultItem> RecentVaults { get; } = new();
@@ -201,7 +208,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         if (idleMins > 0 && (DateTimeOffset.UtcNow - _lastActivityUtc).TotalMinutes >= idleMins)
         {
             LockVault();
-            ShowToast($"已连续 {idleMins} 分钟无操作，密码库已自动锁定");
+            var msg = $"已连续 {idleMins} 分钟无操作，密码库已自动锁定";
+            ShowToast(msg);
+            NativeNotificationService.Send("KeePassModern", msg);
             return;
         }
 
@@ -212,7 +221,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         SelectedEntry?.RefreshTotp();
     }
 
-    partial void OnUnlockVaultPathChanged(string value) => OnPropertyChanged(nameof(UnlockVaultHeading));
+    partial void OnUnlockVaultPathChanged(string value)
+    {
+        OnPropertyChanged(nameof(UnlockVaultHeading));
+        OnPropertyChanged(nameof(CanUnlockWithTouchId));
+    }
     partial void OnUnlockKeyFilePathChanged(string value)
     {
         OnPropertyChanged(nameof(UnlockKeyFileDisplay));
@@ -390,6 +403,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             ActivateDatabase(db, key);
             SettingsService.AddRecentVault(vaultPath, string.IsNullOrWhiteSpace(keyFile) ? null : keyFile, db.Meta.DatabaseName);
             RefreshRecentVaults();
+
+            if (RememberForTouchId && IsTouchIdSupported && !string.IsNullOrEmpty(pwd))
+            {
+                MacTouchIdService.SavePasswordToKeychain(vaultPath, pwd);
+                OnPropertyChanged(nameof(CanUnlockWithTouchId));
+            }
             UnlockMasterPassword = string.Empty;
         }
         catch (Exception ex)
@@ -401,6 +420,31 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         {
             IsUnlocking = false;
         }
+    }
+
+    [RelayCommand]
+    private async Task UnlockWithTouchIdAsync()
+    {
+        if (IsUnlocking || !CanUnlockWithTouchId) return;
+        UnlockError = string.Empty;
+
+        var ok = await MacTouchIdService.AuthenticateAsync($"解锁密码库「{Path.GetFileName(UnlockVaultPath)}」");
+        if (!ok)
+        {
+            UnlockError = "Touch ID 验证未通过或已取消。";
+            return;
+        }
+
+        var savedPwd = MacTouchIdService.TryLoadPasswordFromKeychain(UnlockVaultPath);
+        if (string.IsNullOrEmpty(savedPwd))
+        {
+            UnlockError = "未能从 macOS 钥匙串读取主密码，请手动输入主密码。";
+            OnPropertyChanged(nameof(CanUnlockWithTouchId));
+            return;
+        }
+
+        UnlockMasterPassword = savedPwd;
+        await UnlockVaultAsync();
     }
 
     [RelayCommand]

@@ -342,16 +342,30 @@
                                   IsVisible="{Binding IsWindows}"
                                   IsChecked="{Binding UnlockUseWindowsUserAccount}" />
 
+                        <!-- macOS 专属：启用 Touch ID 快速解锁（主密码安全托管于 macOS 钥匙串） -->
+                        <CheckBox Content="启用 Touch ID 快速解锁（托管于 macOS 钥匙串）" FontSize="12.5"
+                                  IsVisible="{Binding IsTouchIdSupported}"
+                                  IsChecked="{Binding RememberForTouchId}" />
+
                         <TextBlock Text="{Binding UnlockError}" Foreground="{DynamicResource DangerBrush}" FontSize="12.5" TextAlignment="Center"
                                    IsVisible="{Binding UnlockError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
-                        <!-- 通栏解锁主按钮 + 丝滑解密进度条 -->
+                        <!-- 通栏解锁主按钮 + Touch ID 快速解锁 + 丝滑解密进度条 -->
                         <StackPanel Spacing="8" Margin="0,6,0,0">
                             <Button Classes="accent" Height="42" HorizontalAlignment="Stretch" Command="{Binding UnlockVaultCommand}" IsEnabled="{Binding !IsUnlocking}">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <PathIcon Data="{StaticResource IconUnlock}" Width="14" Height="14" />
                                     <TextBlock Text="解锁密码库" FontSize="14" FontWeight="SemiBold" IsVisible="{Binding !IsUnlocking}" />
                                     <TextBlock Text="正在解密密码库..." FontSize="14" FontWeight="SemiBold" IsVisible="{Binding IsUnlocking}" />
+                                </StackPanel>
+                            </Button>
+                            <Button Height="38" HorizontalAlignment="Stretch"
+                                    Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource InputBorderBrush}" BorderThickness="1"
+                                    IsVisible="{Binding CanUnlockWithTouchId}" IsEnabled="{Binding !IsUnlocking}"
+                                    Command="{Binding UnlockWithTouchIdCommand}">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <PathIcon Data="{StaticResource IconShield}" Width="14" Height="14" Foreground="{DynamicResource BrandEmeraldBrush}" />
+                                    <TextBlock Text="使用 Touch ID 快速解锁" FontSize="13.5" FontWeight="Medium" />
                                 </StackPanel>
                             </Button>
                             <ProgressBar IsIndeterminate="True" Height="3" CornerRadius="2" HorizontalAlignment="Stretch"
