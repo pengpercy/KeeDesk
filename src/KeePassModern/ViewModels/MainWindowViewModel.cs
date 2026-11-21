@@ -259,20 +259,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         try
         {
             var db = KdbxDatabase.CreateDefault(NewVaultName);
-            // Add a helpful sample entry so users immediately experience all Fluent 2 detail features
-            var sample = new KdbxEntry
-            {
-                Title = "GitHub 企业版",
-                UserName = "admin@company.com",
-                Password = PasswordGenerator.GenerateFromCharset(new PasswordGeneratorOptions { Length = 22 }),
-                Url = "https://github.com/login",
-                Notes = "欢迎使用 KeePassModern！支持 KDBX 4.1 内存保护、TOTP 动态验证码与三档界面密度切换。",
-                IsFavorite = true
-            };
-            sample.Tags.Add("工作");
-            sample.Tags.Add("代码");
-            sample.SetString(KdbxConstants.FieldOtp, "otpauth://totp/GitHub:admin?secret=JBSWY3DPEHPK3PXP&issuer=GitHub", true);
-            db.RootGroup.Groups[0].AddEntry(sample);
+            PopulateSampleEntries(db);
 
             var key = CompositeKey.FromPasswordAndKeyFile(UnlockMasterPassword, UnlockKeyFilePath);
             KdbxFormat.Save(db, savePath, key);
@@ -292,8 +279,16 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private void OpenDemoVault()
     {
         var db = KdbxDatabase.CreateDefault("个人密码库.kdbx");
+        PopulateSampleEntries(db);
+        ActivateDatabase(db, CompositeKey.FromPassword("demo"));
+        ShowToast("已进入演示密码库（已载入全部 6 条示例密码）");
+    }
 
-        // 对齐设计稿画板 02 / 12 的子分组结构
+    /// <summary>
+    /// 填充设计稿（画板 02 / 12）中的完整子分组与 6 条示例条目，供新建密码库与演示模式共用。
+    /// </summary>
+    private static void PopulateSampleEntries(KdbxDatabase db)
+    {
         var devGroup = db.RootGroup.Groups[2]; // 开发与云服务
         var sshSubGroup = new KdbxGroup { Name = "SSH 密钥与令牌", IconId = 3 };
         var prodDbSubGroup = new KdbxGroup { Name = "生产数据库", IconId = 3 };
@@ -382,9 +377,6 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         };
         e6.Tags.Add("工作");
         db.RootGroup.Groups[0].AddEntry(e6); // 常用账号
-
-        ActivateDatabase(db, CompositeKey.FromPassword("demo"));
-        ShowToast("已进入演示密码库（已载入全部 6 条示例密码）");
     }
 
     private void ActivateDatabase(KdbxDatabase db, CompositeKey key)
