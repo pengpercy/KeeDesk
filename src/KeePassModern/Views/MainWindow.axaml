@@ -448,8 +448,7 @@
                                     <TextBlock Grid.Column="2" Text="{Binding LockShortcutHint}" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center" Margin="6,0,0,0" />
                                 </Grid>
                             </Button>
-                            <Button Grid.Column="2" Classes="settingsBtn" Width="34" Height="32" MinHeight="32" Padding="0"
-                                    Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1"
+                            <Button Grid.Column="2" Classes="subtle settingsBtn" Width="32" Height="32" MinHeight="32" Padding="0"
                                     ToolTip.Tip="快捷设置与选项">
                                 <Button.Flyout>
                                     <MenuFlyout Placement="TopEdgeAlignedRight">
@@ -674,28 +673,27 @@
                                     PointerPressed="TitleBar_PointerPressed">
                                 <Grid ColumnDefinitions="*, Auto">
                                     <TextBlock Grid.Column="0" Text="{Binding SelectedEntry.GroupPath}" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center" />
-                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
-                                        <Button Classes="subtle" ToolTip.Tip="密码生成器" Command="{Binding OpenPasswordGeneratorCommandCommand}" IsVisible="{Binding IsMacOS}">
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                                        <Button Classes="subtle" Width="32" Height="32" MinHeight="32" Padding="0" ToolTip.Tip="强密码生成器" Command="{Binding OpenPasswordGeneratorCommandCommand}" IsVisible="{Binding IsMacOS}">
                                             <PathIcon Data="{StaticResource IconKey}" Width="14" Height="14" />
                                         </Button>
-                                        <Button Classes="subtle" ToolTip.Tip="保存密码库 (⌘S)" Command="{Binding SaveVaultCommand}" IsVisible="{Binding IsMacOS}">
+                                        <Button Classes="subtle" Width="32" Height="32" MinHeight="32" Padding="0" ToolTip.Tip="保存密码库 (⌘S)" Command="{Binding SaveVaultCommand}" IsVisible="{Binding IsMacOS}">
                                             <PathIcon Data="{StaticResource IconSave}" Width="14" Height="14" />
                                         </Button>
-                                        <Button Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1"
+                                        <Button Classes="subtle" Width="32" Height="32" MinHeight="32" Padding="0"
                                                 Command="{Binding ToggleFavoriteSelectedCommand}" ToolTip.Tip="收藏 / 取消收藏"
                                                 IsVisible="{Binding SelectedEntry, Converter={x:Static ObjectConverters.IsNotNull}}">
-                                            <PathIcon Data="{StaticResource IconStar}" Width="13" Height="13" />
+                                            <PathIcon Data="{StaticResource IconStar}" Width="14" Height="14" />
                                         </Button>
-                                        <Button Width="32" Height="32" MinHeight="32" Padding="0"
-                                                Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1"
+                                        <Button Classes="subtle" Width="32" Height="32" MinHeight="32" Padding="0"
                                                 Command="{Binding EditSelectedEntryCommand}" ToolTip.Tip="编辑条目"
                                                 IsVisible="{Binding SelectedEntry, Converter={x:Static ObjectConverters.IsNotNull}}">
-                                            <PathIcon Data="{StaticResource IconEdit}" Width="13" Height="13" />
+                                            <PathIcon Data="{StaticResource IconEdit}" Width="14" Height="14" />
                                         </Button>
-                                        <Button Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1"
+                                        <Button Classes="subtle" Width="32" Height="32" MinHeight="32" Padding="0"
                                                 Command="{Binding DeleteSelectedEntryCommand}" ToolTip.Tip="删除 / 移入回收站"
                                                 IsVisible="{Binding SelectedEntry, Converter={x:Static ObjectConverters.IsNotNull}}">
-                                            <PathIcon Data="{StaticResource IconTrash}" Width="13" Height="13" Foreground="{DynamicResource DangerBrush}" />
+                                            <PathIcon Data="{StaticResource IconTrash}" Width="14" Height="14" Foreground="{DynamicResource DangerBrush}" />
                                         </Button>
                                     </StackPanel>
                                 </Grid>
