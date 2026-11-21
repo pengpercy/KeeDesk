@@ -490,6 +490,16 @@
                                                                   Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).RenameGroupCommand}"
                                                                   CommandParameter="{Binding}" />
                                                         <Separator />
+                                                        <MenuItem Header="上移分组"
+                                                                  Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).MoveGroupUpCommand}"
+                                                                  CommandParameter="{Binding}" />
+                                                        <MenuItem Header="下移分组"
+                                                                  Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).MoveGroupDownCommand}"
+                                                                  CommandParameter="{Binding}" />
+                                                        <MenuItem Header="按名称排序子分组"
+                                                                  Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).SortSubGroupsCommand}"
+                                                                  CommandParameter="{Binding}" />
+                                                        <Separator />
                                                         <MenuItem Header="删除分组"
                                                                   Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).DeleteGroupCommand}"
                                                                   CommandParameter="{Binding}" />
@@ -688,7 +698,7 @@
                     <Grid IsVisible="{Binding !IsAuditViewActive}" ColumnDefinitions="356, 1, *">
                         <!-- PANE 2: 中栏条目列表（macOS 顶部直接内置搜索框 + 新建条目按钮，对应画板 02） -->
                         <Border Grid.Column="0" Background="{DynamicResource ListPaneBackgroundBrush}">
-                            <Grid RowDefinitions="Auto, Auto, *">
+                            <Grid RowDefinitions="Auto, Auto, Auto, *">
                                 <!-- macOS 专属：中栏顶部搜索栏 + 新建按钮（兼做可拖动顶部区，严格对齐画板 02） -->
                                 <Border Grid.Row="0" IsVisible="{Binding IsMacOS}" Padding="14,14,14,6"
                                         Background="Transparent"
@@ -742,8 +752,26 @@
                                     </StackPanel>
                                 </Grid>
 
-                                <!-- 条目列表（对齐画板 02 / 03 / 12 选中高亮 + 完整右键快捷菜单 + 拖拽到分组树） -->
-                                <ListBox Grid.Row="2" Classes="entryList" ItemsSource="{Binding FilteredEntries}" SelectedItem="{Binding SelectedEntry}" Background="Transparent" BorderThickness="0" Padding="10,2">
+                                <!-- 多选批量操作条（选中 2 条及以上时自动显示） -->
+                                <Border Grid.Row="2" Classes="fluentCard" Margin="12,0,12,6" Padding="10,6"
+                                        IsVisible="{Binding HasMultipleSelectedEntries}">
+                                    <Grid ColumnDefinitions="*, Auto">
+                                        <TextBlock Text="{Binding SelectedEntriesCount, StringFormat='已选 {0} 项'}" FontSize="12" FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource BrandEmeraldBrush}" VerticalAlignment="Center" />
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                                            <Button Height="24" MinHeight="24" Padding="8,0" FontSize="11.5" Content="{DynamicResource Str_BatchMove}" Command="{Binding BatchMoveEntriesCommand}" />
+                                            <Button Height="24" MinHeight="24" Padding="8,0" FontSize="11.5" Content="{DynamicResource Str_BatchFav}" Command="{Binding BatchFavoriteEntriesCommand}" />
+                                            <Button Height="24" MinHeight="24" Padding="8,0" FontSize="11.5" Foreground="{DynamicResource DangerBrush}" Content="{DynamicResource Str_BatchDelete}" Command="{Binding BatchDeleteEntriesCommand}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+
+                                <!-- 条目列表（支持单选、Cmd/Ctrl 多选批量操作、右键快捷菜单与拖拽到分组树） -->
+                                <ListBox Grid.Row="3" x:Name="EntryListBox" Classes="entryList"
+                                         SelectionMode="Multiple"
+                                         SelectionChanged="EntryListBox_SelectionChanged"
+                                         ItemsSource="{Binding FilteredEntries}" SelectedItem="{Binding SelectedEntry}"
+                                         Background="Transparent" BorderThickness="0" Padding="10,2">
                                     <ListBox.ItemTemplate>
                                         <DataTemplate>
                                             <Border Classes="entryCard" Height="{DynamicResource DensityRowHeight}"

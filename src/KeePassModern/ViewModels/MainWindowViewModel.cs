@@ -117,6 +117,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public ObservableCollection<GroupItemViewModel> RootGroups { get; } = new();
     public ObservableCollection<string> AllTags { get; } = new();
     public ObservableCollection<EntryItemViewModel> FilteredEntries { get; } = new();
+    private List<EntryItemViewModel> _selectedEntries = new();
+    [ObservableProperty] private int _selectedEntriesCount;
+    public bool HasMultipleSelectedEntries => SelectedEntriesCount > 1;
     [ObservableProperty] private EntryItemViewModel? _selectedEntry;
     [ObservableProperty] private GroupItemViewModel? _selectedGroup;
     private string? _selectedTag;
@@ -155,6 +158,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public Func<KdbxDatabase, KdbxEntry, Task<KdbxGroup?>>? OpenMoveToGroupAsync { get; set; }
     public Func<KdbxDatabase, Task<bool>>? OpenDatabaseMaintenanceAsync { get; set; }
     public Func<Task<EntrySearchParameters?>>? OpenAdvancedSearchAsync { get; set; }
+    public Func<string, List<AutoTypeMatchResult>, Task<AutoTypeMatchResult?>>? OpenAutoTypePickerAsync { get; set; }
     public Action<string>? OpenUrlExternal { get; set; }
     public Action? MinimizeWindowAction { get; set; }
 
@@ -213,6 +217,13 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         OnPropertyChanged(nameof(HasUnlockKeyFile));
     }
     partial void OnRecycleBinCountChanged(int value) => OnPropertyChanged(nameof(HasRecycleBinItems));
+    partial void OnSelectedEntriesCountChanged(int value) => OnPropertyChanged(nameof(HasMultipleSelectedEntries));
+
+    public void UpdateSelectedEntries(IEnumerable<EntryItemViewModel> items)
+    {
+        _selectedEntries = items.ToList();
+        SelectedEntriesCount = _selectedEntries.Count;
+    }
 
     partial void OnSelectedRecentVaultChanged(RecentVaultItem? value)
     {
@@ -1098,6 +1109,90 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private void MoveGroupUp(GroupItemViewModel? group) => ReorderGroup(group, -1);
+
+    [RelayCommand]
+    private void MoveGroupDown(GroupItemViewModel? group) => ReorderGroup(group, 1);
+
+    private void ReorderGroup(GroupItemViewModel? group, int delta)
+    {
+        if (_database is null || group?.Model.Parent is null) return;
+        var siblings = group.Model.Parent.Groups;
+        int idx = siblings.IndexOf(group.Model);
+        int targetIdx = idx + delta;
+        if (idx < 0 || targetIdx < 0 || targetIdx >= siblings.Count) return;
+
+        siblings.RemoveAt(idx);
+        siblings.Insert(targetIdx, group.Model);
+        _database.IsModified = true;
+        SaveVault();
+        RebuildWorkspace();
+    }
+
+    [RelayCommand]
+    private void SortSubGroups(GroupItemViewModel? group)
+    {
+        if (_database is null || group is null || group.Model.Groups.Count < 2) return;
+        var sorted = group.Model.Groups.OrderBy(g => g.Name, StringComparer.OrdinalIgnoreCase).ToList();
+        group.Model.Groups.Clear();
+        group.Model.Groups.AddRange(sorted);
+        _database.IsModified = true;
+        SaveVault();
+        RebuildWorkspace();
+        ShowToast($"已按名称排序「{group.Name}」的子分组");
+    }
+
+    // ==================== 条目多选批量操作 ====================
+    [RelayCommand]
+    private async Task BatchMoveEntriesAsync()
+    {
+        if (_database is null || _selectedEntries.Count == 0 || OpenMoveToGroupAsync is null) return;
+        var dest = await OpenMoveToGroupAsync(_database, _selectedEntries[0].Model);
+        if (dest is null) return;
+
+        int moved = 0;
+        foreach (var item in _selectedEntries.ToList())
+        {
+            if (DatabaseMaintenanceService.MoveEntryToGroup(_database, item.Model, dest))
+                moved++;
+        }
+        if (moved > 0)
+        {
+            SaveVault();
+            RebuildWorkspace();
+            ShowToast($"已批量将 {moved} 条记录移动到分组「{dest.Name}」");
+        }
+    }
+
+    [RelayCommand]
+    private void BatchFavoriteEntries()
+    {
+        if (_database is null || _selectedEntries.Count == 0) return;
+        bool targetFav = _selectedEntries.Any(e => !e.Model.IsFavorite);
+        foreach (var item in _selectedEntries)
+        {
+            item.Model.IsFavorite = targetFav;
+            item.Model.LastModificationTime = DateTimeOffset.UtcNow;
+        }
+        _database.IsModified = true;
+        SaveVault();
+        RebuildWorkspace();
+        ShowToast(targetFav ? $"已批量收藏 {_selectedEntries.Count} 条记录" : $"已批量取消收藏 {_selectedEntries.Count} 条记录");
+    }
+
+    [RelayCommand]
+    private void BatchDeleteEntries()
+    {
+        if (_database is null || _selectedEntries.Count == 0) return;
+        int count = _selectedEntries.Count;
+        foreach (var item in _selectedEntries.ToList())
+            _database.MoveEntryToRecycleBin(item.Model);
+        SaveVault();
+        RebuildWorkspace();
+        ShowToast(ActiveSection == ActiveSection.RecycleBin ? $"已永久删除 {count} 条记录" : $"已将 {count} 条记录移入回收站");
+    }
+
+    [RelayCommand]
     private void ToggleRevealPassword()
     {
         if (SelectedEntry is not null)
@@ -1168,6 +1263,40 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
         var res = await AutoTypeService.ExecuteAsync(target.Model, _database, MinimizeWindowAction);
         ShowToast(res.Message);
+    }
+
+    /// <summary>
+    /// 全局 Auto-Type 热键触发：探测当前前台窗口标题，自动匹配条目（单条直接输入，多条弹窗选择）。
+    /// </summary>
+    [RelayCommand]
+    private async Task TriggerGlobalAutoTypeAsync()
+    {
+        if (!IsUnlocked || _database is null) return;
+        var windowTitle = await Task.Run(GlobalHotKeyService.GetForegroundWindowTitle);
+        var matches = AutoTypeMatcher.FindMatches(_database, windowTitle);
+
+        if (matches.Count == 1)
+        {
+            var res = await AutoTypeService.ExecuteAsync(matches[0].Entry, _database);
+            ShowToast(res.Message);
+            return;
+        }
+
+        if (matches.Count == 0)
+        {
+            // 若无精确标题匹配，列出全部启用了 Auto-Type 的条目供快速选择
+            matches = _database.EnumerateAllEntries(false)
+                .Where(e => !e.IsExpired && e.AutoType.Enabled)
+                .Select(e => new AutoTypeMatchResult(e, AutoTypeSequenceParser.GetEffectiveSequence(e), "手动选择"))
+                .ToList();
+        }
+
+        if (matches.Count == 0 || OpenAutoTypePickerAsync is null) return;
+        var picked = await OpenAutoTypePickerAsync(windowTitle, matches);
+        if (picked is null) return;
+
+        var execRes = await AutoTypeService.ExecuteAsync(picked.Entry, _database);
+        ShowToast(execRes.Message);
     }
 
     [RelayCommand]

@@ -20,6 +20,8 @@ public partial class EntryEditorWindow : Window
     private readonly KdbxGroup _targetGroup;
     private readonly KdbxDatabase? _database;
     private readonly Dictionary<string, ProtectedBinary> _pendingBinaries = new(StringComparer.Ordinal);
+    private int _selectedIconId;
+    private Guid _selectedCustomIconUuid;
     private bool _passwordVisible;
     private bool _initializing = true;
 
@@ -53,6 +55,8 @@ public partial class EntryEditorWindow : Window
         }
         else
         {
+            _selectedIconId = entry.IconId;
+            _selectedCustomIconUuid = entry.CustomIconUuid;
             Title = $"编辑条目 — {entry.Title}";
             DialogHeading.Text = $"编辑条目 — {entry.Title}";
             SaveButtonText.Text = "保存修改";
@@ -293,6 +297,8 @@ public partial class EntryEditorWindow : Window
             entry.CreateHistorySnapshot(_database?.Meta.HistoryMaxItems ?? 10);
 
         entry.Title = TitleBox.Text?.Trim() ?? string.Empty;
+        entry.IconId = _selectedIconId;
+        entry.CustomIconUuid = _selectedCustomIconUuid;
         entry.UserName = UserNameBox.Text ?? string.Empty;
         entry.Password = PasswordBox.Text ?? string.Empty;
         entry.Url = UrlBox.Text?.Trim() ?? string.Empty;
@@ -348,6 +354,15 @@ public partial class EntryEditorWindow : Window
             SavedPasswordForClipboard = entry.Password;
 
         Close(true);
+    }
+
+    private async void PickIcon_Click(object? sender, RoutedEventArgs e)
+    {
+        var dlg = new IconPickerWindow(_database, _selectedIconId, _selectedCustomIconUuid);
+        var res = await dlg.ShowDialog<IconPickerResult?>(this);
+        if (res is null) return;
+        _selectedIconId = res.IconId;
+        _selectedCustomIconUuid = res.CustomIconUuid;
     }
 
     private async void InsertUserNameRef_Click(object? sender, RoutedEventArgs e)

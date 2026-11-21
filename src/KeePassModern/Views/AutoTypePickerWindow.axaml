@@ -1,0 +1,38 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:chrome="clr-namespace:Avalonia.Controls.Chrome;assembly=Avalonia.Controls"
+        x:Class="KeePassModern.Views.AutoTypePickerWindow"
+        Title="选择自动输入条目"
+        Width="480" Height="400"
+        WindowStartupLocation="CenterScreen"
+        Topmost="True"
+        CanResize="False"
+        ExtendClientAreaToDecorationsHint="True"
+        WindowDecorations="Full"
+        ExtendClientAreaTitleBarHeightHint="40"
+        Background="{DynamicResource WorkspaceBackgroundBrush}"
+        Foreground="{DynamicResource PrimaryTextBrush}">
+
+    <Grid RowDefinitions="Auto, *, 1, Auto">
+        <Border Grid.Row="0" Padding="22,34,22,10" Background="Transparent"
+                chrome:WindowDecorationProperties.ElementRole="TitleBar"
+                PointerPressed="TitleBar_PointerPressed">
+            <StackPanel Spacing="3">
+                <TextBlock Text="全局自动输入（Auto-Type）" FontSize="17" FontWeight="SemiBold" />
+                <TextBlock x:Name="TargetWindowLabel" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+        </Border>
+
+        <ListBox Grid.Row="1" x:Name="MatchListBox" Margin="18,4,18,12"
+                 Background="{DynamicResource CardBackgroundBrush}"
+                 BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8"
+                 DoubleTapped="MatchListBox_DoubleTapped" KeyDown="MatchListBox_KeyDown" />
+
+        <Border Grid.Row="2" Background="{DynamicResource DividerBrush}" />
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="20,12">
+            <Button Width="84" Height="34" Content="取消" Click="Cancel_Click" />
+            <Button Classes="accent" Height="34" Padding="16,0" Content="立即自动输入" Click="Confirm_Click" />
+        </StackPanel>
+    </Grid>
+</Window>

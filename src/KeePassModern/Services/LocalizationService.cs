@@ -38,7 +38,21 @@ public static class LocalizationService
         ["Str_Url"] = "网址",
         ["Str_NotesAndAttachments"] = "备注与附件",
         ["Str_EmptyDetailHint"] = "在左侧选择一个密码条目查看详情，或点击「新建条目」添加",
-        ["Str_EmptyRecycleBin"] = "清空回收站"
+        ["Str_EmptyRecycleBin"] = "清空回收站",
+        ["Str_SettingsTitle"] = "偏好设置",
+        ["Str_NavAppearance"] = "外观与密度",
+        ["Str_NavSecurity"] = "安全与锁定",
+        ["Str_NavAutoType"] = "自动输入热键",
+        ["Str_NavData"] = "同步与导入导出",
+        ["Str_NavAbout"] = "关于与更新",
+        ["Str_AppearanceHeading"] = "外观与界面密度",
+        ["Str_ThemeMode"] = "外观模式",
+        ["Str_ThemeSystem"] = "跟随系统",
+        ["Str_ThemeLight"] = "浅色模式",
+        ["Str_ThemeDark"] = "深色模式",
+        ["Str_BatchMove"] = "移动",
+        ["Str_BatchFav"] = "收藏",
+        ["Str_BatchDelete"] = "删除"
     };
 
     private static readonly Dictionary<string, string> EnUs = new(StringComparer.Ordinal)
@@ -68,7 +82,21 @@ public static class LocalizationService
         ["Str_Url"] = "URL",
         ["Str_NotesAndAttachments"] = "Notes & Attachments",
         ["Str_EmptyDetailHint"] = "Select an entry on the left to inspect, or click '+' to add one",
-        ["Str_EmptyRecycleBin"] = "Empty Recycle Bin"
+        ["Str_EmptyRecycleBin"] = "Empty Recycle Bin",
+        ["Str_SettingsTitle"] = "Settings",
+        ["Str_NavAppearance"] = "Appearance & Density",
+        ["Str_NavSecurity"] = "Security & Lock",
+        ["Str_NavAutoType"] = "Auto-Type Hotkey",
+        ["Str_NavData"] = "Sync & Import/Export",
+        ["Str_NavAbout"] = "About & Updates",
+        ["Str_AppearanceHeading"] = "Appearance & UI Density",
+        ["Str_ThemeMode"] = "Theme Mode",
+        ["Str_ThemeSystem"] = "Follow System",
+        ["Str_ThemeLight"] = "Light",
+        ["Str_ThemeDark"] = "Dark",
+        ["Str_BatchMove"] = "Move",
+        ["Str_BatchFav"] = "Star",
+        ["Str_BatchDelete"] = "Delete"
     };
 
     public static void Apply(string? languageCode)

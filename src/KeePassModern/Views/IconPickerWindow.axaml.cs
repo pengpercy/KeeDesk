@@ -1,0 +1,153 @@
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Interactivity;
+using Avalonia.Layout;
+using Avalonia.Media;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform.Storage;
+using Avalonia.VisualTree;
+using KeePassModern.Core.Kdbx;
+using KeePassModern.Helpers;
+
+namespace KeePassModern.Views;
+
+public sealed record IconPickerResult(int IconId, Guid CustomIconUuid);
+
+/// <summary>
+/// 对标原版 KeePass 2.x IconPickerForm 的标准/自定义图标选择器。
+/// </summary>
+public partial class IconPickerWindow : Window
+{
+    private readonly KdbxDatabase? _database;
+    private int _selectedIconId;
+    private Guid _selectedCustomIconUuid;
+
+    public IconPickerWindow() : this(null, 0, Guid.Empty) { }
+
+    public IconPickerWindow(KdbxDatabase? db, int currentIconId, Guid currentCustomIconUuid)
+    {
+        InitializeComponent();
+        _database = db;
+        _selectedIconId = currentIconId;
+        _selectedCustomIconUuid = currentCustomIconUuid;
+
+        MacTitleBarInsets.AttachTrafficLightsCentering(this, 40);
+        RenderIcons();
+    }
+
+    private void RenderIcons()
+    {
+        StandardIconsPanel.Children.Clear();
+        foreach (var item in KeePassIconCatalog.StandardIcons)
+        {
+            bool isSelected = _selectedCustomIconUuid == Guid.Empty && _selectedIconId == item.IconId;
+            var btn = new Button
+            {
+                Width = 44,
+                Height = 44,
+                Margin = new Thickness(4),
+                Padding = new Thickness(0),
+                BorderThickness = new Thickness(isSelected ? 2 : 1),
+                BorderBrush = isSelected ? new SolidColorBrush(Color.Parse("#10B981")) : Brushes.Transparent,
+                Content = new PathIcon
+                {
+                    Data = KeePassIconCatalog.GetGeometry(item.IconId),
+                    Width = 18,
+                    Height = 18
+                }
+            };
+            ToolTip.SetTip(btn, item.Name);
+            var id = item.IconId;
+            btn.Click += (_, _) =>
+            {
+                _selectedIconId = id;
+                _selectedCustomIconUuid = Guid.Empty;
+                RenderIcons();
+            };
+            StandardIconsPanel.Children.Add(btn);
+        }
+
+        CustomIconsPanel.Children.Clear();
+        var customIcons = _database?.Meta.CustomIcons ?? [];
+        NoCustomIconsHint.IsVisible = customIcons.Count == 0;
+
+        foreach (var icon in customIcons)
+        {
+            try
+            {
+                using var ms = new MemoryStream(icon.Data);
+                var bmp = new Bitmap(ms);
+                bool isSelected = _selectedCustomIconUuid == icon.Uuid;
+                var btn = new Button
+                {
+                    Width = 44,
+                    Height = 44,
+                    Margin = new Thickness(4),
+                    Padding = new Thickness(6),
+                    BorderThickness = new Thickness(isSelected ? 2 : 1),
+                    BorderBrush = isSelected ? new SolidColorBrush(Color.Parse("#10B981")) : Brushes.Transparent,
+                    Content = new Image
+                    {
+                        Source = bmp,
+                        Width = 24,
+                        Height = 24,
+                        Stretch = Stretch.Uniform,
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        VerticalAlignment = VerticalAlignment.Center
+                    }
+                };
+                var uuid = icon.Uuid;
+                btn.Click += (_, _) =>
+                {
+                    _selectedCustomIconUuid = uuid;
+                    RenderIcons();
+                };
+                CustomIconsPanel.Children.Add(btn);
+            }
+            catch { }
+        }
+    }
+
+    private async void ImportCustomIcon_Click(object? sender, RoutedEventArgs e)
+    {
+        if (_database is null) return;
+        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            AllowMultiple = false,
+            FileTypeFilter = [new FilePickerFileType("PNG 图标") { Patterns = ["*.png", "*.jpg", "*.ico"] }]
+        });
+        var path = files.FirstOrDefault()?.TryGetLocalPath();
+        if (string.IsNullOrEmpty(path)) return;
+
+        var bytes = await File.ReadAllBytesAsync(path);
+        var customIcon = new KdbxCustomIcon
+        {
+            Uuid = Guid.NewGuid(),
+            Name = Path.GetFileNameWithoutExtension(path),
+            Data = bytes,
+            LastModificationTime = DateTimeOffset.UtcNow
+        };
+        _database.Meta.CustomIcons.Add(customIcon);
+        _database.IsModified = true;
+        _selectedCustomIconUuid = customIcon.Uuid;
+        RenderIcons();
+    }
+
+    private void Confirm_Click(object? sender, RoutedEventArgs e)
+        => Close(new IconPickerResult(_selectedIconId, _selectedCustomIconUuid));
+
+    private void Cancel_Click(object? sender, RoutedEventArgs e) => Close(null);
+
+    private void TitleBar_PointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (e.ClickCount != 1 || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
+        var src = e.Source as Avalonia.Visual;
+        while (src is not null)
+        {
+            if (src is Button) return;
+            src = src.GetVisualParent();
+        }
+        BeginMoveDrag(e);
+    }
+}

@@ -23,14 +23,14 @@
                         chrome:WindowDecorationProperties.ElementRole="TitleBar"
                         PointerPressed="TitleBar_PointerPressed" />
 
-                <TextBlock Grid.Row="1" Text="偏好设置" FontSize="15" FontWeight="SemiBold" Margin="18,4,16,12" />
+                <TextBlock Grid.Row="1" Text="{DynamicResource Str_SettingsTitle}" FontSize="15" FontWeight="SemiBold" Margin="18,4,16,12" />
 
                 <StackPanel Grid.Row="2" Spacing="4" Margin="10,0">
                     <Button x:Name="NavAppearance" Classes="subtle" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="0" Height="34" Click="NavClick" Tag="0">
                         <Grid ColumnDefinitions="6, 26, *">
                             <Border x:Name="Ind0" Grid.Column="0" Width="3" Height="16" CornerRadius="2" Background="{DynamicResource SystemControlHighlightAccentBrush}" HorizontalAlignment="Left" />
                             <PathIcon Grid.Column="1" Data="{StaticResource IconSettings}" Width="14" Height="14" />
-                            <TextBlock Grid.Column="2" Text="外观与密度" FontSize="13" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="2" Text="{DynamicResource Str_NavAppearance}" FontSize="13" VerticalAlignment="Center" />
                         </Grid>
                     </Button>
 
@@ -38,7 +38,7 @@
                         <Grid ColumnDefinitions="6, 26, *">
                             <Border x:Name="Ind1" Grid.Column="0" Width="3" Height="16" CornerRadius="2" Background="{DynamicResource SystemControlHighlightAccentBrush}" HorizontalAlignment="Left" IsVisible="False" />
                             <PathIcon Grid.Column="1" Data="{StaticResource IconShield}" Width="14" Height="14" />
-                            <TextBlock Grid.Column="2" Text="安全与锁定" FontSize="13" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="2" Text="{DynamicResource Str_NavSecurity}" FontSize="13" VerticalAlignment="Center" />
                         </Grid>
                     </Button>
 
@@ -46,7 +46,7 @@
                         <Grid ColumnDefinitions="6, 26, *">
                             <Border x:Name="Ind2" Grid.Column="0" Width="3" Height="16" CornerRadius="2" Background="{DynamicResource SystemControlHighlightAccentBrush}" HorizontalAlignment="Left" IsVisible="False" />
                             <PathIcon Grid.Column="1" Data="{StaticResource IconKey}" Width="14" Height="14" />
-                            <TextBlock Grid.Column="2" Text="自动输入热键" FontSize="13" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="2" Text="{DynamicResource Str_NavAutoType}" FontSize="13" VerticalAlignment="Center" />
                         </Grid>
                     </Button>
 
@@ -54,7 +54,7 @@
                         <Grid ColumnDefinitions="6, 26, *">
                             <Border x:Name="Ind3" Grid.Column="0" Width="3" Height="16" CornerRadius="2" Background="{DynamicResource SystemControlHighlightAccentBrush}" HorizontalAlignment="Left" IsVisible="False" />
                             <PathIcon Grid.Column="1" Data="{StaticResource IconExport}" Width="14" Height="14" />
-                            <TextBlock Grid.Column="2" Text="同步与导入导出" FontSize="13" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="2" Text="{DynamicResource Str_NavData}" FontSize="13" VerticalAlignment="Center" />
                         </Grid>
                     </Button>
 
@@ -62,7 +62,7 @@
                         <Grid ColumnDefinitions="6, 26, *">
                             <Border x:Name="Ind4" Grid.Column="0" Width="3" Height="16" CornerRadius="2" Background="{DynamicResource SystemControlHighlightAccentBrush}" HorizontalAlignment="Left" IsVisible="False" />
                             <PathIcon Grid.Column="1" Data="{StaticResource IconVault}" Width="14" Height="14" />
-                            <TextBlock Grid.Column="2" Text="关于与更新" FontSize="13" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="2" Text="{DynamicResource Str_NavAbout}" FontSize="13" VerticalAlignment="Center" />
                         </Grid>
                     </Button>
                 </StackPanel>

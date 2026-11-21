@@ -73,9 +73,11 @@
                             <StackPanel Spacing="4">
                                 <TextBlock Text="标题与图标 *" FontSize="11.5" FontWeight="Medium" Foreground="{DynamicResource SecondaryTextBrush}" />
                                 <Grid ColumnDefinitions="32, 8, *, 8, Auto">
-                                    <Border Grid.Column="0" x:Name="IconBadgeBorder" Width="32" Height="32" CornerRadius="6" Background="{DynamicResource BadgePillBackgroundBrush}">
+                                    <Button Grid.Column="0" x:Name="IconBadgeBtn" Width="32" Height="32" MinHeight="32" Padding="0" CornerRadius="6"
+                                            Background="{DynamicResource BadgePillBackgroundBrush}" BorderThickness="0"
+                                            ToolTip.Tip="点击选择条目图标（支持自定义 PNG）" Click="PickIcon_Click">
                                         <TextBlock x:Name="IconBadgeText" Text="KP" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource BadgePillForegroundBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                    </Border>
+                                    </Button>
                                     <TextBox Grid.Column="2" x:Name="TitleBox" Height="32" PlaceholderText="例如：阿里云主账号、公司内部 GitLab..." TextChanged="TitleBox_TextChanged" />
                                     <ToggleButton Grid.Column="4" x:Name="FavoriteToggle" Classes="chipToggle" Height="32" Padding="10,0">
                                         <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center" HorizontalAlignment="Center">

@@ -227,4 +227,24 @@ public class KdbxCoreTests
         Assert.Equal(new AutoTypeTextStep("Secret#123"), steps[3]);
         Assert.Equal(new AutoTypeKeyStep(AutoTypeKey.Enter, 1), steps[4]);
     }
+
+    [Fact]
+    public void AutoTypeMatcher_MatchesWildcardTitleAndDomain()
+    {
+        using var db = KdbxDatabase.CreateDefault("MatcherTest");
+        var gh = new KdbxEntry { Title = "GitHub Enterprise", UserName = "u1", Password = "p1", Url = "https://github.com/login" };
+        var aws = new KdbxEntry { Title = "Cloud Root", UserName = "u2", Password = "p2" };
+        aws.AutoType.Associations.Add(new KdbxAutoTypeAssociation { Window = "*AWS Console*", KeystrokeSequence = "{USERNAME}{ENTER}" });
+        db.RootGroup.Groups[0].AddEntry(gh);
+        db.RootGroup.Groups[0].AddEntry(aws);
+
+        var m1 = AutoTypeMatcher.FindMatches(db, "Sign in to GitHub - Google Chrome");
+        Assert.Single(m1);
+        Assert.Equal(gh.Uuid, m1[0].Entry.Uuid);
+
+        var m2 = AutoTypeMatcher.FindMatches(db, "Safari - AWS Console Production");
+        Assert.Single(m2);
+        Assert.Equal(aws.Uuid, m2[0].Entry.Uuid);
+        Assert.Equal("{USERNAME}{ENTER}", m2[0].Sequence);
+    }
 }

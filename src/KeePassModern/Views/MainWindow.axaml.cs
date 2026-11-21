@@ -17,6 +17,7 @@ public partial class MainWindow : Window
     private Avalonia.Point? _entryDragStartPoint;
     private PointerPressedEventArgs? _entryDragPressedEvent;
     private EntryItemViewModel? _entryDragCandidate;
+    private KeePassModern.Services.GlobalHotKeyService? _globalHotKeyService;
 
     public MainWindow()
     {
@@ -194,6 +195,26 @@ public partial class MainWindow : Window
         };
 
         vm.MinimizeWindowAction = () => WindowState = WindowState.Minimized;
+
+        vm.OpenAutoTypePickerAsync = async (targetTitle, matches) =>
+        {
+            var dlg = new AutoTypePickerWindow(targetTitle, matches);
+            return await dlg.ShowDialog<KeePassModern.Core.Services.AutoTypeMatchResult?>(this);
+        };
+
+        // 注册 OS 级全局 Auto-Type 热键（Windows: Ctrl+Alt+A / macOS: Control+Option+A）
+        _globalHotKeyService?.Dispose();
+        _globalHotKeyService = new KeePassModern.Services.GlobalHotKeyService();
+        _globalHotKeyService.HotKeyPressed += () =>
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                if (vm.IsUnlocked)
+                    vm.TriggerGlobalAutoTypeCommand.Execute(null);
+            });
+        };
+        _globalHotKeyService.TryRegisterDefault();
+        Closed += (_, _) => _globalHotKeyService?.Dispose();
     }
 
     private void OnWindowDragOver(object? sender, DragEventArgs e)
@@ -316,6 +337,13 @@ public partial class MainWindow : Window
     {
         if (DataContext is MainWindowViewModel vm)
             vm.OpenEntryUrlCommand.Execute(vm.SelectedEntry);
+    }
+
+    private void EntryListBox_SelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (DataContext is not MainWindowViewModel vm) return;
+        if (sender is ListBox lb && lb.SelectedItems is not null)
+            vm.UpdateSelectedEntries(lb.SelectedItems.OfType<EntryItemViewModel>());
     }
 
     // ==================== 条目拖拽到左侧分组树 ====================
