@@ -195,20 +195,36 @@
                         <TextBlock Grid.Row="1" Text="最近打开的密码库" FontSize="12" FontWeight="Medium"
                                    Foreground="{DynamicResource SecondaryTextBrush}" Margin="20,12,20,10" />
 
-                        <!-- 最近打开的密码库列表（复用 entryList 选中高亮：中性底色 + 左侧 3×24px 品牌色指示条） -->
+                        <!-- 最近打开的密码库列表（悬停右侧显示移除图标，支持右键移除/清空） -->
                         <ListBox Grid.Row="2" Classes="entryList" ItemsSource="{Binding RecentVaults}" SelectedItem="{Binding SelectedRecentVault}"
                                  Background="Transparent" BorderThickness="0" Padding="18,0">
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
                                     <Border Classes="entryCard" Height="62">
-                                        <Grid ColumnDefinitions="8, *">
+                                        <Border.ContextMenu>
+                                            <ContextMenu>
+                                                <MenuItem Header="从最近列表移除"
+                                                          Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).RemoveRecentVaultCommand}"
+                                                          CommandParameter="{Binding}" />
+                                                <Separator />
+                                                <MenuItem Header="清空全部最近记录"
+                                                          Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ClearRecentVaultsCommand}" />
+                                            </ContextMenu>
+                                        </Border.ContextMenu>
+                                        <Grid ColumnDefinitions="8, *, Auto">
                                             <Border Grid.Column="0" Classes="entryIndicator" Width="3" Height="24" CornerRadius="2"
                                                     Background="{DynamicResource SystemControlHighlightAccentBrush}"
                                                     HorizontalAlignment="Left" VerticalAlignment="Center" />
-                                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3" Margin="8,0,12,0">
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3" Margin="8,0,6,0">
                                                 <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" FontSize="13.5" TextTrimming="CharacterEllipsis" />
                                                 <TextBlock Text="{Binding FilePath}" FontSize="11.5" Foreground="{DynamicResource SecondaryTextBrush}" TextTrimming="CharacterEllipsis" />
                                             </StackPanel>
+                                            <Button Grid.Column="2" Classes="subtle recentRemoveBtn" Width="26" Height="26" MinHeight="26" Padding="0" Margin="0,0,8,0"
+                                                    VerticalAlignment="Center" ToolTip.Tip="从最近列表移除（不删除本地文件）"
+                                                    Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).RemoveRecentVaultCommand}"
+                                                    CommandParameter="{Binding}">
+                                                <PathIcon Data="{StaticResource IconClose}" Width="10" Height="10" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                            </Button>
                                         </Grid>
                                     </Border>
                                 </DataTemplate>

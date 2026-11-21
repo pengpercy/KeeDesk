@@ -332,6 +332,16 @@
             <Setter Property="Foreground" Value="{DynamicResource AccentActionForegroundBrush}" />
         </Style>
 
+        <!-- 最近密码库卡片悬停时显示右侧移除按钮 -->
+        <Style Selector="ListBox.entryList ListBoxItem Button.recentRemoveBtn">
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="IsHitTestVisible" Value="False" />
+        </Style>
+        <Style Selector="ListBox.entryList ListBoxItem:pointerover Button.recentRemoveBtn">
+            <Setter Property="Opacity" Value="1" />
+            <Setter Property="IsHitTestVisible" Value="True" />
+        </Style>
+
         <!-- 侧边栏分组 TreeView 选中态改为克制中性底色 -->
         <Style Selector="TreeViewItem:selected /template/ Border#PART_LayoutRoot">
             <Setter Property="Background" Value="{DynamicResource SidebarItemSelectedBackgroundBrush}" />

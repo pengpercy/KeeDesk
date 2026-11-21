@@ -81,4 +81,16 @@ public sealed class AppSettingsService
             Settings.RecentVaults.RemoveRange(10, Settings.RecentVaults.Count - 10);
         Save();
     }
+
+    public void RemoveRecentVault(string filePath)
+    {
+        Settings.RecentVaults.RemoveAll(r => string.Equals(r.FilePath, filePath, StringComparison.OrdinalIgnoreCase));
+        Save();
+    }
+
+    public void ClearRecentVaults()
+    {
+        Settings.RecentVaults.Clear();
+        Save();
+    }
 }

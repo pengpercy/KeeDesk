@@ -177,6 +177,30 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private void RemoveRecentVault(RecentVaultItem? item)
+    {
+        if (item is null) return;
+        SettingsService.RemoveRecentVault(item.FilePath);
+        if (string.Equals(UnlockVaultPath, item.FilePath, StringComparison.OrdinalIgnoreCase))
+        {
+            UnlockVaultPath = string.Empty;
+            UnlockKeyFilePath = string.Empty;
+        }
+        RefreshRecentVaults();
+        ShowToast($"已从最近列表移除「{item.DisplayName}」（本地文件不受影响）");
+    }
+
+    [RelayCommand]
+    private void ClearRecentVaults()
+    {
+        SettingsService.ClearRecentVaults();
+        UnlockVaultPath = string.Empty;
+        UnlockKeyFilePath = string.Empty;
+        RefreshRecentVaults();
+        ShowToast("已清空最近打开的密码库记录");
+    }
+
+    [RelayCommand]
     private async Task BrowseVaultFileAsync()
     {
         if (PickOpenFileAsync is null) return;
