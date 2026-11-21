@@ -313,10 +313,10 @@
 
                         <ScrollViewer Grid.Row="1" Padding="12,8,12,8">
                             <StackPanel Spacing="{DynamicResource DensityItemSpacing}">
-                                <!-- 当前密码库胶囊 -->
+                                <!-- 当前密码库胶囊（状态圆点固定 #29C742，不随主题色变动） -->
                                 <Border Classes="fluentCard" Padding="12,9" Margin="0,0,0,8">
                                     <Grid ColumnDefinitions="Auto, *">
-                                        <Ellipse Grid.Column="0" Width="10" Height="10" Fill="#189A58" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                        <Ellipse Grid.Column="0" Width="10" Height="10" Fill="#29C742" Margin="0,0,8,0" VerticalAlignment="Center" />
                                         <TextBlock Grid.Column="1" Text="{Binding VaultDisplayName}" FontWeight="SemiBold" FontSize="{DynamicResource DensityFontSizeBody}" TextTrimming="CharacterEllipsis" />
                                     </Grid>
                                 </Border>
