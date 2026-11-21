@@ -874,8 +874,7 @@
                                                                        Foreground="{DynamicResource BadgePillForegroundBrush}"
                                                                        HorizontalAlignment="Center" VerticalAlignment="Center"
                                                                        IsVisible="{Binding !HasCustomIcon}" />
-                                                            <Image Source="{Binding CustomIconBitmap}" Width="22" Height="22" Stretch="Uniform"
-                                                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                            <Image Source="{Binding CustomIconBitmap}" Stretch="UniformToFill"
                                                                    IsVisible="{Binding HasCustomIcon}" />
                                                         </Panel>
                                                     </Border>
@@ -965,10 +964,8 @@
                                                 <TextBlock Text="{Binding SelectedEntry.Initials}" FontSize="20" FontWeight="Bold"
                                                            Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"
                                                            IsVisible="{Binding !SelectedEntry.HasCustomIcon}" />
-                                                <Border Background="{DynamicResource CardBackgroundBrush}" IsVisible="{Binding SelectedEntry.HasCustomIcon}">
-                                                    <Image Source="{Binding SelectedEntry.CustomIconBitmap}" Width="36" Height="36" Stretch="Uniform"
-                                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                                </Border>
+                                                <Image Source="{Binding SelectedEntry.CustomIconBitmap}" Stretch="UniformToFill"
+                                                       IsVisible="{Binding SelectedEntry.HasCustomIcon}" />
                                             </Panel>
                                         </Border>
                                         <StackPanel VerticalAlignment="Center" Spacing="4">

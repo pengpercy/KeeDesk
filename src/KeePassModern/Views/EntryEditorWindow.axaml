@@ -86,7 +86,9 @@
                                         </Button.Flyout>
                                         <Panel>
                                             <TextBlock x:Name="IconBadgeText" Text="KP" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource BadgePillForegroundBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                            <Image x:Name="IconBadgeImage" Width="22" Height="22" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="False" />
+                                            <Border CornerRadius="6" ClipToBounds="True" IsVisible="{Binding #IconBadgeImage.IsVisible}">
+                                                <Image x:Name="IconBadgeImage" Stretch="UniformToFill" IsVisible="False" />
+                                            </Border>
                                         </Panel>
                                     </Button>
                                     <TextBox Grid.Column="2" x:Name="TitleBox" Height="32" PlaceholderText="例如：阿里云主账号、公司内部 GitLab..." TextChanged="TitleBox_TextChanged" />
