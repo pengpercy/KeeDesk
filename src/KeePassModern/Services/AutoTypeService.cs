@@ -24,7 +24,8 @@ public static partial class AutoTypeService
 
         if (OperatingSystem.IsMacOS() && !AXIsProcessTrusted())
         {
-            return new AutoTypeExecutionResult(false, "macOS 需要「辅助功能」权限才能自动输入，请在 系统设置 -> 隐私与安全性 -> 辅助功能 中授权 KeePassModern");
+            RequestMacAccessibilityPermissionAndOpenSettings();
+            return new AutoTypeExecutionResult(false, "已打开 macOS 辅助功能设置，请勾选允许 KeePassModern 后重试自动输入");
         }
 
         // 先最小化主窗口，将焦点交还给上一个前台应用（浏览器/终端等）
@@ -109,6 +110,57 @@ public static partial class AutoTypeService
     [LibraryImport("/System/Library/Frameworks/ApplicationServices.framework/ApplicationServices")]
     [return: MarshalAs(UnmanagedType.I1)]
     private static partial bool AXIsProcessTrusted();
+
+    [LibraryImport("/System/Library/Frameworks/ApplicationServices.framework/ApplicationServices")]
+    [return: MarshalAs(UnmanagedType.I1)]
+    private static partial bool AXIsProcessTrustedWithOptions(IntPtr options);
+
+    [LibraryImport("/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation")]
+    private static partial IntPtr CFDictionaryCreate(
+        IntPtr allocator,
+        in IntPtr keys,
+        in IntPtr values,
+        nint numValues,
+        IntPtr keyCallBacks,
+        IntPtr valueCallBacks);
+
+    [LibraryImport("/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation")]
+    private static partial IntPtr CFStringCreateWithCString(IntPtr alloc, [MarshalAs(UnmanagedType.LPUTF8Str)] string cStr, uint encoding);
+
+    /// <summary>
+    /// 触发 macOS 原生辅助功能授权提示（自动将本应用加入辅助功能列表）并直接打开系统设置 -> 隐私与安全性 -> 辅助功能面板。
+    /// </summary>
+    private static void RequestMacAccessibilityPermissionAndOpenSettings()
+    {
+        try
+        {
+            // 1. 触发原生 AXTrustedCheckOptionPrompt，自动把 KeePassModern 注册进辅助功能列表
+            var cfLib = NativeLibrary.Load("/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation");
+            var kCfBooleanTrue = Marshal.ReadIntPtr(NativeLibrary.GetExport(cfLib, "kCFBooleanTrue"));
+            var key = CFStringCreateWithCString(IntPtr.Zero, "AXTrustedCheckOptionPrompt", 0x08000100);
+            if (key != IntPtr.Zero && kCfBooleanTrue != IntPtr.Zero)
+            {
+                var dict = CFDictionaryCreate(IntPtr.Zero, in key, in kCfBooleanTrue, 1, IntPtr.Zero, IntPtr.Zero);
+                if (dict != IntPtr.Zero)
+                {
+                    _ = AXIsProcessTrustedWithOptions(dict);
+                    CFRelease(dict);
+                }
+                CFRelease(key);
+            }
+        }
+        catch { }
+
+        try
+        {
+            // 2. 直接跳转打开「系统设置 -> 隐私与安全性 -> 辅助功能」窗口
+            Process.Start(new ProcessStartInfo("open", "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
+            {
+                UseShellExecute = false
+            });
+        }
+        catch { }
+    }
 
     [LibraryImport("/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics")]
     private static partial IntPtr CGEventCreateKeyboardEvent(IntPtr source, ushort virtualKey, [MarshalAs(UnmanagedType.I1)] bool keyDown);
