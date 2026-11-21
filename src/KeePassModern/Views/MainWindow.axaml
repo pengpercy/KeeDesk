@@ -721,7 +721,7 @@
                                         </StackPanel>
                                     </StackPanel>
 
-                                    <!-- 核心凭证卡片 -->
+                                    <!-- 核心凭证卡片（右侧操作统一为无文字无边框 32×32 图标按钮，复制后变绿色对钩再还原） -->
                                     <Border Classes="fluentCard" Padding="20,16">
                                         <StackPanel Spacing="14">
                                             <Grid ColumnDefinitions="*, Auto">
@@ -729,11 +729,12 @@
                                                     <TextBlock Text="用户名" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
                                                     <SelectableTextBlock Text="{Binding SelectedEntry.UserName}" FontSize="14" FontWeight="Medium" />
                                                 </StackPanel>
-                                                <Button Grid.Column="1" VerticalAlignment="Center" Command="{Binding CopyUserNameCommand}">
-                                                    <StackPanel Orientation="Horizontal" Spacing="6">
-                                                        <PathIcon Data="{StaticResource IconCopy}" Width="13" Height="13" />
-                                                        <TextBlock Text="复制" />
-                                                    </StackPanel>
+                                                <Button Grid.Column="1" Classes="subtle" Width="32" Height="32" MinHeight="32" Padding="0"
+                                                        VerticalAlignment="Center" ToolTip.Tip="复制用户名" Command="{Binding CopyUserNameCommand}">
+                                                    <Panel>
+                                                        <PathIcon Data="{StaticResource IconCopy}" Width="14" Height="14" Foreground="{DynamicResource SecondaryTextBrush}" IsVisible="{Binding !IsUserNameCopied}" />
+                                                        <PathIcon Data="{StaticResource IconCheck}" Width="15" Height="15" Foreground="#29C742" IsVisible="{Binding IsUserNameCopied}" />
+                                                    </Panel>
                                                 </Button>
                                             </Grid>
 
@@ -749,15 +750,17 @@
                                                         <TextBlock Text="{Binding SelectedEntry.StrengthLabel}" FontSize="11.5" Foreground="{DynamicResource SecondaryTextBrush}" />
                                                     </StackPanel>
                                                 </StackPanel>
-                                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                                    <Button Command="{Binding ToggleRevealPasswordCommand}" ToolTip.Tip="显示/隐藏密码">
-                                                        <PathIcon Data="{StaticResource IconEye}" Width="14" Height="14" />
+                                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                                    <Button Classes="subtle" Width="32" Height="32" MinHeight="32" Padding="0"
+                                                            Command="{Binding ToggleRevealPasswordCommand}" ToolTip.Tip="显示 / 隐藏密码">
+                                                        <PathIcon Data="{StaticResource IconEye}" Width="15" Height="15" Foreground="{DynamicResource SecondaryTextBrush}" />
                                                     </Button>
-                                                    <Button Classes="accent" Command="{Binding CopyPasswordCommand}">
-                                                        <StackPanel Orientation="Horizontal" Spacing="6">
-                                                            <PathIcon Data="{StaticResource IconCopy}" Width="13" Height="13" />
-                                                            <TextBlock Text="复制" />
-                                                        </StackPanel>
+                                                    <Button Classes="subtle" Width="32" Height="32" MinHeight="32" Padding="0"
+                                                            Command="{Binding CopyPasswordCommand}" ToolTip.Tip="复制密码">
+                                                        <Panel>
+                                                            <PathIcon Data="{StaticResource IconCopy}" Width="14" Height="14" Foreground="{DynamicResource SecondaryTextBrush}" IsVisible="{Binding !IsPasswordCopied}" />
+                                                            <PathIcon Data="{StaticResource IconCheck}" Width="15" Height="15" Foreground="#29C742" IsVisible="{Binding IsPasswordCopied}" />
+                                                        </Panel>
                                                     </Button>
                                                 </StackPanel>
                                             </Grid>
@@ -774,11 +777,12 @@
                                                             </Border>
                                                         </StackPanel>
                                                     </StackPanel>
-                                                    <Button Grid.Column="1" VerticalAlignment="Center" Command="{Binding CopyTotpCommand}">
-                                                        <StackPanel Orientation="Horizontal" Spacing="6">
-                                                            <PathIcon Data="{StaticResource IconCopy}" Width="13" Height="13" />
-                                                            <TextBlock Text="复制验证码" />
-                                                        </StackPanel>
+                                                    <Button Grid.Column="1" Classes="subtle" Width="32" Height="32" MinHeight="32" Padding="0"
+                                                            VerticalAlignment="Center" ToolTip.Tip="复制动态验证码" Command="{Binding CopyTotpCommand}">
+                                                        <Panel>
+                                                            <PathIcon Data="{StaticResource IconCopy}" Width="14" Height="14" Foreground="{DynamicResource SecondaryTextBrush}" IsVisible="{Binding !IsTotpCopied}" />
+                                                            <PathIcon Data="{StaticResource IconCheck}" Width="15" Height="15" Foreground="#29C742" IsVisible="{Binding IsTotpCopied}" />
+                                                        </Panel>
                                                     </Button>
                                                 </Grid>
                                             </StackPanel>
@@ -790,11 +794,9 @@
                                                         <TextBlock Text="网址" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
                                                         <SelectableTextBlock Text="{Binding SelectedEntry.Url}" Foreground="{DynamicResource SystemControlForegroundAccentBrush}" FontSize="13.5" />
                                                     </StackPanel>
-                                                    <Button Grid.Column="1" VerticalAlignment="Center" Click="OpenUrl_Click">
-                                                        <StackPanel Orientation="Horizontal" Spacing="6">
-                                                            <PathIcon Data="{StaticResource IconLink}" Width="13" Height="13" />
-                                                            <TextBlock Text="打开" />
-                                                        </StackPanel>
+                                                    <Button Grid.Column="1" Classes="subtle" Width="32" Height="32" MinHeight="32" Padding="0"
+                                                            VerticalAlignment="Center" ToolTip.Tip="在浏览器中打开" Click="OpenUrl_Click">
+                                                        <PathIcon Data="{StaticResource IconLink}" Width="14" Height="14" Foreground="{DynamicResource SecondaryTextBrush}" />
                                                     </Button>
                                                 </Grid>
                                             </StackPanel>

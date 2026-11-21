@@ -102,6 +102,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private string _toastMessage = string.Empty;
     [ObservableProperty] private bool _isToastVisible;
 
+    // 详情页复制按钮绿色对钩短暂反馈状态
+    [ObservableProperty] private bool _isUserNameCopied;
+    [ObservableProperty] private bool _isPasswordCopied;
+    [ObservableProperty] private bool _isTotpCopied;
+
     // Callbacks wired by MainWindow for native dialogs/clipboard
     public Func<string, Task>? CopyToClipboardAsync { get; set; }
     public Func<Task<string?>>? GetClipboardTextAsync { get; set; }
@@ -715,6 +720,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     {
         if (SelectedEntry is null) return;
         await CopySecretAsync(SelectedEntry.UserName, "用户名");
+        FlashCopiedFlag(v => IsUserNameCopied = v);
     }
 
     [RelayCommand]
@@ -723,6 +729,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         if (SelectedEntry is null) return;
         var resolved = FieldReferenceResolver.Resolve(SelectedEntry.Password, SelectedEntry.Model, _database);
         await CopySecretAsync(resolved, "密码");
+        FlashCopiedFlag(v => IsPasswordCopied = v);
     }
 
     [RelayCommand]
@@ -730,6 +737,17 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     {
         if (SelectedEntry is null || !SelectedEntry.HasTotp) return;
         await CopySecretAsync(SelectedEntry.TotpRaw, "动态验证码");
+        FlashCopiedFlag(v => IsTotpCopied = v);
+    }
+
+    private static void FlashCopiedFlag(Action<bool> setter)
+    {
+        setter(true);
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(1500);
+            await Dispatcher.UIThread.InvokeAsync(() => setter(false));
+        });
     }
 
     [RelayCommand]
