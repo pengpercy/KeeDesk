@@ -16,19 +16,17 @@ jobs:
       matrix:
         include:
           - os: windows-2022
-            rid: win-x64
+            rids: win-x64
             platform: win
-          - os: macos-15-intel
-            rid: osx-x64
-            platform: macos
+          # 单台 Apple Silicon runner 同时编译 osx-arm64 与 osx-x64，避免申请两台 macOS runner 排队与 10x 计费浪费
           - os: macos-15
-            rid: osx-arm64
+            rids: osx-arm64 osx-x64
             platform: macos
           - os: ubuntu-24.04
-            rid: linux-x64
+            rids: linux-x64
             platform: linux
           - os: ubuntu-24.04-arm
-            rid: linux-arm64
+            rids: linux-arm64
             platform: linux
     runs-on: ${{ matrix.os }}
     steps:
@@ -47,32 +45,47 @@ jobs:
         shell: bash
         run: echo "version=$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_OUTPUT"
 
-      - name: Publish NativeAOT (${{ matrix.rid }})
-        run: dotnet publish src/KeePassModern/KeePassModern.csproj -c Release -r ${{ matrix.rid }} --self-contained true -o publish/${{ matrix.rid }}
-
-      - name: Package macOS App Bundle & DMG (with zh-Hans.lproj)
+      - name: Publish & Package macOS (osx-arm64 + osx-x64 on single runner)
         if: matrix.platform == 'macos'
         run: |
           chmod +x build/scripts/package-macos.sh
-          bash build/scripts/package-macos.sh "publish/${{ matrix.rid }}" "dist" "${{ matrix.rid }}" "${{ steps.ver.outputs.version }}"
+          for rid in ${{ matrix.rids }}; do
+            dotnet publish src/KeePassModern/KeePassModern.csproj -c Release -r "$rid" --self-contained true -o "publish/$rid"
+            bash build/scripts/package-macos.sh "publish/$rid" "dist" "$rid" "${{ steps.ver.outputs.version }}"
+          done
 
-      - name: Package Windows ZIP
+      - name: Publish & Package Windows ZIP
         if: matrix.platform == 'win'
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path dist | Out-Null
-          Compress-Archive -Path "publish/${{ matrix.rid }}/*" -DestinationPath "dist/KeePassModern-${{ steps.ver.outputs.version }}-${{ matrix.rid }}.zip" -Force
+          foreach ($rid in "${{ matrix.rids }}".Split(' ')) {
+            dotnet publish src/KeePassModern/KeePassModern.csproj -c Release -r $rid --self-contained true -o "publish/$rid"
+            Compress-Archive -Path "publish/$rid/*" -DestinationPath "dist/KeePassModern-${{ steps.ver.outputs.version }}-$rid.zip" -Force
+          }
 
-      - name: Package Linux tar.gz
+      - name: Publish & Package Linux tar.gz
         if: matrix.platform == 'linux'
         run: |
           mkdir -p dist
-          tar -czf "dist/KeePassModern-${{ steps.ver.outputs.version }}-${{ matrix.rid }}.tar.gz" -C "publish/${{ matrix.rid }}" .
+          for rid in ${{ matrix.rids }}; do
+            dotnet publish src/KeePassModern/KeePassModern.csproj -c Release -r "$rid" --self-contained true -o "publish/$rid"
+            tar -czf "dist/KeePassModern-${{ steps.ver.outputs.version }}-$rid.tar.gz" -C "publish/$rid" .
+          done
 
       - uses: actions/upload-artifact@v4
         with:
-          name: release-${{ matrix.rid }}
-          path: dist/*
+          name: release-${{ matrix.platform }}-${{ matrix.os }}
+          path: dist/*.dmg
+          if-no-files-found: ignore
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-archive-${{ matrix.platform }}-${{ matrix.os }}
+          path: |
+            dist/*.zip
+            dist/*.tar.gz
+          if-no-files-found: ignore
 
   create-release:
     needs: publish
