@@ -12,7 +12,7 @@ namespace KeePassModern.Views;
 
 public partial class MainWindow : Window
 {
-    private const string EntryDragFormatId = "keepassmodern/entry-uuid";
+    private const string EntryDragFormatId = "com.keepassmodern.entry-uuid";
     private static readonly DataFormat<string> EntryDragFormat = DataFormat.CreateStringApplicationFormat(EntryDragFormatId);
     private Avalonia.Point? _entryDragStartPoint;
     private PointerPressedEventArgs? _entryDragPressedEvent;
