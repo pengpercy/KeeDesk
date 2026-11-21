@@ -100,6 +100,35 @@
             <Setter Property="RenderTransform" Value="translateY(0px) scale(1)" />
             <Setter Property="IsHitTestVisible" Value="True" />
         </Style>
+
+        <!-- 设置按钮齿轮悬停旋转动画（参考 Downio） -->
+        <Style Selector="Button.settingsBtn PathIcon">
+            <Setter Property="Transitions">
+                <Transitions>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.3" Easing="CubicEaseOut" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.settingsBtn:pointerover PathIcon">
+            <Setter Property="RenderTransform" Value="rotate(90deg) scale(1.1)" />
+        </Style>
+
+        <!-- 紧凑悬浮菜单样式（MenuFlyout） -->
+        <Style Selector="MenuFlyoutPresenter">
+            <Setter Property="Padding" Value="4" />
+            <Setter Property="MinWidth" Value="164" />
+            <Setter Property="CornerRadius" Value="8" />
+        </Style>
+        <Style Selector="MenuItem">
+            <Setter Property="FontSize" Value="12.5" />
+            <Setter Property="Padding" Value="10,6" />
+            <Setter Property="CornerRadius" Value="5" />
+            <Setter Property="Margin" Value="2,1" />
+        </Style>
+        <Style Selector="MenuItem:pointerover /template/ Border#PART_LayoutRoot">
+            <Setter Property="Background" Value="{DynamicResource SidebarItemSelectedBackgroundBrush}" />
+            <Setter Property="CornerRadius" Value="5" />
+        </Style>
     </Window.Styles>
 
     <Grid RowDefinitions="Auto, Auto, *">
@@ -392,8 +421,8 @@
 
                         <Border Grid.Row="3" Background="{DynamicResource DividerBrush}" />
 
-                        <!-- 侧边栏底部：142×32 锁定密码库 + 66×32 齿轮图标设置按钮（对齐画板 02 / 12） -->
-                        <Grid Grid.Row="4" ColumnDefinitions="*, 8, 68" Margin="14,14,14,16">
+                        <!-- 侧边栏底部：锁定密码库 + 仅图标旋转齿轮设置按钮（含快捷操作悬浮菜单） -->
+                        <Grid Grid.Row="4" ColumnDefinitions="*, 8, 34" Margin="14,14,14,16">
                             <Button Grid.Column="0" Height="32" MinHeight="32" Padding="10,0" HorizontalAlignment="Stretch"
                                     Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1"
                                     Command="{Binding LockVaultCommand}">
@@ -403,13 +432,28 @@
                                     <TextBlock Grid.Column="2" Text="{Binding LockShortcutHint}" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center" Margin="6,0,0,0" />
                                 </Grid>
                             </Button>
-                            <Button Grid.Column="2" Height="32" MinHeight="32" Padding="8,0" HorizontalAlignment="Stretch"
+                            <Button Grid.Column="2" Classes="settingsBtn" Width="34" Height="32" MinHeight="32" Padding="0"
                                     Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1"
-                                    Command="{Binding OpenSettingsCommandCommand}" ToolTip.Tip="偏好设置">
-                                <StackPanel Orientation="Horizontal" Spacing="5" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <PathIcon Data="{StaticResource IconSettings}" Width="13" Height="13" Foreground="{DynamicResource SecondaryTextBrush}" />
-                                    <TextBlock Text="设置" FontSize="12" VerticalAlignment="Center" />
-                                </StackPanel>
+                                    ToolTip.Tip="快捷设置与选项">
+                                <Button.Flyout>
+                                    <MenuFlyout Placement="TopEdgeAlignedRight">
+                                        <MenuItem Header="界面密度">
+                                            <MenuItem Header="紧凑（Compact）" Command="{Binding SetDensityCommand}" CommandParameter="Compact" />
+                                            <MenuItem Header="标准（Normal · 默认）" Command="{Binding SetDensityCommand}" CommandParameter="Normal" />
+                                            <MenuItem Header="宽松（Comfortable）" Command="{Binding SetDensityCommand}" CommandParameter="Comfortable" />
+                                        </MenuItem>
+                                        <MenuItem Header="强密码生成器" Command="{Binding OpenPasswordGeneratorCommandCommand}" />
+                                        <Separator />
+                                        <MenuItem Header="导入 CSV..." Command="{Binding ImportCsvCommand}" />
+                                        <MenuItem Header="导出 CSV..." Command="{Binding ExportCsvCommand}" />
+                                        <MenuItem Header="生成 HTML 应急表..." Command="{Binding ExportEmergencySheetCommand}" />
+                                        <Separator />
+                                        <MenuItem Header="检查更新..." Command="{Binding CheckForUpdatesCommand}" />
+                                        <MenuItem Header="关于 KeePassModern" Command="{Binding OpenAboutAsyncCommandCommand}" />
+                                        <MenuItem Header="偏好设置..." Command="{Binding OpenSettingsCommandCommand}" />
+                                    </MenuFlyout>
+                                </Button.Flyout>
+                                <PathIcon Data="{StaticResource IconSettings}" Width="14" Height="14" Foreground="{DynamicResource SecondaryTextBrush}" />
                             </Button>
                         </Grid>
                     </Grid>
@@ -538,13 +582,14 @@
                                                 <TextBlock Text="⌘K" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" />
                                             </Border>
                                         </Grid>
-                                        <Button Grid.Column="2" Classes="accent" Height="32" MinWidth="76" Padding="12,0" Command="{Binding AddEntryCommand}">
-                                            <TextBlock Text="新建条目" FontSize="13.5" FontWeight="SemiBold" />
+                                        <Button Grid.Column="2" Classes="accent" Width="32" Height="32" MinHeight="32" Padding="0"
+                                                Command="{Binding AddEntryCommand}" ToolTip.Tip="新建密码条目">
+                                            <PathIcon Data="{StaticResource IconAdd}" Width="15" Height="15" />
                                         </Button>
                                     </Grid>
                                 </Border>
 
-                                <!-- 第二行工具条：条目计数 + 排序 + 密度快捷切换（Win11 下含新建按钮） -->
+                                <!-- 第二行工具条：条目计数 + 排序（界面密度切换已收纳进左下角设置悬浮菜单） -->
                                 <Grid Grid.Row="1" ColumnDefinitions="*, Auto" Margin="14,6,12,8">
                                     <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                                         <TextBlock Text="{Binding CurrentFilterTitle}" FontSize="12" FontWeight="Medium" Foreground="{DynamicResource SecondaryTextBrush}" />
@@ -556,11 +601,10 @@
                                         <Button Height="26" MinHeight="26" Padding="8,0" FontSize="11.5"
                                                 Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1"
                                                 Command="{Binding ToggleSortOrderCommand}" Content="{Binding SortButtonLabel}" />
-                                        <Button Height="26" MinHeight="26" Padding="8,0" FontSize="11.5"
-                                                Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1"
-                                                Command="{Binding CycleDensityCommand}" Content="{Binding CurrentDensityLabel}" ToolTip.Tip="点击切换界面密度（紧凑 / 标准 / 宽松）" />
-                                        <Button Classes="accent" Height="26" MinHeight="26" Padding="10,0" FontSize="11.5"
-                                                IsVisible="{Binding IsWindowsOrLinux}" Command="{Binding AddEntryCommand}" Content="新建条目" />
+                                        <Button Classes="accent" Width="28" Height="26" MinHeight="26" Padding="0"
+                                                IsVisible="{Binding IsWindowsOrLinux}" Command="{Binding AddEntryCommand}" ToolTip.Tip="新建密码条目">
+                                            <PathIcon Data="{StaticResource IconAdd}" Width="13" Height="13" />
+                                        </Button>
                                     </StackPanel>
                                 </Grid>
 
@@ -626,13 +670,11 @@
                                                 IsVisible="{Binding SelectedEntry, Converter={x:Static ObjectConverters.IsNotNull}}">
                                             <PathIcon Data="{StaticResource IconStar}" Width="13" Height="13" />
                                         </Button>
-                                        <Button Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1"
-                                                Command="{Binding EditSelectedEntryCommand}"
+                                        <Button Width="32" Height="32" MinHeight="32" Padding="0"
+                                                Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1"
+                                                Command="{Binding EditSelectedEntryCommand}" ToolTip.Tip="编辑条目"
                                                 IsVisible="{Binding SelectedEntry, Converter={x:Static ObjectConverters.IsNotNull}}">
-                                            <StackPanel Orientation="Horizontal" Spacing="5">
-                                                <PathIcon Data="{StaticResource IconEdit}" Width="12" Height="12" />
-                                                <TextBlock Text="编辑" FontSize="12.5" />
-                                            </StackPanel>
+                                            <PathIcon Data="{StaticResource IconEdit}" Width="13" Height="13" />
                                         </Button>
                                         <Button Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1"
                                                 Command="{Binding DeleteSelectedEntryCommand}" ToolTip.Tip="删除 / 移入回收站"

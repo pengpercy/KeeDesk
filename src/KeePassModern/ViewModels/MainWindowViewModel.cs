@@ -517,10 +517,18 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             UiDensity.Normal => UiDensity.Comfortable,
             _ => UiDensity.Compact
         };
-        DensityService.Apply(next);
-        SettingsService.Settings.UiDensity = next.ToString();
+        SetDensity(next.ToString());
+    }
+
+    [RelayCommand]
+    private void SetDensity(string? densityName)
+    {
+        if (!Enum.TryParse<UiDensity>(densityName, ignoreCase: true, out var target))
+            target = UiDensity.Normal;
+        DensityService.Apply(target);
+        SettingsService.Settings.UiDensity = target.ToString();
         SettingsService.Save();
-        CurrentDensityLabel = next switch
+        CurrentDensityLabel = target switch
         {
             UiDensity.Compact => "紧凑",
             UiDensity.Comfortable => "宽松",
