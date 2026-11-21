@@ -1,6 +1,8 @@
+using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using KeePassModern.Core.Kdbx;
 using KeePassModern.Core.Services;
+using KeePassModern.Services;
 
 namespace KeePassModern.ViewModels;
 
@@ -10,10 +12,12 @@ public sealed record AttachmentItem(string FileName, string DisplaySize, string 
 public sealed partial class EntryItemViewModel : ViewModelBase
 {
     public KdbxEntry Model { get; }
+    private readonly KdbxDatabase? _database;
 
-    public EntryItemViewModel(KdbxEntry entry)
+    public EntryItemViewModel(KdbxEntry entry, KdbxDatabase? database = null)
     {
         Model = entry;
+        _database = database;
         Refresh();
     }
 
@@ -40,6 +44,8 @@ public sealed partial class EntryItemViewModel : ViewModelBase
     [ObservableProperty] private int _historyCount;
     [ObservableProperty] private int _attachmentCount;
     [ObservableProperty] private string _footerMeta = string.Empty;
+    [ObservableProperty] private Bitmap? _customIconBitmap;
+    public bool HasCustomIcon => CustomIconBitmap is not null;
 
     public string DisplayedPassword => IsPasswordRevealed ? Password : MaskedPassword;
 
@@ -99,6 +105,8 @@ public sealed partial class EntryItemViewModel : ViewModelBase
 
         HistoryCount = Model.History.Count;
         AttachmentCount = Model.Binaries.Count;
+        CustomIconBitmap = FaviconFetcherService.TryDecodeCustomIcon(_database, Model.CustomIconUuid);
+        OnPropertyChanged(nameof(HasCustomIcon));
         FooterMeta = $"修改时间：{Model.LastModificationTime.LocalDateTime:yyyy-MM-dd HH:mm}   ·   创建时间：{Model.CreationTime.LocalDateTime:yyyy-MM-dd HH:mm}   ·   UUID: {Model.Uuid.ToString("N")[..8]}...";
 
         RefreshTotp();

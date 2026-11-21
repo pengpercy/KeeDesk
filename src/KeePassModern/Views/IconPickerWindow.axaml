@@ -24,6 +24,18 @@
 
         <ScrollViewer Grid.Row="1" Padding="24,4,24,16">
             <StackPanel Spacing="14">
+                <!-- 从官网域名或图片 URL 自动获取 Favicon（借鉴现代供应商图标设置体验） -->
+                <Border Classes="fluentCard" Padding="14">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="自动获取官网 Favicon / 图片 URL" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource SecondaryTextBrush}" />
+                        <Grid ColumnDefinitions="*, 8, Auto">
+                            <TextBox Grid.Column="0" x:Name="FetchUrlBox" Height="32" PlaceholderText="输入网址/域名（如 github.com）或图片 URL..." />
+                            <Button Grid.Column="2" x:Name="FetchBtn" Classes="accent" Height="32" MinHeight="32" Padding="12,0" Content="获取图标" Click="FetchFavicon_Click" />
+                        </Grid>
+                        <TextBlock x:Name="FetchStatusText" FontSize="11.5" Foreground="{DynamicResource SecondaryTextBrush}" IsVisible="False" />
+                    </StackPanel>
+                </Border>
+
                 <Border Classes="fluentCard" Padding="14">
                     <StackPanel Spacing="10">
                         <TextBlock Text="标准 Fluent 矢量图标" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource SecondaryTextBrush}" />

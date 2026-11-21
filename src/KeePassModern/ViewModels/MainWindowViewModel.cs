@@ -969,7 +969,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             : source.OrderByDescending(e => e.IsFavorite).ThenBy(e => e.Title, StringComparer.OrdinalIgnoreCase)).ToList();
         FilteredEntries.Clear();
         foreach (var e in list)
-            FilteredEntries.Add(new EntryItemViewModel(e));
+            FilteredEntries.Add(new EntryItemViewModel(e, _database));
 
         SelectedEntry = FilteredEntries.FirstOrDefault(x => x.Model.Uuid == prevSelectedUuid) ?? FilteredEntries.FirstOrDefault();
     }

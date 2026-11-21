@@ -23,17 +23,72 @@ public partial class IconPickerWindow : Window
     private int _selectedIconId;
     private Guid _selectedCustomIconUuid;
 
-    public IconPickerWindow() : this(null, 0, Guid.Empty) { }
+    public IconPickerWindow() : this(null, 0, Guid.Empty, string.Empty) { }
 
-    public IconPickerWindow(KdbxDatabase? db, int currentIconId, Guid currentCustomIconUuid)
+    public IconPickerWindow(KdbxDatabase? db, int currentIconId, Guid currentCustomIconUuid, string suggestedDomain = "")
     {
         InitializeComponent();
         _database = db;
         _selectedIconId = currentIconId;
         _selectedCustomIconUuid = currentCustomIconUuid;
+        FetchUrlBox.Text = suggestedDomain;
 
         MacTitleBarInsets.AttachTrafficLightsCentering(this, 40);
         RenderIcons();
+    }
+
+    private async void FetchFavicon_Click(object? sender, RoutedEventArgs e)
+    {
+        if (_database is null) return;
+        var input = (FetchUrlBox.Text ?? string.Empty).Trim();
+        if (string.IsNullOrEmpty(input))
+        {
+            FetchStatusText.Text = "请输入网站域名（如 github.com）或完整图片 URL。";
+            FetchStatusText.IsVisible = true;
+            return;
+        }
+
+        FetchBtn.IsEnabled = false;
+        FetchStatusText.Text = "正在获取图标...";
+        FetchStatusText.IsVisible = true;
+
+        try
+        {
+            bool looksLikeImageUrl = input.StartsWith("http", StringComparison.OrdinalIgnoreCase) &&
+                                     (input.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
+                                      input.EndsWith(".ico", StringComparison.OrdinalIgnoreCase) ||
+                                      input.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
+                                      input.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) ||
+                                      input.EndsWith(".webp", StringComparison.OrdinalIgnoreCase));
+
+            byte[]? bytes;
+            string name;
+            if (looksLikeImageUrl)
+            {
+                bytes = await KeePassModern.Services.FaviconFetcherService.FetchByImageUrlAsync(input);
+                name = Path.GetFileNameWithoutExtension(new Uri(input).AbsolutePath);
+            }
+            else
+            {
+                var domain = KeePassModern.Services.FaviconFetcherService.ExtractDomain(input, input) ?? input;
+                bytes = await KeePassModern.Services.FaviconFetcherService.FetchByDomainAsync(domain);
+                name = domain;
+            }
+
+            if (bytes is null)
+            {
+                FetchStatusText.Text = "未能获取到有效图片，请检查网络或尝试其他图片地址。";
+                return;
+            }
+
+            _selectedCustomIconUuid = KeePassModern.Services.FaviconFetcherService.AddOrReuseCustomIcon(_database, name, bytes);
+            FetchStatusText.Text = $"已成功获取并选中「{name}」图标！";
+            RenderIcons();
+        }
+        finally
+        {
+            FetchBtn.IsEnabled = true;
+        }
     }
 
     private void RenderIcons()

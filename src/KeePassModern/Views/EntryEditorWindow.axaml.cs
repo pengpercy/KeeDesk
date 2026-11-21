@@ -58,6 +58,7 @@ public partial class EntryEditorWindow : Window
             _selectedIconId = entry.IconId;
             _selectedCustomIconUuid = entry.CustomIconUuid;
             Title = $"编辑条目 — {entry.Title}";
+            RefreshIconBadgePreview();
             DialogHeading.Text = $"编辑条目 — {entry.Title}";
             SaveButtonText.Text = "保存修改";
             TemplateCombo.IsVisible = false;
@@ -356,13 +357,61 @@ public partial class EntryEditorWindow : Window
         Close(true);
     }
 
+    private void RefreshIconBadgePreview()
+    {
+        var bmp = KeePassModern.Services.FaviconFetcherService.TryDecodeCustomIcon(_database, _selectedCustomIconUuid);
+        if (bmp is not null)
+        {
+            IconBadgeImage.Source = bmp;
+            IconBadgeImage.IsVisible = true;
+            IconBadgeText.IsVisible = false;
+        }
+        else
+        {
+            IconBadgeImage.Source = null;
+            IconBadgeImage.IsVisible = false;
+            IconBadgeText.IsVisible = true;
+        }
+    }
+
+    private async void AutoFetchFavicon_Click(object? sender, RoutedEventArgs e)
+    {
+        if (_database is null) return;
+        var domain = KeePassModern.Services.FaviconFetcherService.ExtractDomain(UrlBox.Text, UserNameBox.Text);
+        if (string.IsNullOrEmpty(domain))
+        {
+            StrengthText.Text = "请先填写「登录网址」或含 @ 的「邮箱」，再自动获取官网图标";
+            return;
+        }
+
+        StrengthText.Text = $"正在从 {domain} 获取官网图标...";
+        var bytes = await KeePassModern.Services.FaviconFetcherService.FetchByDomainAsync(domain);
+        if (bytes is null)
+        {
+            StrengthText.Text = $"未能从 {domain} 获取到图标，可尝试选择本地图片或手动输入图片 URL";
+            return;
+        }
+
+        _selectedCustomIconUuid = KeePassModern.Services.FaviconFetcherService.AddOrReuseCustomIcon(_database, domain, bytes);
+        RefreshIconBadgePreview();
+        StrengthText.Text = $"已成功获取 {domain} 官网图标";
+    }
+
+    private void ResetLetterIcon_Click(object? sender, RoutedEventArgs e)
+    {
+        _selectedCustomIconUuid = Guid.Empty;
+        RefreshIconBadgePreview();
+    }
+
     private async void PickIcon_Click(object? sender, RoutedEventArgs e)
     {
-        var dlg = new IconPickerWindow(_database, _selectedIconId, _selectedCustomIconUuid);
+        var suggestedDomain = KeePassModern.Services.FaviconFetcherService.ExtractDomain(UrlBox.Text, UserNameBox.Text) ?? string.Empty;
+        var dlg = new IconPickerWindow(_database, _selectedIconId, _selectedCustomIconUuid, suggestedDomain);
         var res = await dlg.ShowDialog<IconPickerResult?>(this);
         if (res is null) return;
         _selectedIconId = res.IconId;
         _selectedCustomIconUuid = res.CustomIconUuid;
+        RefreshIconBadgePreview();
     }
 
     private async void InsertUserNameRef_Click(object? sender, RoutedEventArgs e)

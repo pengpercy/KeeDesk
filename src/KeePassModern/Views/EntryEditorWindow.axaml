@@ -74,9 +74,20 @@
                                 <TextBlock Text="标题与图标 *" FontSize="11.5" FontWeight="Medium" Foreground="{DynamicResource SecondaryTextBrush}" />
                                 <Grid ColumnDefinitions="32, 8, *, 8, Auto">
                                     <Button Grid.Column="0" x:Name="IconBadgeBtn" Width="32" Height="32" MinHeight="32" Padding="0" CornerRadius="6"
-                                            Background="{DynamicResource BadgePillBackgroundBrush}" BorderThickness="0"
-                                            ToolTip.Tip="点击选择条目图标（支持自定义 PNG）" Click="PickIcon_Click">
-                                        <TextBlock x:Name="IconBadgeText" Text="KP" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource BadgePillForegroundBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            Background="{DynamicResource BadgePillBackgroundBrush}" BorderThickness="0" ClipToBounds="True"
+                                            ToolTip.Tip="点击设置图标（自动获取官网 Favicon / 本地图片 / 内置图标）">
+                                        <Button.Flyout>
+                                            <MenuFlyout Placement="BottomEdgeAlignedLeft">
+                                                <MenuItem Header="自动获取官网图标（按网址 / 邮箱域名）" Click="AutoFetchFavicon_Click" />
+                                                <MenuItem Header="选择本地图片 / 图片 URL / 内置图标..." Click="PickIcon_Click" />
+                                                <Separator />
+                                                <MenuItem Header="恢复默认字母图标" Click="ResetLetterIcon_Click" />
+                                            </MenuFlyout>
+                                        </Button.Flyout>
+                                        <Panel>
+                                            <TextBlock x:Name="IconBadgeText" Text="KP" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource BadgePillForegroundBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            <Image x:Name="IconBadgeImage" Width="22" Height="22" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="False" />
+                                        </Panel>
                                     </Button>
                                     <TextBox Grid.Column="2" x:Name="TitleBox" Height="32" PlaceholderText="例如：阿里云主账号、公司内部 GitLab..." TextChanged="TitleBox_TextChanged" />
                                     <ToggleButton Grid.Column="4" x:Name="FavoriteToggle" Classes="chipToggle" Height="32" Padding="10,0">
