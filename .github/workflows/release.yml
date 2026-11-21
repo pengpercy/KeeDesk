@@ -1,0 +1,40 @@
+name: Release Build (6-RID NativeAOT)
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2022
+            rid: win-x64
+          - os: windows-2022
+            rid: win-arm64
+          - os: macos-15-intel
+            rid: osx-x64
+          - os: macos-latest
+            rid: osx-arm64
+          - os: ubuntu-latest
+            rid: linux-x64
+            container: ubuntu:20.04
+          - os: ubuntu-latest
+            rid: linux-arm64
+            container: ubuntu:20.04
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Publish NativeAOT (${{ matrix.rid }})
+        run: dotnet publish src/KeePassModern/KeePassModern.csproj -c Release -r ${{ matrix.rid }} --self-contained true -o publish/${{ matrix.rid }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: KeePassModern-${{ matrix.rid }}
+          path: publish/${{ matrix.rid }}

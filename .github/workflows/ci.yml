@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test-and-build:
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Restore
+        run: dotnet restore KeePassModern.sln
+      - name: Build
+        run: dotnet build KeePassModern.sln -c Debug --no-restore
+      - name: Test
+        run: dotnet test tests/KeePassModern.Tests/KeePassModern.Tests.csproj -c Debug --no-build

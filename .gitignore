@@ -1,0 +1,13 @@
+.DS_Store
+.idea/
+.vs/
+*.user
+*.suo
+bin/
+obj/
+publish/
+artifacts/
+TestResults/
+*.log
+*.kdbx.tmp
+.alma-snapshots/

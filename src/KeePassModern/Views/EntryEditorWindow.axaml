@@ -1,0 +1,259 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:chrome="clr-namespace:Avalonia.Controls.Chrome;assembly=Avalonia.Controls"
+        x:Class="KeePassModern.Views.EntryEditorWindow"
+        Title="添加新密码条目"
+        Width="620" Height="670"
+        MinWidth="560" MinHeight="580"
+        WindowStartupLocation="CenterOwner"
+        CanResize="True"
+        ExtendClientAreaToDecorationsHint="True"
+        WindowDecorations="Full"
+        ExtendClientAreaTitleBarHeightHint="40"
+        Background="{DynamicResource WorkspaceBackgroundBrush}"
+        Foreground="{DynamicResource PrimaryTextBrush}">
+
+    <!-- 方案 A（画板 08 / 09）：精致 Fluent 2 桌面比例（32px 控件 / 13px 正文 / 12px 标签 / 零选项卡） -->
+    <Grid RowDefinitions="Auto, *, 1, Auto">
+        <!-- 顶部 Header（支持拖动） -->
+        <Border Grid.Row="0" Padding="20,38,20,10" Background="Transparent"
+                chrome:WindowDecorationProperties.ElementRole="TitleBar"
+                PointerPressed="TitleBar_PointerPressed">
+            <Grid ColumnDefinitions="*, Auto">
+                <TextBlock Grid.Column="0" x:Name="DialogHeading" Text="添加新密码条目" FontSize="17" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <ComboBox x:Name="TemplateCombo" Height="28" MinHeight="28" FontSize="12" SelectionChanged="TemplateCombo_Changed">
+                        <ComboBoxItem Content="模板：常规登录" Tag="Login" />
+                        <ComboBoxItem Content="模板：银行卡" Tag="Bank" />
+                        <ComboBoxItem Content="模板：API 密钥" Tag="ApiKey" />
+                        <ComboBoxItem Content="模板：安全笔记" Tag="Note" />
+                    </ComboBox>
+
+                    <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="10,0" Height="28">
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <PathIcon Data="{StaticResource IconFolder}" Width="12" Height="12" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center" />
+                            <TextBlock x:Name="TargetGroupLabel" Text="常用账号" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+
+                    <Button x:Name="HistoryToggleBtn" Height="28" MinHeight="28" Padding="10,0" IsVisible="False"
+                            Click="ToggleHistoryPanel_Click">
+                        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                            <PathIcon Data="{StaticResource IconHistory}" Width="12" Height="12" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center" />
+                            <TextBlock x:Name="HistoryBtnText" Text="历史 (0)" FontSize="12" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- 主体滚动区 / 独立历史快照视图 -->
+        <Grid Grid.Row="1">
+            <Border x:Name="HistoryOverlayPanel" IsVisible="False" Margin="20,4,20,14" Classes="fluentCard" Padding="16">
+                <Grid RowDefinitions="Auto, *, Auto">
+                    <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,10">
+                        <StackPanel Spacing="2">
+                            <TextBlock Text="历史版本快照" FontSize="14" FontWeight="SemiBold" />
+                            <TextBlock Text="每次修改保存自动保留快照，选中任意版本可一键恢复" FontSize="11.5" Foreground="{DynamicResource SecondaryTextBrush}" />
+                        </StackPanel>
+                        <Button Grid.Column="1" Height="28" MinHeight="28" FontSize="12" Content="返回编辑" Click="ToggleHistoryPanel_Click" />
+                    </Grid>
+                    <ListBox Grid.Row="1" x:Name="HistoryListBox" Background="Transparent" />
+                    <Button Grid.Row="2" Classes="accent" Height="32" Content="恢复选中版本" HorizontalAlignment="Right" Margin="0,10,0,0" Click="RestoreHistory_Click" />
+                </Grid>
+            </Border>
+
+            <ScrollViewer x:Name="MainFormScroll" Padding="20,4,20,14">
+                <StackPanel Spacing="10">
+                    <!-- ========== Card 1：核心凭证卡片（精致 32px 控件高度） ========== -->
+                    <Border Classes="fluentCard" Padding="16,14">
+                        <StackPanel Spacing="11">
+                            <!-- 标题与图标 + 收藏开关 -->
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="标题与图标 *" FontSize="11.5" FontWeight="Medium" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                <Grid ColumnDefinitions="32, 8, *, 8, Auto">
+                                    <Border Grid.Column="0" x:Name="IconBadgeBorder" Width="32" Height="32" CornerRadius="6" Background="{DynamicResource BadgePillBackgroundBrush}">
+                                        <TextBlock x:Name="IconBadgeText" Text="KP" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource BadgePillForegroundBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <TextBox Grid.Column="2" x:Name="TitleBox" Height="32" PlaceholderText="例如：阿里云主账号、公司内部 GitLab..." TextChanged="TitleBox_TextChanged" />
+                                    <ToggleButton Grid.Column="4" x:Name="FavoriteToggle" Classes="chipToggle" Height="32" Padding="10,0">
+                                        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                            <PathIcon Data="{StaticResource IconStar}" Width="12" Height="12" VerticalAlignment="Center" />
+                                            <TextBlock x:Name="FavoriteToggleText" Text="收藏" FontSize="12" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </ToggleButton>
+                                </Grid>
+                            </StackPanel>
+
+                            <!-- 双列：用户名 & 网址 -->
+                            <Grid ColumnDefinitions="*, 12, *">
+                                <StackPanel Grid.Column="0" Spacing="4">
+                                    <TextBlock Text="用户名 / 邮箱" FontSize="11.5" FontWeight="Medium" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                    <TextBox x:Name="UserNameBox" Height="32" PlaceholderText="输入登录账号或 {REF:...}..." />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" Spacing="4">
+                                    <TextBlock Text="登录网址（URL）" FontSize="11.5" FontWeight="Medium" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                    <Grid>
+                                        <TextBox x:Name="UrlBox" Height="32" Padding="30,5,10,5" PlaceholderText="https://example.com/login" />
+                                        <PathIcon Data="{StaticResource IconGlobe}" Width="13" Height="13" Foreground="{DynamicResource SecondaryTextBrush}"
+                                                  HorizontalAlignment="Left" VerticalAlignment="Center" Margin="10,0,0,0" IsHitTestVisible="False" />
+                                    </Grid>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- 密码 + 显隐 + 生成密码 + 实时强度条 -->
+                            <StackPanel Spacing="5">
+                                <TextBlock Text="密码 *" FontSize="11.5" FontWeight="Medium" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                <Grid ColumnDefinitions="*, 6, Auto, 6, Auto">
+                                    <TextBox Grid.Column="0" x:Name="PasswordBox" Height="32" PasswordChar="•" FontFamily="Consolas,Menlo,monospace"
+                                             PlaceholderText="输入密码，或点击右侧生成强密码..." TextChanged="PasswordBox_TextChanged" />
+                                    <Button Grid.Column="2" Height="32" MinHeight="32" Width="34" Padding="0" ToolTip.Tip="显示 / 隐藏密码" Click="TogglePasswordVisibility_Click">
+                                        <PathIcon Data="{StaticResource IconEye}" Width="14" Height="14" />
+                                    </Button>
+                                    <Button Grid.Column="4" Classes="accent" Height="32" MinHeight="32" Padding="11,0" Click="GeneratePassword_Click">
+                                        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                            <PathIcon Data="{StaticResource IconShield}" Width="12" Height="12" VerticalAlignment="Center" />
+                                            <TextBlock Text="生成密码" FontSize="12" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                </Grid>
+                                <Grid ColumnDefinitions="170, 12, *">
+                                    <ProgressBar Grid.Column="0" x:Name="StrengthBar" Minimum="0" Maximum="1" Value="0" MinWidth="0" Width="170" Height="4" CornerRadius="2" Foreground="{DynamicResource BrandEmeraldBrush}" HorizontalAlignment="Left" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="2" x:Name="StrengthText" Text="密码强度：待输入" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center" />
+                                </Grid>
+                            </StackPanel>
+
+                            <!-- TOTP 动态验证码 -->
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="动态验证码（2FA / TOTP，可选）" FontSize="11.5" FontWeight="Medium" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                <Grid ColumnDefinitions="*, 6, Auto">
+                                    <TextBox Grid.Column="0" x:Name="TotpBox" Height="32" FontFamily="Consolas,Menlo,monospace" FontSize="12.5"
+                                             PlaceholderText="粘贴 otpauth:// 链接或 Base32 密钥..." TextChanged="TotpBox_TextChanged" />
+                                    <Border Grid.Column="2" x:Name="TotpPreviewBadge" IsVisible="False" Background="{DynamicResource BadgePillBackgroundBrush}" CornerRadius="4" Padding="10,0" Height="32">
+                                        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                            <PathIcon Data="{StaticResource IconClock}" Width="12" Height="12" Foreground="{DynamicResource BadgePillForegroundBrush}" VerticalAlignment="Center" />
+                                            <TextBlock x:Name="TotpPreviewText" FontFamily="Consolas,Menlo,monospace" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource BadgePillForegroundBrush}" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- ========== Card 2：备注、内联自定义字段与附件 ========== -->
+                    <Border Classes="fluentCard" Padding="16,12">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="备注、自定义字段与附件" FontSize="12.5" FontWeight="SemiBold" />
+                            <TextBox x:Name="NotesBox" AcceptsReturn="True" TextWrapping="Wrap" Height="58" VerticalContentAlignment="Top" Padding="10,7"
+                                     PlaceholderText="输入安全问题、备用恢复码或账号说明..." />
+
+                            <StackPanel x:Name="CustomFieldsSection" IsVisible="False" Spacing="4">
+                                <TextBlock Text="自定义字段（每行：字段名=字段值，值前加 * 开启内存保护）" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                <TextBox x:Name="CustomFieldsBox" AcceptsReturn="True" TextWrapping="Wrap" Height="68" VerticalContentAlignment="Top" Padding="10,7"
+                                         FontFamily="Consolas,Menlo,monospace" FontSize="12" PlaceholderText="API_Token=*ghp_xxxxxxxx" />
+                            </StackPanel>
+
+                            <StackPanel x:Name="AttachmentsSection" IsVisible="False" Spacing="4">
+                                <Grid ColumnDefinitions="*, Auto">
+                                    <TextBlock Text="已附加的加密文件" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center" />
+                                    <Button Grid.Column="1" Classes="subtle" Height="22" MinHeight="22" Padding="6,0" FontSize="11" Content="移除选中" Click="RemoveAttachment_Click" />
+                                </Grid>
+                                <ListBox x:Name="AttachmentsListBox" MaxHeight="76" Background="{DynamicResource CardSubtleBackgroundBrush}" CornerRadius="4" />
+                            </StackPanel>
+
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button Height="28" MinHeight="28" Padding="10,0" Click="ShowCustomFields_Click">
+                                    <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                        <PathIcon Data="{StaticResource IconAdd}" Width="11" Height="11" Foreground="{DynamicResource BrandEmeraldBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Text="添加自定义字段" FontSize="12" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
+                                <Button Height="28" MinHeight="28" Padding="10,0" Click="AddAttachment_Click">
+                                    <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                        <PathIcon Data="{StaticResource IconAttach}" Width="11" Height="11" Foreground="{DynamicResource BrandEmeraldBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Text="添加文件附件" FontSize="12" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- ========== Expander 1：到期时间与标签 ========== -->
+                    <Expander HorizontalAlignment="Stretch">
+                        <Expander.Header>
+                            <Grid ColumnDefinitions="Auto, *" Margin="0,2">
+                                <Border Grid.Column="0" Width="28" Height="28" CornerRadius="6" Background="{DynamicResource CardSubtleBackgroundBrush}" Margin="0,0,10,0">
+                                    <PathIcon Data="{StaticResource IconClock}" Width="13" Height="13" Foreground="{DynamicResource BrandEmeraldBrush}" />
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                                    <TextBlock Text="到期时间与标签" FontSize="12.5" FontWeight="SemiBold" />
+                                    <TextBlock x:Name="ExpanderTagsSummary" Text="永不过期 · 暂未添加标签" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                </StackPanel>
+                            </Grid>
+                        </Expander.Header>
+                        <StackPanel Spacing="10">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="标签（分号或逗号分隔）" FontSize="11.5" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                <TextBox x:Name="TagsBox" Height="32" PlaceholderText="例如：工作; 生产; 金融" TextChanged="UpdateExpanderSummaries" />
+                            </StackPanel>
+                            <CheckBox x:Name="ExpiresCheck" Content="为此条目设置到期提醒时间" FontSize="12.5" IsCheckedChanged="UpdateExpanderSummaries" />
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <CalendarDatePicker x:Name="ExpiryPicker" Width="170" Height="32" SelectedDateFormat="Custom" CustomDateFormatString="yyyy-MM-dd"
+                                                    PlaceholderText="选择到期日期" SelectedDateChanged="ExpiryPicker_Changed" />
+                                <Button Height="32" MinHeight="32" FontSize="12" Content="+1个月" Click="ExpiryPreset_Click" Tag="30" />
+                                <Button Height="32" MinHeight="32" FontSize="12" Content="+3个月" Click="ExpiryPreset_Click" Tag="90" />
+                                <Button Height="32" MinHeight="32" FontSize="12" Content="+1年" Click="ExpiryPreset_Click" Tag="365" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Expander>
+
+                    <!-- ========== Expander 2：自动输入与 KDBX 高级属性 ========== -->
+                    <Expander HorizontalAlignment="Stretch">
+                        <Expander.Header>
+                            <Grid ColumnDefinitions="Auto, *" Margin="0,2">
+                                <Border Grid.Column="0" Width="28" Height="28" CornerRadius="6" Background="{DynamicResource CardSubtleBackgroundBrush}" Margin="0,0,10,0">
+                                    <PathIcon Data="{StaticResource IconKeyboard}" Width="13" Height="13" Foreground="{DynamicResource BrandEmeraldBrush}" />
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                                    <TextBlock Text="自动输入（Auto-Type）与 KDBX 高级属性" FontSize="12.5" FontWeight="SemiBold" />
+                                    <TextBlock x:Name="ExpanderAdvancedSummary" Text="继承分组默认按键序列 · 已启用密码质量审计" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                </StackPanel>
+                            </Grid>
+                        </Expander.Header>
+                        <StackPanel Spacing="10" Margin="2,6">
+                            <CheckBox x:Name="AutoTypeEnabledCheck" Content="为此条目启用自动输入（Auto-Type）" FontSize="12.5" IsChecked="True" />
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="默认按键序列（留空继承分组默认）" FontSize="11.5" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                <TextBox x:Name="AutoTypeSeqBox" Height="32" FontFamily="Consolas,Menlo,monospace" PlaceholderText="{}{USERNAME}{TAB}{PASSWORD}{ENTER}" />
+                            </StackPanel>
+                            <CheckBox x:Name="AutoTypeObfuscateCheck" Content="启用双通道按键混淆（防按键记录）" FontSize="12.5" />
+                            <Border Height="1" Background="{DynamicResource DividerBrush}" />
+                            <CheckBox x:Name="QualityCheckBox" Content="纳入密码强度安全审计（取消勾选将按 KDBX 4.1 禁用单条检测）" FontSize="12.5" IsChecked="True" />
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="覆盖 URL（可选）" FontSize="11.5" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                <TextBox x:Name="OverrideUrlBox" Height="32" PlaceholderText="例如：cmd://ssh {USERNAME}@{URL}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Expander>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+
+        <Border Grid.Row="2" Background="{DynamicResource DividerBrush}" />
+
+        <!-- 固定底部 Footer（使用标准软盘保存图标 IconSave） -->
+        <Grid Grid.Row="3" ColumnDefinitions="*, Auto" Margin="20,12">
+            <CheckBox Grid.Column="0" x:Name="AutoCopyAfterSaveCheck" Content="保存后自动复制密码到安全剪贴板" FontSize="12" VerticalAlignment="Center" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                <Button Content="取消" Click="Cancel_Click" MinWidth="76" Height="32" MinHeight="32" />
+                <Button x:Name="SaveButton" Classes="accent" Click="Save_Click" MinWidth="108" Height="32" MinHeight="32">
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <PathIcon Data="{StaticResource IconSave}" Width="13" Height="13" VerticalAlignment="Center" />
+                        <TextBlock x:Name="SaveButtonText" Text="创建并保存" FontSize="12.5" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

@@ -1,0 +1,278 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:KeePassModern.Controls"
+        xmlns:chrome="clr-namespace:Avalonia.Controls.Chrome;assembly=Avalonia.Controls"
+        x:Class="KeePassModern.Views.SettingsWindow"
+        Title="偏好设置"
+        Width="700" Height="660"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        ExtendClientAreaToDecorationsHint="True"
+        WindowDecorations="Full"
+        ExtendClientAreaTitleBarHeightHint="40"
+        Background="{DynamicResource WorkspaceBackgroundBrush}"
+        Foreground="{DynamicResource PrimaryTextBrush}">
+
+    <!-- 左右分栏布局（严格对齐画板 07：左侧 184px 导航直通顶部，右侧内容区） -->
+    <Grid ColumnDefinitions="184, 1, *">
+        <!-- 左侧导航栏 -->
+        <Border Grid.Column="0" Background="{DynamicResource SidebarBackgroundBrush}">
+            <Grid RowDefinitions="40, Auto, *">
+                <!-- 顶部拖动区（macOS 交通灯安全区） -->
+                <Border Grid.Row="0" Background="Transparent"
+                        chrome:WindowDecorationProperties.ElementRole="TitleBar"
+                        PointerPressed="TitleBar_PointerPressed" />
+
+                <TextBlock Grid.Row="1" Text="偏好设置" FontSize="15" FontWeight="SemiBold" Margin="18,4,16,12" />
+
+                <StackPanel Grid.Row="2" Spacing="4" Margin="10,0">
+                    <Button x:Name="NavAppearance" Classes="subtle" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="0" Height="34" Click="NavClick" Tag="0">
+                        <Grid ColumnDefinitions="6, 26, *">
+                            <Border x:Name="Ind0" Grid.Column="0" Width="3" Height="16" CornerRadius="2" Background="{DynamicResource SystemControlHighlightAccentBrush}" HorizontalAlignment="Left" />
+                            <PathIcon Grid.Column="1" Data="{StaticResource IconSettings}" Width="14" Height="14" />
+                            <TextBlock Grid.Column="2" Text="外观与密度" FontSize="13" VerticalAlignment="Center" />
+                        </Grid>
+                    </Button>
+
+                    <Button x:Name="NavSecurity" Classes="subtle" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="0" Height="34" Click="NavClick" Tag="1">
+                        <Grid ColumnDefinitions="6, 26, *">
+                            <Border x:Name="Ind1" Grid.Column="0" Width="3" Height="16" CornerRadius="2" Background="{DynamicResource SystemControlHighlightAccentBrush}" HorizontalAlignment="Left" IsVisible="False" />
+                            <PathIcon Grid.Column="1" Data="{StaticResource IconShield}" Width="14" Height="14" />
+                            <TextBlock Grid.Column="2" Text="安全与锁定" FontSize="13" VerticalAlignment="Center" />
+                        </Grid>
+                    </Button>
+
+                    <Button x:Name="NavAutoType" Classes="subtle" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="0" Height="34" Click="NavClick" Tag="2">
+                        <Grid ColumnDefinitions="6, 26, *">
+                            <Border x:Name="Ind2" Grid.Column="0" Width="3" Height="16" CornerRadius="2" Background="{DynamicResource SystemControlHighlightAccentBrush}" HorizontalAlignment="Left" IsVisible="False" />
+                            <PathIcon Grid.Column="1" Data="{StaticResource IconKey}" Width="14" Height="14" />
+                            <TextBlock Grid.Column="2" Text="自动输入热键" FontSize="13" VerticalAlignment="Center" />
+                        </Grid>
+                    </Button>
+
+                    <Button x:Name="NavData" Classes="subtle" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="0" Height="34" Click="NavClick" Tag="3">
+                        <Grid ColumnDefinitions="6, 26, *">
+                            <Border x:Name="Ind3" Grid.Column="0" Width="3" Height="16" CornerRadius="2" Background="{DynamicResource SystemControlHighlightAccentBrush}" HorizontalAlignment="Left" IsVisible="False" />
+                            <PathIcon Grid.Column="1" Data="{StaticResource IconExport}" Width="14" Height="14" />
+                            <TextBlock Grid.Column="2" Text="同步与导入导出" FontSize="13" VerticalAlignment="Center" />
+                        </Grid>
+                    </Button>
+
+                    <Button x:Name="NavAbout" Classes="subtle" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="0" Height="34" Click="NavClick" Tag="4">
+                        <Grid ColumnDefinitions="6, 26, *">
+                            <Border x:Name="Ind4" Grid.Column="0" Width="3" Height="16" CornerRadius="2" Background="{DynamicResource SystemControlHighlightAccentBrush}" HorizontalAlignment="Left" IsVisible="False" />
+                            <PathIcon Grid.Column="1" Data="{StaticResource IconVault}" Width="14" Height="14" />
+                            <TextBlock Grid.Column="2" Text="关于与更新" FontSize="13" VerticalAlignment="Center" />
+                        </Grid>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- 垂直分割线直通顶部 -->
+        <Border Grid.Column="1" Background="{DynamicResource DividerBrush}" />
+
+        <!-- 右侧内容区 -->
+        <Grid Grid.Column="2" RowDefinitions="40, *">
+            <!-- 顶部拖动区 -->
+            <Border Grid.Row="0" Background="Transparent"
+                    chrome:WindowDecorationProperties.ElementRole="TitleBar"
+                    PointerPressed="TitleBar_PointerPressed" />
+
+            <ScrollViewer Grid.Row="1" Padding="24,4,24,24">
+                <Panel>
+                    <!-- ========== 页面 0：外观与界面密度（100% 对齐画板 07） ========== -->
+                    <StackPanel x:Name="PageAppearance" Spacing="16">
+                        <TextBlock Text="外观与界面密度" FontSize="20" FontWeight="SemiBold" />
+
+                        <!-- 外观模式卡片 -->
+                        <Border Classes="fluentCard" Padding="16">
+                            <StackPanel Spacing="12">
+                                <TextBlock Text="外观模式" FontSize="13.5" FontWeight="SemiBold" />
+                                <UniformGrid Columns="3" Rows="1">
+                                    <Button x:Name="BtnThemeDefault" Classes="optionCard" Height="42" Margin="0,0,8,0" HorizontalAlignment="Stretch" Click="ThemeCard_Click" Tag="Default">
+                                        <TextBlock Classes="optionTitle" Text="跟随系统" FontSize="13" VerticalAlignment="Center" />
+                                    </Button>
+                                    <Button x:Name="BtnThemeLight" Classes="optionCard" Height="42" Margin="4,0" HorizontalAlignment="Stretch" Click="ThemeCard_Click" Tag="Light">
+                                        <TextBlock Classes="optionTitle" Text="浅色模式" FontSize="13" VerticalAlignment="Center" />
+                                    </Button>
+                                    <Button x:Name="BtnThemeDark" Classes="optionCard" Height="42" Margin="8,0,0,0" HorizontalAlignment="Stretch" Click="ThemeCard_Click" Tag="Dark">
+                                        <TextBlock Classes="optionTitle" Text="深色模式" FontSize="13" VerticalAlignment="Center" />
+                                    </Button>
+                                </UniformGrid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- 主题强调色卡片（默认跟随系统色 + 6 预设 + 自定义，色块与实际强调色一致） -->
+                        <Border Classes="fluentCard" Padding="16">
+                            <StackPanel Spacing="12">
+                                <TextBlock Text="主题强调色（默认跟随系统强调色）" FontSize="13.5" FontWeight="SemiBold" />
+                                <CheckBox x:Name="FollowSystemAccentCheck" Content="跟随操作系统强调色（默认 · macOS / Win11 / Linux）" IsCheckedChanged="FollowSystemAccent_Changed" />
+
+                                <TextBlock Text="内置主题色预设（点击即时切换）：" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                <UniformGrid Columns="7" Rows="1">
+                                    <Button Classes="subtle" Padding="4,6" Click="AccentPreset_Click" Tag="Emerald">
+                                        <StackPanel Spacing="5" HorizontalAlignment="Center">
+                                            <Border x:Name="RingEmerald" Width="28" Height="28" CornerRadius="14" BorderThickness="2" BorderBrush="Transparent" Padding="2">
+                                                <Ellipse Fill="#10B981" />
+                                            </Border>
+                                            <TextBlock Text="安全绿" FontSize="11" HorizontalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Classes="subtle" Padding="4,6" Click="AccentPreset_Click" Tag="ClassicBlue">
+                                        <StackPanel Spacing="5" HorizontalAlignment="Center">
+                                            <Border x:Name="RingClassicBlue" Width="28" Height="28" CornerRadius="14" BorderThickness="2" BorderBrush="Transparent" Padding="2">
+                                                <Ellipse Fill="#3B82F6" />
+                                            </Border>
+                                            <TextBlock Text="经典蓝" FontSize="11" HorizontalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Classes="subtle" Padding="4,6" Click="AccentPreset_Click" Tag="Indigo">
+                                        <StackPanel Spacing="5" HorizontalAlignment="Center">
+                                            <Border x:Name="RingIndigo" Width="28" Height="28" CornerRadius="14" BorderThickness="2" BorderBrush="Transparent" Padding="2">
+                                                <Ellipse Fill="#6366F1" />
+                                            </Border>
+                                            <TextBlock Text="极光靛" FontSize="11" HorizontalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Classes="subtle" Padding="4,6" Click="AccentPreset_Click" Tag="Amber">
+                                        <StackPanel Spacing="5" HorizontalAlignment="Center">
+                                            <Border x:Name="RingAmber" Width="28" Height="28" CornerRadius="14" BorderThickness="2" BorderBrush="Transparent" Padding="2">
+                                                <Ellipse Fill="#D97706" />
+                                            </Border>
+                                            <TextBlock Text="琥珀金" FontSize="11" HorizontalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Classes="subtle" Padding="4,6" Click="AccentPreset_Click" Tag="Rose">
+                                        <StackPanel Spacing="5" HorizontalAlignment="Center">
+                                            <Border x:Name="RingRose" Width="28" Height="28" CornerRadius="14" BorderThickness="2" BorderBrush="Transparent" Padding="2">
+                                                <Ellipse Fill="#E11D48" />
+                                            </Border>
+                                            <TextBlock Text="玫瑰红" FontSize="11" HorizontalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Classes="subtle" Padding="4,6" Click="AccentPreset_Click" Tag="Slate">
+                                        <StackPanel Spacing="5" HorizontalAlignment="Center">
+                                            <Border x:Name="RingSlate" Width="28" Height="28" CornerRadius="14" BorderThickness="2" BorderBrush="Transparent" Padding="2">
+                                                <Ellipse Fill="#64748B" />
+                                            </Border>
+                                            <TextBlock Text="石墨灰" FontSize="11" HorizontalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                    <StackPanel Spacing="5" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,6,0,0">
+                                        <ColorPicker x:Name="CustomAccentPicker" Color="#10B981" Width="32" Height="28" ColorChanged="CustomAccent_Changed" />
+                                        <TextBlock Text="自定义" FontSize="11" HorizontalAlignment="Center" />
+                                    </StackPanel>
+                                </UniformGrid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- 界面密度三档卡片（实时生效，无需重启） -->
+                        <Border Classes="fluentCard" Padding="16">
+                            <StackPanel Spacing="12">
+                                <TextBlock Text="界面密度（实时生效，无需重启）" FontSize="13.5" FontWeight="SemiBold" />
+                                <UniformGrid Columns="3" Rows="1">
+                                    <Button x:Name="BtnDensityCompact" Classes="optionCard" Height="64" Margin="0,0,8,0" HorizontalAlignment="Stretch" Click="DensityCard_Click" Tag="Compact">
+                                        <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <TextBlock Classes="optionTitle" Text="紧凑" FontSize="13.5" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                                            <TextBlock Classes="optionSub" Text="行高 34px · 紧凑" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button x:Name="BtnDensityNormal" Classes="optionCard" Height="64" Margin="4,0" HorizontalAlignment="Stretch" Click="DensityCard_Click" Tag="Normal">
+                                        <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <TextBlock Classes="optionTitle" Text="标准" FontSize="13.5" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                                            <TextBlock Classes="optionSub" Text="行高 52px · 默认" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button x:Name="BtnDensityComfortable" Classes="optionCard" Height="64" Margin="8,0,0,0" HorizontalAlignment="Stretch" Click="DensityCard_Click" Tag="Comfortable">
+                                        <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <TextBlock Classes="optionTitle" Text="宽松" FontSize="13.5" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                                            <TextBlock Classes="optionSub" Text="行高 64px · 宽松" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                </UniformGrid>
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock Text="界面默认跟随系统强调色，品牌标识使用安全绿。" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                    </StackPanel>
+
+                    <!-- ========== 页面 1：安全与锁定 ========== -->
+                    <StackPanel x:Name="PageSecurity" Spacing="16" IsVisible="False">
+                        <TextBlock Text="安全与自动锁定" FontSize="20" FontWeight="SemiBold" />
+                        <Border Classes="fluentCard" Padding="18">
+                            <StackPanel Spacing="14">
+                                <Grid ColumnDefinitions="*, 120">
+                                    <StackPanel>
+                                        <TextBlock Text="安全剪贴板自动清空时间（秒）" FontWeight="Medium" />
+                                        <TextBlock Text="复制密码或验证码后，倒计时结束自动清零剪贴板" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                    </StackPanel>
+                                    <NumericUpDown Grid.Column="1" x:Name="ClipClearNumeric" Minimum="5" Maximum="120" Value="15" ValueChanged="SecurityChanged" />
+                                </Grid>
+                                <Border Height="1" Background="{DynamicResource DividerBrush}" />
+                                <Grid ColumnDefinitions="*, 120">
+                                    <StackPanel>
+                                        <TextBlock Text="空闲自动锁定时间（分钟）" FontWeight="Medium" />
+                                        <TextBlock Text="超过指定空闲时间后自动锁定并清零内存敏感数据" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                    </StackPanel>
+                                    <NumericUpDown Grid.Column="1" x:Name="AutoLockNumeric" Minimum="1" Maximum="120" Value="10" ValueChanged="SecurityChanged" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- ========== 页面 2：自动输入热键 ========== -->
+                    <StackPanel x:Name="PageAutoType" Spacing="16" IsVisible="False">
+                        <TextBlock Text="自动输入与快捷键" FontSize="20" FontWeight="SemiBold" />
+                        <Border Classes="fluentCard" Padding="18">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="应用内全局快捷键" FontWeight="SemiBold" />
+                                <TextBlock Text="• 搜索密码库：⌘K / Ctrl+K" FontSize="13" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                <TextBlock Text="• 新建密码条目：⌘N / Ctrl+N" FontSize="13" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                <TextBlock Text="• 保存当前密码库：⌘S / Ctrl+S" FontSize="13" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                <TextBlock Text="• 立即锁定密码库：⌘L / Ctrl+L" FontSize="13" Foreground="{DynamicResource SecondaryTextBrush}" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- ========== 页面 3：同步与导入导出 ========== -->
+                    <StackPanel x:Name="PageData" Spacing="16" IsVisible="False">
+                        <TextBlock Text="同步与导入导出" FontSize="20" FontWeight="SemiBold" />
+                        <Border Classes="fluentCard" Padding="18">
+                            <StackPanel Spacing="12">
+                                <TextBlock Text="数据迁移与纸质应急备份" FontWeight="SemiBold" />
+                                <TextBlock Text="支持 Chrome / Firefox / Bitwarden / 1Password 通用 CSV 导入，以及导出可打印 HTML 应急表。" FontSize="12.5" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,4,0,0">
+                                    <Button Content="导入 CSV" Click="ImportCsv_Click" />
+                                    <Button Content="导出 CSV" Click="ExportCsv_Click" />
+                                    <Button Classes="accent" Content="生成 HTML 应急表" Click="ExportEmergency_Click" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- ========== 页面 4：关于与更新 ========== -->
+                    <StackPanel x:Name="PageAbout" Spacing="16" IsVisible="False">
+                        <TextBlock Text="关于 KeePassModern" FontSize="20" FontWeight="SemiBold" />
+                        <Border Classes="fluentCard" Padding="20">
+                            <StackPanel Spacing="10">
+                                <StackPanel Orientation="Horizontal" Spacing="12">
+                                    <controls:BrandLogo Width="48" Height="48" />
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock x:Name="AboutVersionText" Text="KeePassModern 1.0.0" FontSize="16" FontWeight="SemiBold" />
+                                        <TextBlock Text="基于 Avalonia 12 + .NET 10 + NativeAOT 构建" FontSize="12.5" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                    </StackPanel>
+                                </StackPanel>
+                                <TextBlock Text="完全兼容 KeePass KDBX 3.1 / 4.0 / 4.1 密码库格式，采用纯托管零反射密码学引擎（Argon2id / Argon2d / AES-256 / ChaCha20 / Twofish）与 Microsoft Fluent 2 设计语言。" FontSize="13" LineHeight="20" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,6,0,0">
+                                    <Button Classes="accent" Height="32" Content="检查更新" Click="CheckUpdate_Click" />
+                                    <Button Height="32" Content="访问 GitHub 仓库" Click="OpenGitHub_Click" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Panel>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</Window>
