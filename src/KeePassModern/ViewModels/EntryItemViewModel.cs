@@ -4,6 +4,9 @@ using KeePassModern.Core.Services;
 
 namespace KeePassModern.ViewModels;
 
+public sealed record CustomFieldItem(string Key, string DisplayValue, string RawValue, bool IsProtected);
+public sealed record AttachmentItem(string FileName, string DisplaySize, string DisplayLabel);
+
 public sealed partial class EntryItemViewModel : ViewModelBase
 {
     public KdbxEntry Model { get; }
@@ -40,14 +43,24 @@ public sealed partial class EntryItemViewModel : ViewModelBase
 
     public string DisplayedPassword => IsPasswordRevealed ? Password : MaskedPassword;
 
-    public IReadOnlyList<KeyValuePair<string, string>> CustomFields
+    public IReadOnlyList<CustomFieldItem> CustomFields
         => Model.GetCustomStrings()
             .Where(kv => kv.Key is not KdbxConstants.FieldOtp and not KdbxConstants.FieldTimeOtpSecretBase32)
-            .Select(kv => new KeyValuePair<string, string>(kv.Key, kv.Value.IsProtected ? "••••••••" : kv.Value.ReadString()))
+            .Select(kv =>
+            {
+                var raw = kv.Value.ReadString();
+                return new CustomFieldItem(kv.Key, kv.Value.IsProtected ? "••••••••" : raw, raw, kv.Value.IsProtected);
+            })
             .ToList();
 
-    public IReadOnlyList<string> AttachmentNames
-        => Model.Binaries.Select(kv => $"{kv.Key} ({FormatBytes(kv.Value.Length)})").ToList();
+    public IReadOnlyList<AttachmentItem> Attachments
+        => Model.Binaries
+            .Select(kv =>
+            {
+                var size = FormatBytes(kv.Value.Length);
+                return new AttachmentItem(kv.Key, size, $"{kv.Key} ({size})");
+            })
+            .ToList();
 
     partial void OnIsPasswordRevealedChanged(bool value) => OnPropertyChanged(nameof(DisplayedPassword));
 
@@ -91,7 +104,7 @@ public sealed partial class EntryItemViewModel : ViewModelBase
         RefreshTotp();
         OnPropertyChanged(nameof(DisplayedPassword));
         OnPropertyChanged(nameof(CustomFields));
-        OnPropertyChanged(nameof(AttachmentNames));
+        OnPropertyChanged(nameof(Attachments));
     }
 
     public void RefreshTotp()

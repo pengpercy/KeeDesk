@@ -18,6 +18,10 @@ public partial class MainWindow : Window
         Opened += (_, _) => WireViewModelCallbacks();
         KeyDown += OnWindowKeyDown;
 
+        // 注册全局文件拖拽打开（支持拖入 .kdbx 密码库或 .keyx 密钥文件）
+        AddHandler(DragDrop.DragOverEvent, OnWindowDragOver);
+        AddHandler(DragDrop.DropEvent, OnWindowDrop);
+
         // macOS 下将交通灯按钮按 48pt 标题栏对称微调至右下居中位置
         MacTitleBarInsets.AttachTrafficLightsCentering(this, 48, right =>
         {
@@ -116,17 +120,68 @@ public partial class MainWindow : Window
             var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
             {
                 SuggestedFileName = suggestedName,
-                DefaultExtension = ext,
-                FileTypeChoices = [new FilePickerFileType(ext.ToUpperInvariant()) { Patterns = [$"*.{ext}"] }]
+                DefaultExtension = ext == "*" ? null : ext,
+                FileTypeChoices = ext == "*"
+                    ? [FilePickerFileTypes.All]
+                    : [new FilePickerFileType(ext.ToUpperInvariant()) { Patterns = [$"*.{ext}"] }]
             });
             return file?.TryGetLocalPath();
         };
+
+        vm.OpenGroupDialogAsync = async (heading, initialName, initialNotes) =>
+        {
+            var dlg = new GroupDialogWindow(heading, initialName, initialNotes);
+            var res = await dlg.ShowDialog<GroupDialogResult?>(this);
+            return res is null ? null : (res.Name, res.Notes);
+        };
+
+        vm.OpenDatabaseSettingsAsync = async db =>
+        {
+            var dlg = new DatabaseSettingsWindow(db);
+            var res = await dlg.ShowDialog<DatabaseSettingsResult?>(this);
+            return res is null ? (false, null, null) : (res.Saved, res.NewMasterKey, res.NewKeyFilePath);
+        };
+
+        vm.OpenVaultUnlockPromptAsync = async vaultPath =>
+        {
+            var dlg = new VaultUnlockPromptWindow(vaultPath);
+            return await dlg.ShowDialog<KeePassModern.Core.Kdbx.KdbxDatabase?>(this);
+        };
+
+        vm.OpenUrlExternal = url =>
+        {
+            if (string.IsNullOrWhiteSpace(url)) return;
+            try
+            {
+                Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+            }
+            catch { }
+        };
+    }
+
+    private void OnWindowDragOver(object? sender, DragEventArgs e)
+    {
+        e.DragEffects = e.DataTransfer.Contains(DataFormat.File)
+            ? DragDropEffects.Copy
+            : DragDropEffects.None;
+    }
+
+    private void OnWindowDrop(object? sender, DragEventArgs e)
+    {
+        if (DataContext is not MainWindowViewModel vm) return;
+        var files = e.DataTransfer.TryGetFiles();
+        if (files is null) return;
+
+        var paths = files.Select(f => f.TryGetLocalPath()).Where(p => !string.IsNullOrEmpty(p)).Cast<string>();
+        vm.HandleDroppedFiles(paths);
     }
 
     private void OnWindowKeyDown(object? sender, KeyEventArgs e)
     {
         if (DataContext is not MainWindowViewModel vm || !vm.IsUnlocked) return;
         bool mod = OperatingSystem.IsMacOS() ? e.KeyModifiers.HasFlag(KeyModifiers.Meta) : e.KeyModifiers.HasFlag(KeyModifiers.Control);
+        bool shift = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
+
         if (!mod) return;
 
         if (e.Key == Key.K)
@@ -146,9 +201,34 @@ public partial class MainWindow : Window
             vm.LockVaultCommand.Execute(null);
             e.Handled = true;
         }
-        else if (e.Key == Key.N)
+        else if (e.Key == Key.N || e.Key == Key.I)
         {
             vm.AddEntryCommand.Execute(null);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.B)
+        {
+            vm.CopyUserNameCommand.Execute(null);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.C && shift)
+        {
+            vm.CopyPasswordCommand.Execute(null);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.T && shift)
+        {
+            vm.CopyTotpCommand.Execute(null);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.D)
+        {
+            vm.DuplicateEntryCommand.Execute(vm.SelectedEntry);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.U)
+        {
+            vm.OpenEntryUrlCommand.Execute(vm.SelectedEntry);
             e.Handled = true;
         }
     }
@@ -192,11 +272,7 @@ public partial class MainWindow : Window
 
     private void OpenUrl_Click(object? sender, RoutedEventArgs e)
     {
-        if (DataContext is not MainWindowViewModel vm || string.IsNullOrWhiteSpace(vm.SelectedEntry?.Url)) return;
-        try
-        {
-            Process.Start(new ProcessStartInfo(vm.SelectedEntry.Url) { UseShellExecute = true });
-        }
-        catch { }
+        if (DataContext is MainWindowViewModel vm)
+            vm.OpenEntryUrlCommand.Execute(vm.SelectedEntry);
     }
 }

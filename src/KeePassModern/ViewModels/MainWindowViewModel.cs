@@ -117,6 +117,13 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public Func<ReleaseInfo, Task>? ShowUpdateWindowAsync { get; set; }
     public Func<string, Task<string?>>? PickOpenFileAsync { get; set; }
     public Func<string, string, Task<string?>>? PickSaveFileAsync { get; set; }
+    public Func<string, string, string, Task<(string Name, string Notes)?>>? OpenGroupDialogAsync { get; set; }
+    public Func<KdbxDatabase, Task<(bool Saved, CompositeKey? NewKey, string? NewKeyFile)>>? OpenDatabaseSettingsAsync { get; set; }
+    public Func<string, Task<KdbxDatabase?>>? OpenVaultUnlockPromptAsync { get; set; }
+    public Action<string>? OpenUrlExternal { get; set; }
+
+    public bool HasRecycleBinItems => RecycleBinCount > 0;
+    public bool HasUnlockKeyFile => !string.IsNullOrWhiteSpace(UnlockKeyFilePath);
 
     public MainWindowViewModel(AppSettingsService settingsService)
     {
@@ -152,7 +159,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     }
 
     partial void OnUnlockVaultPathChanged(string value) => OnPropertyChanged(nameof(UnlockVaultHeading));
-    partial void OnUnlockKeyFilePathChanged(string value) => OnPropertyChanged(nameof(UnlockKeyFileDisplay));
+    partial void OnUnlockKeyFilePathChanged(string value)
+    {
+        OnPropertyChanged(nameof(UnlockKeyFileDisplay));
+        OnPropertyChanged(nameof(HasUnlockKeyFile));
+    }
+    partial void OnRecycleBinCountChanged(int value) => OnPropertyChanged(nameof(HasRecycleBinItems));
 
     partial void OnSelectedRecentVaultChanged(RecentVaultItem? value)
     {
@@ -224,6 +236,66 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         var path = await PickOpenFileAsync("*");
         if (!string.IsNullOrEmpty(path))
             UnlockKeyFilePath = path;
+    }
+
+    [RelayCommand]
+    private void ClearKeyFile()
+    {
+        UnlockKeyFilePath = string.Empty;
+    }
+
+    [RelayCommand]
+    private async Task GenerateKeyFileAsync()
+    {
+        if (PickSaveFileAsync is null) return;
+        var suggested = string.IsNullOrWhiteSpace(NewVaultName) ? "KeePassModern.keyx" : $"{NewVaultName}.keyx";
+        var path = await PickSaveFileAsync(suggested, "keyx");
+        if (string.IsNullOrWhiteSpace(path)) return;
+
+        try
+        {
+            var xml = CompositeKey.GenerateXmlKeyFileV2();
+            await File.WriteAllTextAsync(path, xml);
+            if (!IsUnlocked)
+                UnlockKeyFilePath = path;
+            ShowToast($"已生成 XML v2.0 密钥文件：{Path.GetFileName(path)}");
+        }
+        catch (Exception ex)
+        {
+            ShowToast($"生成密钥文件失败：{ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// 处理拖放到主窗口的文件：支持直接拖入 .kdbx 密码库文件或 .keyx/.key 密钥文件。
+    /// </summary>
+    public void HandleDroppedFiles(IEnumerable<string> paths)
+    {
+        var list = paths.Where(File.Exists).ToList();
+        if (list.Count == 0) return;
+
+        var kdbx = list.FirstOrDefault(p => p.EndsWith(".kdbx", StringComparison.OrdinalIgnoreCase));
+        if (!string.IsNullOrEmpty(kdbx))
+        {
+            if (IsUnlocked)
+                LockVault();
+            UnlockVaultPath = kdbx;
+            UnlockError = string.Empty;
+            ShowToast($"已载入密码库：{Path.GetFileName(kdbx)}，请输入主密码解锁");
+            return;
+        }
+
+        if (!IsUnlocked)
+        {
+            var keyFile = list.FirstOrDefault(p =>
+                p.EndsWith(".keyx", StringComparison.OrdinalIgnoreCase) ||
+                p.EndsWith(".key", StringComparison.OrdinalIgnoreCase));
+            if (!string.IsNullOrEmpty(keyFile))
+            {
+                UnlockKeyFilePath = keyFile;
+                ShowToast($"已选择密钥文件：{Path.GetFileName(keyFile)}");
+            }
+        }
     }
 
     [RelayCommand]
@@ -666,11 +738,15 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private async Task EditSelectedEntryAsync()
+    private async Task EditSelectedEntryAsync() => await EditEntryAsync(SelectedEntry);
+
+    [RelayCommand]
+    private async Task EditEntryAsync(EntryItemViewModel? item)
     {
-        if (_database is null || SelectedEntry is null || OpenEntryEditorAsync is null) return;
-        var targetGroup = SelectedEntry.Model.Parent ?? _database.RootGroup;
-        if (await OpenEntryEditorAsync(SelectedEntry.Model, targetGroup))
+        var target = item ?? SelectedEntry;
+        if (_database is null || target is null || OpenEntryEditorAsync is null) return;
+        var targetGroup = target.Model.Parent ?? _database.RootGroup;
+        if (await OpenEntryEditorAsync(target.Model, targetGroup))
         {
             _database.IsModified = true;
             SaveVault();
@@ -679,33 +755,146 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void ToggleFavoriteSelected()
+    private void DuplicateEntry(EntryItemViewModel? item)
     {
-        if (_database is null || SelectedEntry is null) return;
-        SelectedEntry.Model.IsFavorite = !SelectedEntry.Model.IsFavorite;
-        SelectedEntry.Model.LastModificationTime = DateTimeOffset.UtcNow;
+        var target = item ?? SelectedEntry;
+        if (_database is null || target is null) return;
+        var clone = _database.DuplicateEntry(target.Model);
+        SaveVault();
+        RebuildWorkspace();
+        SelectedEntry = FilteredEntries.FirstOrDefault(e => e.Model.Uuid == clone.Uuid) ?? SelectedEntry;
+        ShowToast($"已克隆条目：{clone.Title}");
+    }
+
+    [RelayCommand]
+    private void ToggleFavoriteSelected() => ToggleFavoriteEntry(SelectedEntry);
+
+    [RelayCommand]
+    private void ToggleFavoriteEntry(EntryItemViewModel? item)
+    {
+        var target = item ?? SelectedEntry;
+        if (_database is null || target is null) return;
+        target.Model.IsFavorite = !target.Model.IsFavorite;
+        target.Model.LastModificationTime = DateTimeOffset.UtcNow;
         _database.IsModified = true;
+        SaveVault();
         RebuildWorkspace();
     }
 
     [RelayCommand]
-    private void DeleteSelectedEntry()
+    private void DeleteSelectedEntry() => DeleteEntry(SelectedEntry);
+
+    [RelayCommand]
+    private void DeleteEntry(EntryItemViewModel? item)
     {
-        if (_database is null || SelectedEntry is null) return;
-        _database.MoveEntryToRecycleBin(SelectedEntry.Model);
+        var target = item ?? SelectedEntry;
+        if (_database is null || target is null) return;
+        bool wasInBin = _database.IsInRecycleBin(target.Model);
+        _database.MoveEntryToRecycleBin(target.Model);
+        SaveVault();
         RebuildWorkspace();
-        ShowToast(ActiveSection == ActiveSection.RecycleBin ? "条目已永久删除" : "条目已移入回收站");
+        ShowToast(wasInBin ? "条目已永久删除" : "条目已移入回收站");
     }
 
     [RelayCommand]
-    private void RestoreSelectedEntry()
+    private void PermanentlyDeleteEntry(EntryItemViewModel? item)
     {
-        if (_database is null || SelectedEntry is null) return;
-        if (_database.RestoreEntryFromRecycleBin(SelectedEntry.Model))
+        var target = item ?? SelectedEntry;
+        if (_database is null || target is null) return;
+        _database.DeleteEntryPermanently(target.Model);
+        SaveVault();
+        RebuildWorkspace();
+        ShowToast("条目已永久删除");
+    }
+
+    [RelayCommand]
+    private void RestoreSelectedEntry() => RestoreEntry(SelectedEntry);
+
+    [RelayCommand]
+    private void RestoreEntry(EntryItemViewModel? item)
+    {
+        var target = item ?? SelectedEntry;
+        if (_database is null || target is null) return;
+        if (_database.RestoreEntryFromRecycleBin(target.Model))
         {
+            SaveVault();
             RebuildWorkspace();
-            ShowToast("已恢复到原分组");
+            ShowToast("条目已恢复到原分组");
         }
+    }
+
+    [RelayCommand]
+    private void EmptyRecycleBin()
+    {
+        if (_database is null || RecycleBinCount == 0) return;
+        _database.EmptyRecycleBin();
+        SaveVault();
+        RebuildWorkspace();
+        ShowToast("回收站已清空");
+    }
+
+    // ==================== 分组管理（新建 / 新建子分组 / 重命名 / 删除） ====================
+    [RelayCommand]
+    private async Task AddRootGroupAsync()
+    {
+        if (_database is null || OpenGroupDialogAsync is null) return;
+        var res = await OpenGroupDialogAsync("新建根分组", string.Empty, string.Empty);
+        if (res is null) return;
+
+        var g = new KdbxGroup { Name = res.Value.Name, Notes = res.Value.Notes, IconId = 48 };
+        _database.RootGroup.AddGroup(g);
+        _database.IsModified = true;
+        SaveVault();
+        RebuildWorkspace();
+        ShowToast($"已新建分组：{g.Name}");
+    }
+
+    [RelayCommand]
+    private async Task AddSubGroupAsync(GroupItemViewModel? parent)
+    {
+        if (_database is null || parent is null || OpenGroupDialogAsync is null) return;
+        var res = await OpenGroupDialogAsync($"在「{parent.Name}」下新建子分组", string.Empty, string.Empty);
+        if (res is null) return;
+
+        var g = new KdbxGroup { Name = res.Value.Name, Notes = res.Value.Notes, IconId = 48 };
+        parent.Model.AddGroup(g);
+        parent.Model.IsExpanded = true;
+        _database.IsModified = true;
+        SaveVault();
+        RebuildWorkspace();
+        ShowToast($"已新建子分组：{g.Name}");
+    }
+
+    [RelayCommand]
+    private async Task RenameGroupAsync(GroupItemViewModel? group)
+    {
+        if (_database is null || group is null || OpenGroupDialogAsync is null) return;
+        var res = await OpenGroupDialogAsync("重命名分组", group.Model.Name, group.Model.Notes);
+        if (res is null) return;
+
+        group.Model.Name = res.Value.Name;
+        group.Model.Notes = res.Value.Notes;
+        group.Model.LastModificationTime = DateTimeOffset.UtcNow;
+        _database.IsModified = true;
+        SaveVault();
+        RebuildWorkspace();
+        ShowToast($"已更新分组：{group.Model.Name}");
+    }
+
+    [RelayCommand]
+    private void DeleteGroup(GroupItemViewModel? group)
+    {
+        if (_database is null || group is null) return;
+        var name = group.Model.Name;
+        if (SelectedGroup?.Model.Uuid == group.Model.Uuid)
+        {
+            SelectedGroup = null;
+            ActiveSection = ActiveSection.AllEntries;
+        }
+        _database.MoveGroupToRecycleBin(group.Model);
+        SaveVault();
+        RebuildWorkspace();
+        ShowToast(_database.Meta.RecycleBinEnabled ? $"分组「{name}」已移入回收站" : $"分组「{name}」已删除");
     }
 
     [RelayCommand]
@@ -716,28 +905,128 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private async Task CopyUserNameAsync()
+    private async Task CopyUserNameAsync() => await CopyEntryUserNameAsync(SelectedEntry);
+
+    [RelayCommand]
+    private async Task CopyEntryUserNameAsync(EntryItemViewModel? item)
     {
-        if (SelectedEntry is null) return;
-        await CopySecretAsync(SelectedEntry.UserName, "用户名");
-        FlashCopiedFlag(v => IsUserNameCopied = v);
+        var target = item ?? SelectedEntry;
+        if (target is null) return;
+        var resolved = FieldReferenceResolver.Resolve(target.UserName, target.Model, _database);
+        await CopySecretAsync(resolved, "用户名");
+        if (target == SelectedEntry) FlashCopiedFlag(v => IsUserNameCopied = v);
     }
 
     [RelayCommand]
-    private async Task CopyPasswordAsync()
+    private async Task CopyPasswordAsync() => await CopyEntryPasswordAsync(SelectedEntry);
+
+    [RelayCommand]
+    private async Task CopyEntryPasswordAsync(EntryItemViewModel? item)
     {
-        if (SelectedEntry is null) return;
-        var resolved = FieldReferenceResolver.Resolve(SelectedEntry.Password, SelectedEntry.Model, _database);
+        var target = item ?? SelectedEntry;
+        if (target is null) return;
+        var resolved = FieldReferenceResolver.Resolve(target.Password, target.Model, _database);
         await CopySecretAsync(resolved, "密码");
-        FlashCopiedFlag(v => IsPasswordCopied = v);
+        if (target == SelectedEntry) FlashCopiedFlag(v => IsPasswordCopied = v);
     }
 
     [RelayCommand]
-    private async Task CopyTotpAsync()
+    private async Task CopyTotpAsync() => await CopyEntryTotpAsync(SelectedEntry);
+
+    [RelayCommand]
+    private async Task CopyEntryTotpAsync(EntryItemViewModel? item)
     {
-        if (SelectedEntry is null || !SelectedEntry.HasTotp) return;
-        await CopySecretAsync(SelectedEntry.TotpRaw, "动态验证码");
-        FlashCopiedFlag(v => IsTotpCopied = v);
+        var target = item ?? SelectedEntry;
+        if (target is null || !target.HasTotp) return;
+        await CopySecretAsync(target.TotpRaw, "动态验证码");
+        if (target == SelectedEntry) FlashCopiedFlag(v => IsTotpCopied = v);
+    }
+
+    [RelayCommand]
+    private async Task CopyEntryUrlAsync(EntryItemViewModel? item)
+    {
+        var target = item ?? SelectedEntry;
+        if (target is null || string.IsNullOrWhiteSpace(target.Url)) return;
+        var resolved = FieldReferenceResolver.Resolve(target.Url, target.Model, _database);
+        await CopySecretAsync(resolved, "网址");
+    }
+
+    [RelayCommand]
+    private void OpenEntryUrl(EntryItemViewModel? item)
+    {
+        var target = item ?? SelectedEntry;
+        if (target is null || string.IsNullOrWhiteSpace(target.Url)) return;
+        var resolved = FieldReferenceResolver.Resolve(target.Url, target.Model, _database);
+        OpenUrlExternal?.Invoke(resolved);
+    }
+
+    [RelayCommand]
+    private async Task CopyCustomFieldAsync(CustomFieldItem? field)
+    {
+        if (field is null || SelectedEntry is null) return;
+        var resolved = FieldReferenceResolver.Resolve(field.RawValue, SelectedEntry.Model, _database);
+        await CopySecretAsync(resolved, $"字段「{field.Key}」");
+    }
+
+    [RelayCommand]
+    private async Task ExportAttachmentAsync(AttachmentItem? attachment)
+    {
+        if (attachment is null || SelectedEntry is null || PickSaveFileAsync is null) return;
+        if (!SelectedEntry.Model.Binaries.TryGetValue(attachment.FileName, out var binary)) return;
+
+        var ext = Path.GetExtension(attachment.FileName).TrimStart('.');
+        var path = await PickSaveFileAsync(attachment.FileName, string.IsNullOrEmpty(ext) ? "*" : ext);
+        if (string.IsNullOrWhiteSpace(path)) return;
+
+        try
+        {
+            await File.WriteAllBytesAsync(path, binary.ReadData());
+            ShowToast($"已导出附件：{Path.GetFileName(path)}");
+        }
+        catch (Exception ex)
+        {
+            ShowToast($"导出附件失败：{ex.Message}");
+        }
+    }
+
+    // ==================== 密码库设置 / 修改主密钥 / 合并同步 ====================
+    [RelayCommand]
+    private async Task OpenDatabaseSettingsAsyncCommand()
+    {
+        if (_database is null || OpenDatabaseSettingsAsync is null) return;
+        var (saved, newKey, newKeyFile) = await OpenDatabaseSettingsAsync(_database);
+        if (!saved) return;
+
+        if (newKey is not null)
+        {
+            _masterKey?.Dispose();
+            _masterKey = newKey;
+            if (!string.IsNullOrWhiteSpace(_database.FilePath))
+                SettingsService.AddRecentVault(_database.FilePath, newKeyFile, _database.Meta.DatabaseName);
+        }
+
+        VaultDisplayName = string.IsNullOrWhiteSpace(_database.FilePath)
+            ? _database.Meta.DatabaseName
+            : Path.GetFileName(_database.FilePath);
+        SaveVault();
+        RebuildWorkspace();
+        ShowToast(newKey is not null ? "密码库设置与主密钥已更新并重新加密保存" : "密码库设置已更新并保存");
+    }
+
+    [RelayCommand]
+    private async Task MergeDatabaseAsync()
+    {
+        if (_database is null || PickOpenFileAsync is null || OpenVaultUnlockPromptAsync is null) return;
+        var path = await PickOpenFileAsync("kdbx");
+        if (string.IsNullOrWhiteSpace(path)) return;
+
+        using var sourceDb = await OpenVaultUnlockPromptAsync(path);
+        if (sourceDb is null) return;
+
+        var summary = DatabaseMergeService.Merge(_database, sourceDb);
+        SaveVault();
+        RebuildWorkspace();
+        ShowToast($"合并完成：新增 {summary.EntriesAdded} 条目、更新 {summary.EntriesUpdated} 条目、新增 {summary.GroupsAdded} 分组");
     }
 
     private static void FlashCopiedFlag(Action<bool> setter)

@@ -131,10 +131,67 @@ public sealed class KdbxDatabase : IDisposable
             DeleteEntryPermanently(e);
         foreach (var g in bin.Groups.ToList())
         {
-            DeletedObjects.Add(new KdbxDeletedObject { Uuid = g.Uuid, DeletionTime = DateTimeOffset.UtcNow });
-            bin.Groups.Remove(g);
+            DeleteGroupPermanently(g);
         }
         IsModified = true;
+    }
+
+    /// <summary>
+    /// 删除分组（若启用回收站则移入回收站，否则永久删除并记录 DeletedObjects）。
+    /// </summary>
+    public void MoveGroupToRecycleBin(KdbxGroup group)
+    {
+        if (group.Parent is null || group == RootGroup) return;
+        if (!Meta.RecycleBinEnabled || IsInRecycleBin(group))
+        {
+            DeleteGroupPermanently(group);
+            return;
+        }
+
+        var bin = GetOrCreateRecycleBin();
+        group.PreviousParentGroup = group.Parent.Uuid;
+        group.Parent.Groups.Remove(group);
+        bin.AddGroup(group);
+        group.LocationChanged = DateTimeOffset.UtcNow;
+        group.LastModificationTime = DateTimeOffset.UtcNow;
+        IsModified = true;
+    }
+
+    /// <summary>
+    /// 永久删除分组及其所有子分组与条目，并写入已删除对象表供合并同步使用。
+    /// </summary>
+    public void DeleteGroupPermanently(KdbxGroup group)
+    {
+        if (group == RootGroup) return;
+        foreach (var e in group.Entries.ToList())
+            DeleteEntryPermanently(e);
+        foreach (var sub in group.Groups.ToList())
+            DeleteGroupPermanently(sub);
+        group.Parent?.Groups.Remove(group);
+        DeletedObjects.Add(new KdbxDeletedObject { Uuid = group.Uuid, DeletionTime = DateTimeOffset.UtcNow });
+        group.Dispose();
+        IsModified = true;
+    }
+
+    /// <summary>
+    /// 克隆指定条目到同父分组，生成全新 UUID 并追加“ - 副本”标题后缀。
+    /// </summary>
+    public KdbxEntry DuplicateEntry(KdbxEntry source)
+    {
+        var clone = source.CloneWithoutHistory();
+        clone.Uuid = Guid.NewGuid();
+        clone.Title = string.IsNullOrWhiteSpace(source.Title) ? "未命名条目 - 副本" : $"{source.Title} - 副本";
+        var now = DateTimeOffset.UtcNow;
+        clone.CreationTime = now;
+        clone.LastModificationTime = now;
+        clone.LastAccessTime = now;
+        clone.LocationChanged = now;
+        clone.UsageCount = 0;
+
+        var parent = source.Parent ?? RootGroup;
+        parent.AddEntry(clone);
+        IsModified = true;
+        return clone;
     }
 
     /// <summary>
