@@ -224,6 +224,13 @@
                                     <NumericUpDown Grid.Column="1" x:Name="ClipClearNumeric" Minimum="5" Maximum="120" Value="15" ValueChanged="SecurityChanged" />
                                 </Grid>
                                 <Border Height="1" Background="{DynamicResource DividerBrush}" />
+                                <Grid ColumnDefinitions="*, Auto">
+                                    <StackPanel>
+                                        <TextBlock Text="启用无操作自动锁定" FontWeight="Medium" />
+                                        <TextBlock Text="长时间无鼠标或键盘操作时自动锁定全部已打开的密码库" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="1" x:Name="AutoLockEnabledSwitch" OnContent="" OffContent="" VerticalAlignment="Center" IsCheckedChanged="AutoLockEnabled_Changed" />
+                                </Grid>
                                 <Grid ColumnDefinitions="*, 120">
                                     <StackPanel>
                                         <TextBlock Text="空闲自动锁定时间（分钟）" FontWeight="Medium" />

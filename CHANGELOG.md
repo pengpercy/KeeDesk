@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.1 - 2026-11-22
+
+- **Frosted Glass Context & Flyout Menus**: Refined all right-click context menus and popup flyouts to use compact `12px` typography, `6px` rounded containers, `4px` row highlights, `13px` Fluent vector icons, and native frosted-glass blur (`NSVisualEffectMaterialMenu` on macOS, DWM rounded Acrylic on Windows 11).
+- **Streamlined Settings Flyout Panel**: Simplified the bottom-left quick settings flyout to focus on Appearance Mode (System / Light / Dark), UI Density (Compact / Normal / Comfortable), Check for Updates, About, and Preferences.
+- **Configurable Idle Auto-Lock**: Added an explicit toggle switch in Preferences (`Security & Auto-Lock`) to enable or disable automatic vault locking after user inactivity (mouse, wheel, or keyboard), alongside the configurable timeout in minutes.
+
 ## 1.0.0 - 2026-11-22
 
 - **Full-Featured Cross-Platform KeePass 2.x Rewrite**: Built from the ground up with Avalonia 12.1.6, .NET 10, and NativeAOT for sub-100ms cold startup and minimal memory footprint across macOS, Windows, and Linux.

@@ -26,8 +26,10 @@ public partial class MainWindow : Window
         Opened += (_, _) => WireViewModelCallbacks();
         KeyDown += OnWindowKeyDown;
 
-        // 监听用户交互以刷新空闲自动锁定计时器
+        // 监听用户交互（鼠标按下、鼠标移动、滚轮、键盘按键）以刷新空闲自动锁定计时器
         AddHandler(PointerPressedEvent, OnUserActivity, RoutingStrategies.Tunnel);
+        AddHandler(PointerMovedEvent, OnUserActivity, RoutingStrategies.Tunnel);
+        AddHandler(PointerWheelChangedEvent, OnUserActivity, RoutingStrategies.Tunnel);
         AddHandler(KeyDownEvent, OnUserActivity, RoutingStrategies.Tunnel);
 
         // 注册全局文件拖拽打开（支持拖入 .kdbx 密码库或 .keyx 密钥文件）

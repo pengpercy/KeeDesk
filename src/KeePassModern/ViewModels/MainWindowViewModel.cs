@@ -203,15 +203,18 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     {
         if (!IsUnlocked) return;
 
-        // 空闲超时自动锁定（对标原版 KeePass WorkspaceLocking）
-        int idleMins = SettingsService.Settings.AutoLockIdleMinutes;
-        if (idleMins > 0 && (DateTimeOffset.UtcNow - _lastActivityUtc).TotalMinutes >= idleMins)
+        // 空闲超时自动锁定（支持在设置中开关启用状态与调整分钟时长）
+        if (SettingsService.Settings.AutoLockIdleEnabled)
         {
-            LockVault();
-            var msg = $"已连续 {idleMins} 分钟无操作，密码库已自动锁定";
-            ShowToast(msg);
-            NativeNotificationService.Send("KeePassModern", msg);
-            return;
+            int idleMins = SettingsService.Settings.AutoLockIdleMinutes;
+            if (idleMins > 0 && (DateTimeOffset.UtcNow - _lastActivityUtc).TotalMinutes >= idleMins)
+            {
+                LockVault();
+                var msg = $"已连续 {idleMins} 分钟无操作，密码库已自动锁定";
+                ShowToast(msg);
+                NativeNotificationService.Send("KeePassModern", msg);
+                return;
+            }
         }
 
         foreach (var item in FilteredEntries)
@@ -892,6 +895,23 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             _ => "标准"
         };
         ShowToast($"已切换界面密度：{CurrentDensityLabel}");
+    }
+
+    [RelayCommand]
+    private void SetThemeMode(string? mode)
+    {
+        var target = string.IsNullOrWhiteSpace(mode) ? "Default" : mode;
+        SettingsService.Settings.ThemeMode = target;
+        SettingsService.Save();
+        ThemeAccentService.ApplyThemeVariant(target);
+        ThemeAccentService.ApplyAccent(SettingsService.Settings.AccentMode, SettingsService.Settings.CustomAccentHex);
+        var label = target switch
+        {
+            "Light" => "浅色模式",
+            "Dark" => "深色模式",
+            _ => "跟随系统"
+        };
+        ShowToast($"已切换外观模式：{label}");
     }
 
     [RelayCommand]

@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:KeePassModern.ViewModels"
         xmlns:controls="using:KeePassModern.Controls"
+        xmlns:helpers="using:KeePassModern.Helpers"
         xmlns:chrome="clr-namespace:Avalonia.Controls.Chrome;assembly=Avalonia.Controls"
         x:Class="KeePassModern.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
@@ -142,23 +143,6 @@
         <Style Selector="Button.settingsBtn:pointerover PathIcon">
             <Setter Property="RenderTransform" Value="rotate(90deg) scale(1.1)" />
         </Style>
-
-        <!-- 紧凑悬浮菜单样式（MenuFlyout） -->
-        <Style Selector="MenuFlyoutPresenter">
-            <Setter Property="Padding" Value="4" />
-            <Setter Property="MinWidth" Value="164" />
-            <Setter Property="CornerRadius" Value="8" />
-        </Style>
-        <Style Selector="MenuItem">
-            <Setter Property="FontSize" Value="12.5" />
-            <Setter Property="Padding" Value="10,6" />
-            <Setter Property="CornerRadius" Value="5" />
-            <Setter Property="Margin" Value="2,1" />
-        </Style>
-        <Style Selector="MenuItem:pointerover /template/ Border#PART_LayoutRoot">
-            <Setter Property="Background" Value="{DynamicResource SidebarItemSelectedBackgroundBrush}" />
-            <Setter Property="CornerRadius" Value="5" />
-        </Style>
     </Window.Styles>
 
     <Grid RowDefinitions="Auto, Auto, *">
@@ -232,14 +216,22 @@
                                 <DataTemplate>
                                     <Border Classes="entryCard" Height="62">
                                         <Border.ContextMenu>
-                                            <ContextMenu>
+                                            <helpers:GlassContextMenu>
                                                 <MenuItem Header="从最近列表移除"
                                                           Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).RemoveRecentVaultCommand}"
-                                                          CommandParameter="{Binding}" />
+                                                          CommandParameter="{Binding}">
+                                                    <MenuItem.Icon>
+                                                        <PathIcon Data="{StaticResource IconClose}" Width="12" Height="12" />
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
                                                 <Separator />
                                                 <MenuItem Header="清空全部最近记录"
-                                                          Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ClearRecentVaultsCommand}" />
-                                            </ContextMenu>
+                                                          Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ClearRecentVaultsCommand}">
+                                                    <MenuItem.Icon>
+                                                        <PathIcon Data="{StaticResource IconTrash}" Width="13" Height="13" />
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
+                                            </helpers:GlassContextMenu>
                                         </Border.ContextMenu>
                                         <Grid ColumnDefinitions="8, *, Auto">
                                             <Border Grid.Column="0" Classes="entryIndicator" Width="3" Height="24" CornerRadius="2"
@@ -501,13 +493,21 @@
                                                   DragDrop.DragOver="GroupItem_DragOver"
                                                   DragDrop.Drop="GroupItem_Drop">
                                                 <Grid.ContextMenu>
-                                                    <ContextMenu>
+                                                    <helpers:GlassContextMenu>
                                                         <MenuItem Header="新建子分组..."
                                                                   Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).AddSubGroupCommand}"
-                                                                  CommandParameter="{Binding}" />
+                                                                  CommandParameter="{Binding}">
+                                                            <MenuItem.Icon>
+                                                                <PathIcon Data="{StaticResource IconAdd}" Width="13" Height="13" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
                                                         <MenuItem Header="重命名 / 编辑备注..."
                                                                   Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).RenameGroupCommand}"
-                                                                  CommandParameter="{Binding}" />
+                                                                  CommandParameter="{Binding}">
+                                                            <MenuItem.Icon>
+                                                                <PathIcon Data="{StaticResource IconEdit}" Width="13" Height="13" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
                                                         <Separator />
                                                         <MenuItem Header="上移分组"
                                                                   Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).MoveGroupUpCommand}"
@@ -521,8 +521,12 @@
                                                         <Separator />
                                                         <MenuItem Header="删除分组"
                                                                   Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).DeleteGroupCommand}"
-                                                                  CommandParameter="{Binding}" />
-                                                    </ContextMenu>
+                                                                  CommandParameter="{Binding}">
+                                                            <MenuItem.Icon>
+                                                                <PathIcon Data="{StaticResource IconTrash}" Width="13" Height="13" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
+                                                    </helpers:GlassContextMenu>
                                                 </Grid.ContextMenu>
                                                 <PathIcon Grid.Column="0" Data="{StaticResource IconFolder}" Width="13" Height="13" Foreground="{DynamicResource SecondaryTextBrush}" />
                                                 <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="{DynamicResource DensityFontSizeBody}" VerticalAlignment="Center" Margin="4,0" />
@@ -581,35 +585,43 @@
                                 </Grid>
                             </Button>
                             <Button Grid.Column="2" Classes="subtle settingsBtn" Width="32" Height="32" MinHeight="32" Padding="0"
-                                    ToolTip.Tip="快捷设置与选项">
+                                    ToolTip.Tip="设置与外观">
                                 <Button.Flyout>
-                                    <MenuFlyout Placement="TopEdgeAlignedRight">
+                                    <helpers:GlassMenuFlyout Placement="TopEdgeAlignedRight">
+                                        <MenuItem Header="外观模式">
+                                            <MenuItem.Icon>
+                                                <PathIcon Data="{StaticResource IconEye}" Width="13" Height="13" />
+                                            </MenuItem.Icon>
+                                            <MenuItem Header="跟随系统" Command="{Binding SetThemeModeCommand}" CommandParameter="Default" />
+                                            <MenuItem Header="浅色模式" Command="{Binding SetThemeModeCommand}" CommandParameter="Light" />
+                                            <MenuItem Header="深色模式" Command="{Binding SetThemeModeCommand}" CommandParameter="Dark" />
+                                        </MenuItem>
                                         <MenuItem Header="界面密度">
+                                            <MenuItem.Icon>
+                                                <PathIcon Data="{StaticResource IconDatabase}" Width="13" Height="13" />
+                                            </MenuItem.Icon>
                                             <MenuItem Header="紧凑（Compact）" Command="{Binding SetDensityCommand}" CommandParameter="Compact" />
-                                            <MenuItem Header="标准（Normal · 默认）" Command="{Binding SetDensityCommand}" CommandParameter="Normal" />
+                                            <MenuItem Header="标准（Normal）" Command="{Binding SetDensityCommand}" CommandParameter="Normal" />
                                             <MenuItem Header="宽松（Comfortable）" Command="{Binding SetDensityCommand}" CommandParameter="Comfortable" />
                                         </MenuItem>
-                                        <MenuItem Header="高级查找（支持正则）..." Command="{Binding OpenAdvancedSearchAsyncCommandCommand}" />
-                                        <MenuItem Header="强密码生成器" Command="{Binding OpenPasswordGeneratorCommandCommand}" />
-                                        <MenuItem Header="密码库设置与主密钥..." Command="{Binding OpenDatabaseSettingsAsyncCommandCommand}" />
-                                        <MenuItem Header="密码库维护工具..." Command="{Binding OpenDatabaseMaintenanceAsyncCommandCommand}" />
-                                        <MenuItem Header="合并 / 同步其他密码库..." Command="{Binding MergeDatabaseCommand}" />
-                                        <MenuItem Header="另存为 .kdbx..." Command="{Binding SaveVaultAsCommand}" />
-                                        <MenuItem Header="生成密钥文件 (.keyx)..." Command="{Binding GenerateKeyFileCommand}" />
                                         <Separator />
-                                        <MenuItem Header="导入 / 导出">
-                                            <MenuItem Header="导入 CSV (Chrome / Bitwarden / 1Password)..." Command="{Binding ImportCsvCommand}" />
-                                            <MenuItem Header="导入 KeePass 2.x XML..." Command="{Binding ImportKeePassXmlCommand}" />
-                                            <Separator />
-                                            <MenuItem Header="导出 CSV..." Command="{Binding ExportCsvCommand}" />
-                                            <MenuItem Header="导出 KeePass 2.x XML..." Command="{Binding ExportKeePassXmlCommand}" />
-                                            <MenuItem Header="生成 HTML 应急表..." Command="{Binding ExportEmergencySheetCommand}" />
+                                        <MenuItem Header="检查更新..." Command="{Binding CheckForUpdatesCommand}">
+                                            <MenuItem.Icon>
+                                                <PathIcon Data="{StaticResource IconRefresh}" Width="13" Height="13" />
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                        <MenuItem Header="关于 KeePassModern" Command="{Binding OpenAboutAsyncCommandCommand}">
+                                            <MenuItem.Icon>
+                                                <PathIcon Data="{StaticResource IconShield}" Width="13" Height="13" />
+                                            </MenuItem.Icon>
                                         </MenuItem>
                                         <Separator />
-                                        <MenuItem Header="检查更新..." Command="{Binding CheckForUpdatesCommand}" />
-                                        <MenuItem Header="关于 KeePassModern" Command="{Binding OpenAboutAsyncCommandCommand}" />
-                                        <MenuItem Header="偏好设置..." Command="{Binding OpenSettingsCommandCommand}" />
-                                    </MenuFlyout>
+                                        <MenuItem Header="偏好设置..." Command="{Binding OpenSettingsCommandCommand}">
+                                            <MenuItem.Icon>
+                                                <PathIcon Data="{StaticResource IconSettings}" Width="13" Height="13" />
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                    </helpers:GlassMenuFlyout>
                                 </Button.Flyout>
                                 <PathIcon Data="{StaticResource IconSettings}" Width="14" Height="14" Foreground="{DynamicResource SecondaryTextBrush}" />
                             </Button>
@@ -797,39 +809,75 @@
                                                     PointerPressed="EntryCard_PointerPressed"
                                                     PointerMoved="EntryCard_PointerMoved">
                                                 <Border.ContextMenu>
-                                                    <ContextMenu>
+                                                    <helpers:GlassContextMenu>
                                                         <MenuItem Header="复制用户名"
                                                                   Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).CopyEntryUserNameCommand}"
-                                                                  CommandParameter="{Binding}" />
+                                                                  CommandParameter="{Binding}">
+                                                            <MenuItem.Icon>
+                                                                <PathIcon Data="{StaticResource IconCopy}" Width="13" Height="13" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
                                                         <MenuItem Header="复制密码"
                                                                   Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).CopyEntryPasswordCommand}"
-                                                                  CommandParameter="{Binding}" />
+                                                                  CommandParameter="{Binding}">
+                                                            <MenuItem.Icon>
+                                                                <PathIcon Data="{StaticResource IconKey}" Width="13" Height="13" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
                                                         <MenuItem Header="复制动态验证码 (TOTP)" IsVisible="{Binding HasTotp}"
                                                                   Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).CopyEntryTotpCommand}"
-                                                                  CommandParameter="{Binding}" />
+                                                                  CommandParameter="{Binding}">
+                                                            <MenuItem.Icon>
+                                                                <PathIcon Data="{StaticResource IconClock}" Width="13" Height="13" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
                                                         <MenuItem Header="打开网址" IsVisible="{Binding Url, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                                                   Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).OpenEntryUrlCommand}"
-                                                                  CommandParameter="{Binding}" />
+                                                                  CommandParameter="{Binding}">
+                                                            <MenuItem.Icon>
+                                                                <PathIcon Data="{StaticResource IconLink}" Width="13" Height="13" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
                                                         <MenuItem Header="复制网址" IsVisible="{Binding Url, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                                                   Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).CopyEntryUrlCommand}"
-                                                                  CommandParameter="{Binding}" />
+                                                                  CommandParameter="{Binding}">
+                                                            <MenuItem.Icon>
+                                                                <PathIcon Data="{StaticResource IconGlobe}" Width="13" Height="13" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
                                                         <MenuItem Header="执行自动输入 (Auto-Type)"
                                                                   Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).PerformAutoTypeCommand}"
-                                                                  CommandParameter="{Binding}" />
+                                                                  CommandParameter="{Binding}">
+                                                            <MenuItem.Icon>
+                                                                <PathIcon Data="{StaticResource IconKeyboard}" Width="13" Height="13" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
                                                         <Separator />
                                                         <MenuItem Header="编辑条目..."
                                                                   Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).EditEntryCommand}"
-                                                                  CommandParameter="{Binding}" />
+                                                                  CommandParameter="{Binding}">
+                                                            <MenuItem.Icon>
+                                                                <PathIcon Data="{StaticResource IconEdit}" Width="13" Height="13" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
                                                         <MenuItem Header="克隆条目"
                                                                   Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).DuplicateEntryCommand}"
                                                                   CommandParameter="{Binding}" />
                                                         <MenuItem Header="移动到分组..."
                                                                   IsVisible="{Binding !$parent[Window].((vm:MainWindowViewModel)DataContext).IsRecycleBinSelected}"
                                                                   Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).MoveEntryToGroupCommand}"
-                                                                  CommandParameter="{Binding}" />
+                                                                  CommandParameter="{Binding}">
+                                                            <MenuItem.Icon>
+                                                                <PathIcon Data="{StaticResource IconFolder}" Width="13" Height="13" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
                                                         <MenuItem Header="收藏 / 取消收藏"
                                                                   Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ToggleFavoriteEntryCommand}"
-                                                                  CommandParameter="{Binding}" />
+                                                                  CommandParameter="{Binding}">
+                                                            <MenuItem.Icon>
+                                                                <PathIcon Data="{StaticResource IconStar}" Width="13" Height="13" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
                                                         <MenuItem Header="快捷设置过期时间"
                                                                   IsVisible="{Binding !$parent[Window].((vm:MainWindowViewModel)DataContext).IsRecycleBinSelected}">
                                                             <MenuItem Header="立即设为过期"
@@ -850,16 +898,28 @@
                                                         <MenuItem Header="从回收站还原"
                                                                   IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).IsRecycleBinSelected}"
                                                                   Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).RestoreEntryCommand}"
-                                                                  CommandParameter="{Binding}" />
+                                                                  CommandParameter="{Binding}">
+                                                            <MenuItem.Icon>
+                                                                <PathIcon Data="{StaticResource IconRefresh}" Width="13" Height="13" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
                                                         <MenuItem Header="删除 / 移入回收站"
                                                                   IsVisible="{Binding !$parent[Window].((vm:MainWindowViewModel)DataContext).IsRecycleBinSelected}"
                                                                   Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).DeleteEntryCommand}"
-                                                                  CommandParameter="{Binding}" />
+                                                                  CommandParameter="{Binding}">
+                                                            <MenuItem.Icon>
+                                                                <PathIcon Data="{StaticResource IconTrash}" Width="13" Height="13" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
                                                         <MenuItem Header="永久删除"
                                                                   IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).IsRecycleBinSelected}"
                                                                   Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).PermanentlyDeleteEntryCommand}"
-                                                                  CommandParameter="{Binding}" />
-                                                    </ContextMenu>
+                                                                  CommandParameter="{Binding}">
+                                                            <MenuItem.Icon>
+                                                                <PathIcon Data="{StaticResource IconTrash}" Width="13" Height="13" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
+                                                    </helpers:GlassContextMenu>
                                                 </Border.ContextMenu>
                                                 <Grid ColumnDefinitions="8, Auto, *, Auto" Margin="0,0,10,0">
                                                     <!-- 选中态左侧 3×24px 品牌指示条 -->

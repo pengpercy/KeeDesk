@@ -29,7 +29,9 @@ public partial class SettingsWindow : Window
             if (Color.TryParse(s.CustomAccentHex, out var c))
                 CustomAccentPicker.Color = c;
             ClipClearNumeric.Value = s.ClipboardClearSeconds;
+            AutoLockEnabledSwitch.IsChecked = s.AutoLockIdleEnabled;
             AutoLockNumeric.Value = s.AutoLockIdleMinutes;
+            AutoLockNumeric.IsEnabled = s.AutoLockIdleEnabled;
             LanguageCombo.SelectedIndex = string.Equals(s.Language, "en-US", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
             RefreshCardHighlights(s.ThemeMode, s.UiDensity);
         }
@@ -174,12 +176,23 @@ public partial class SettingsWindow : Window
         }
     }
 
+    private void AutoLockEnabled_Changed(object? sender, RoutedEventArgs e)
+    {
+        if (_loading || _vm is null) return;
+        bool enabled = AutoLockEnabledSwitch.IsChecked == true;
+        AutoLockNumeric.IsEnabled = enabled;
+        _vm.SettingsService.Settings.AutoLockIdleEnabled = enabled;
+        _vm.SettingsService.Save();
+        _vm.RecordUserActivity();
+    }
+
     private void SecurityChanged(object? sender, NumericUpDownValueChangedEventArgs e)
     {
         if (_loading || _vm is null) return;
         _vm.SettingsService.Settings.ClipboardClearSeconds = (int)(ClipClearNumeric.Value ?? 15);
         _vm.SettingsService.Settings.AutoLockIdleMinutes = (int)(AutoLockNumeric.Value ?? 10);
         _vm.SettingsService.Save();
+        _vm.RecordUserActivity();
     }
 
     private async void ImportCsv_Click(object? sender, RoutedEventArgs e)

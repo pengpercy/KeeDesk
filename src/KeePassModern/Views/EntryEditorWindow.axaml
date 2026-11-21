@@ -1,5 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:helpers="using:KeePassModern.Helpers"
         xmlns:chrome="clr-namespace:Avalonia.Controls.Chrome;assembly=Avalonia.Controls"
         x:Class="KeePassModern.Views.EntryEditorWindow"
         Title="添加新密码条目"
@@ -77,12 +78,24 @@
                                             Background="{DynamicResource BadgePillBackgroundBrush}" BorderThickness="0" ClipToBounds="True"
                                             ToolTip.Tip="点击设置图标（自动获取官网 Favicon / 本地图片 / 内置图标）">
                                         <Button.Flyout>
-                                            <MenuFlyout Placement="BottomEdgeAlignedLeft">
-                                                <MenuItem Header="自动获取官网图标（按网址 / 邮箱域名）" Click="AutoFetchFavicon_Click" />
-                                                <MenuItem Header="选择本地图片 / 图片 URL / 内置图标..." Click="PickIcon_Click" />
+                                            <helpers:GlassMenuFlyout Placement="BottomEdgeAlignedLeft">
+                                                <MenuItem Header="自动获取官网图标（按网址 / 邮箱域名）" Click="AutoFetchFavicon_Click">
+                                                    <MenuItem.Icon>
+                                                        <PathIcon Data="{StaticResource IconGlobe}" Width="13" Height="13" />
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
+                                                <MenuItem Header="选择本地图片 / 图片 URL / 内置图标..." Click="PickIcon_Click">
+                                                    <MenuItem.Icon>
+                                                        <PathIcon Data="{StaticResource IconFolder}" Width="13" Height="13" />
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
                                                 <Separator />
-                                                <MenuItem Header="恢复默认字母图标" Click="ResetLetterIcon_Click" />
-                                            </MenuFlyout>
+                                                <MenuItem Header="恢复默认字母图标" Click="ResetLetterIcon_Click">
+                                                    <MenuItem.Icon>
+                                                        <PathIcon Data="{StaticResource IconRefresh}" Width="13" Height="13" />
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
+                                            </helpers:GlassMenuFlyout>
                                         </Button.Flyout>
                                         <Panel>
                                             <TextBlock x:Name="IconBadgeText" Text="KP" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource BadgePillForegroundBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />

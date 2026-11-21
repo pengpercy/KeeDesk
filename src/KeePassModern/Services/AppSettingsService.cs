@@ -11,6 +11,7 @@ public sealed class AppSettings
     public string UiDensity { get; set; } = "Normal"; // Compact / Normal / Comfortable
     public string Language { get; set; } = "zh-CN";
     public int ClipboardClearSeconds { get; set; } = 15;
+    public bool AutoLockIdleEnabled { get; set; } = true;
     public int AutoLockIdleMinutes { get; set; } = 10;
     public bool MinimizeToTray { get; set; } = true;
     public List<RecentVaultItem> RecentVaults { get; set; } = new();
