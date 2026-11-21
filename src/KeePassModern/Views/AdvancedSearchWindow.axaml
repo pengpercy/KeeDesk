@@ -1,0 +1,69 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:chrome="clr-namespace:Avalonia.Controls.Chrome;assembly=Avalonia.Controls"
+        x:Class="KeePassModern.Views.AdvancedSearchWindow"
+        Title="高级查找"
+        Width="480" Height="460"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        ExtendClientAreaToDecorationsHint="True"
+        WindowDecorations="Full"
+        ExtendClientAreaTitleBarHeightHint="40"
+        Background="{DynamicResource WorkspaceBackgroundBrush}"
+        Foreground="{DynamicResource PrimaryTextBrush}">
+
+    <Grid RowDefinitions="Auto, *, 1, Auto">
+        <Border Grid.Row="0" Padding="24,36,24,10" Background="Transparent"
+                chrome:WindowDecorationProperties.ElementRole="TitleBar"
+                PointerPressed="TitleBar_PointerPressed">
+            <StackPanel Spacing="3">
+                <TextBlock Text="高级查找（支持正则表达式）" FontSize="18" FontWeight="SemiBold" />
+                <TextBlock Text="对标 KeePass 2.x SearchForm，支持按字段精确检索" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+            </StackPanel>
+        </Border>
+
+        <StackPanel Grid.Row="1" Spacing="14" Margin="24,4,24,16">
+            <StackPanel Spacing="6">
+                <TextBlock Text="查找内容" FontSize="12" FontWeight="Medium" Foreground="{DynamicResource SecondaryTextBrush}" />
+                <TextBox x:Name="QueryBox" Height="34" PlaceholderText="输入关键词或正则表达式..." KeyDown="QueryBox_KeyDown" />
+            </StackPanel>
+
+            <Border Classes="fluentCard" Padding="14,12">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="搜索字段" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource SecondaryTextBrush}" />
+                    <UniformGrid Columns="3" Rows="3">
+                        <CheckBox x:Name="ChkTitle" Content="标题" IsChecked="True" />
+                        <CheckBox x:Name="ChkUser" Content="用户名" IsChecked="True" />
+                        <CheckBox x:Name="ChkPass" Content="密码" IsChecked="False" />
+                        <CheckBox x:Name="ChkUrl" Content="网址" IsChecked="True" />
+                        <CheckBox x:Name="ChkNotes" Content="备注" IsChecked="True" />
+                        <CheckBox x:Name="ChkTags" Content="标签" IsChecked="True" />
+                        <CheckBox x:Name="ChkCustom" Content="自定义字段" IsChecked="True" />
+                        <CheckBox x:Name="ChkUuid" Content="UUID" IsChecked="False" />
+                    </UniformGrid>
+                </StackPanel>
+            </Border>
+
+            <Border Classes="fluentCard" Padding="14,12">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="匹配选项" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource SecondaryTextBrush}" />
+                    <UniformGrid Columns="2" Rows="2">
+                        <CheckBox x:Name="ChkRegex" Content="使用正则表达式" />
+                        <CheckBox x:Name="ChkCase" Content="区分大小写" />
+                        <CheckBox x:Name="ChkExcludeExpired" Content="排除已过期条目" />
+                        <CheckBox x:Name="ChkIncludeBin" Content="包含回收站条目" />
+                    </UniformGrid>
+                </StackPanel>
+            </Border>
+
+            <TextBlock x:Name="ErrorText" Foreground="{DynamicResource DangerBrush}" FontSize="12" IsVisible="False" />
+        </StackPanel>
+
+        <Border Grid.Row="2" Background="{DynamicResource DividerBrush}" />
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="24,12">
+            <Button Width="84" Height="34" Content="取消" Click="Cancel_Click" />
+            <Button Classes="accent" Height="34" Padding="18,0" Content="开始查找" Click="Search_Click" />
+        </StackPanel>
+    </Grid>
+</Window>

@@ -31,8 +31,10 @@
                     <NativeMenuItem Header="合并 / 同步其他密码库..." Command="{Binding MergeDatabaseCommand}" />
                     <NativeMenuItem Header="生成密钥文件 (.keyx)..." Command="{Binding GenerateKeyFileCommand}" />
                     <NativeMenuItemSeparator />
-                    <NativeMenuItem Header="导入 CSV..." Command="{Binding ImportCsvCommand}" />
+                    <NativeMenuItem Header="导入 CSV (通用/Chrome/Bitwarden/1Password)..." Command="{Binding ImportCsvCommand}" />
+                    <NativeMenuItem Header="导入 KeePass 2.x XML..." Command="{Binding ImportKeePassXmlCommand}" />
                     <NativeMenuItem Header="导出 CSV..." Command="{Binding ExportCsvCommand}" />
+                    <NativeMenuItem Header="导出 KeePass 2.x XML..." Command="{Binding ExportKeePassXmlCommand}" />
                     <NativeMenuItem Header="生成 HTML 应急表..." Command="{Binding ExportEmergencySheetCommand}" />
                     <NativeMenuItemSeparator />
                     <NativeMenuItem Header="关闭当前密码库标签页" Command="{Binding CloseVaultTabCommand}" />
@@ -62,6 +64,19 @@
                     <NativeMenuItemSeparator />
                     <NativeMenuItem Header="强密码生成器" Gesture="Cmd+G" Command="{Binding OpenPasswordGeneratorCommandCommand}" />
                     <NativeMenuItem Header="安全审计仪表盘" Command="{Binding SelectSectionCommand}" CommandParameter="SecurityAudit" />
+                </NativeMenu>
+            </NativeMenuItem>
+            <NativeMenuItem Header="查找">
+                <NativeMenu>
+                    <NativeMenuItem Header="快速搜索" Gesture="Cmd+K" Command="{Binding FocusSearchCommand}" />
+                    <NativeMenuItem Header="高级查找（支持正则）..." Gesture="Cmd+F" Command="{Binding OpenAdvancedSearchAsyncCommandCommand}" />
+                    <NativeMenuItemSeparator />
+                    <NativeMenuItem Header="已过期条目" Command="{Binding ShowQuickFilterCommand}" CommandParameter="Expired" />
+                    <NativeMenuItem Header="7 天内即将过期" Command="{Binding ShowQuickFilterCommand}" CommandParameter="Expiring7" />
+                    <NativeMenuItem Header="30 天内即将过期" Command="{Binding ShowQuickFilterCommand}" CommandParameter="Expiring30" />
+                    <NativeMenuItemSeparator />
+                    <NativeMenuItem Header="最近修改的条目" Command="{Binding ShowQuickFilterCommand}" CommandParameter="LastModified" />
+                    <NativeMenuItem Header="大体积 / 含附件条目" Command="{Binding ShowQuickFilterCommand}" CommandParameter="Large" />
                 </NativeMenu>
             </NativeMenuItem>
             <NativeMenuItem Header="视图">
@@ -544,6 +559,7 @@
                                             <MenuItem Header="标准（Normal · 默认）" Command="{Binding SetDensityCommand}" CommandParameter="Normal" />
                                             <MenuItem Header="宽松（Comfortable）" Command="{Binding SetDensityCommand}" CommandParameter="Comfortable" />
                                         </MenuItem>
+                                        <MenuItem Header="高级查找（支持正则）..." Command="{Binding OpenAdvancedSearchAsyncCommandCommand}" />
                                         <MenuItem Header="强密码生成器" Command="{Binding OpenPasswordGeneratorCommandCommand}" />
                                         <MenuItem Header="密码库设置与主密钥..." Command="{Binding OpenDatabaseSettingsAsyncCommandCommand}" />
                                         <MenuItem Header="密码库维护工具..." Command="{Binding OpenDatabaseMaintenanceAsyncCommandCommand}" />
@@ -551,9 +567,14 @@
                                         <MenuItem Header="另存为 .kdbx..." Command="{Binding SaveVaultAsCommand}" />
                                         <MenuItem Header="生成密钥文件 (.keyx)..." Command="{Binding GenerateKeyFileCommand}" />
                                         <Separator />
-                                        <MenuItem Header="导入 CSV..." Command="{Binding ImportCsvCommand}" />
-                                        <MenuItem Header="导出 CSV..." Command="{Binding ExportCsvCommand}" />
-                                        <MenuItem Header="生成 HTML 应急表..." Command="{Binding ExportEmergencySheetCommand}" />
+                                        <MenuItem Header="导入 / 导出">
+                                            <MenuItem Header="导入 CSV (Chrome / Bitwarden / 1Password)..." Command="{Binding ImportCsvCommand}" />
+                                            <MenuItem Header="导入 KeePass 2.x XML..." Command="{Binding ImportKeePassXmlCommand}" />
+                                            <Separator />
+                                            <MenuItem Header="导出 CSV..." Command="{Binding ExportCsvCommand}" />
+                                            <MenuItem Header="导出 KeePass 2.x XML..." Command="{Binding ExportKeePassXmlCommand}" />
+                                            <MenuItem Header="生成 HTML 应急表..." Command="{Binding ExportEmergencySheetCommand}" />
+                                        </MenuItem>
                                         <Separator />
                                         <MenuItem Header="检查更新..." Command="{Binding CheckForUpdatesCommand}" />
                                         <MenuItem Header="关于 KeePassModern" Command="{Binding OpenAboutAsyncCommandCommand}" />
@@ -758,6 +779,22 @@
                                                         <MenuItem Header="收藏 / 取消收藏"
                                                                   Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ToggleFavoriteEntryCommand}"
                                                                   CommandParameter="{Binding}" />
+                                                        <MenuItem Header="快捷设置过期时间"
+                                                                  IsVisible="{Binding !$parent[Window].((vm:MainWindowViewModel)DataContext).IsRecycleBinSelected}">
+                                                            <MenuItem Header="立即设为过期"
+                                                                      Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).QuickExpireNowCommand}"
+                                                                      CommandParameter="{Binding}" />
+                                                            <MenuItem Header="设为永不过期"
+                                                                      Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).QuickExpireNeverCommand}"
+                                                                      CommandParameter="{Binding}" />
+                                                            <Separator />
+                                                            <MenuItem Header="30 天后过期"
+                                                                      Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).QuickExpireIn30DaysCommand}"
+                                                                      CommandParameter="{Binding}" />
+                                                            <MenuItem Header="90 天后过期"
+                                                                      Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).QuickExpireIn90DaysCommand}"
+                                                                      CommandParameter="{Binding}" />
+                                                        </MenuItem>
                                                         <Separator />
                                                         <MenuItem Header="从回收站还原"
                                                                   IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).IsRecycleBinSelected}"

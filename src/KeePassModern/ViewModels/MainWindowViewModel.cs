@@ -17,7 +17,8 @@ public enum ActiveSection
     SecurityAudit,
     RecycleBin,
     Group,
-    Tag
+    Tag,
+    CustomFilter
 }
 
 /// <summary>
@@ -119,6 +120,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private EntryItemViewModel? _selectedEntry;
     [ObservableProperty] private GroupItemViewModel? _selectedGroup;
     private string? _selectedTag;
+    private string _customFilterTitle = "查找结果";
+    private List<KdbxEntry>? _customFilterEntries;
 
     // Security Audit Dashboard
     [ObservableProperty] private int _auditScore = 100;
@@ -151,6 +154,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public Func<string, string, string, Task<(KdbxDatabase Database, CompositeKey MasterKey, string KeyFilePath)?>>? OpenVaultUnlockPromptAsync { get; set; }
     public Func<KdbxDatabase, KdbxEntry, Task<KdbxGroup?>>? OpenMoveToGroupAsync { get; set; }
     public Func<KdbxDatabase, Task<bool>>? OpenDatabaseMaintenanceAsync { get; set; }
+    public Func<Task<EntrySearchParameters?>>? OpenAdvancedSearchAsync { get; set; }
     public Action<string>? OpenUrlExternal { get; set; }
 
     public bool HasRecycleBinItems => RecycleBinCount > 0;
@@ -875,6 +879,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             ActiveSection.Group when SelectedGroup is not null => EnumerateGroupEntries(SelectedGroup.Model),
             ActiveSection.Tag when !string.IsNullOrEmpty(_selectedTag) => _database.EnumerateAllEntries(false)
                 .Where(e => e.Tags.Any(t => string.Equals(t, _selectedTag, StringComparison.OrdinalIgnoreCase))),
+            ActiveSection.CustomFilter when _customFilterEntries is not null => _customFilterEntries,
             _ => _database.EnumerateAllEntries(false)
         };
 
@@ -885,6 +890,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             ActiveSection.RecycleBin => "回收站",
             ActiveSection.Group when SelectedGroup is not null => SelectedGroup.Name,
             ActiveSection.Tag => $"#{_selectedTag}",
+            ActiveSection.CustomFilter => _customFilterTitle,
             _ => "全部条目"
         };
 
@@ -1267,6 +1273,101 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             SaveVault();
             RebuildWorkspace();
             ShowToast("密码库维护完成并已保存");
+        }
+    }
+
+    // ==================== 高级查找 / 预置快捷筛选 / 快捷过期编辑 / KeePass XML ====================
+    [RelayCommand]
+    private async Task OpenAdvancedSearchAsyncCommand()
+    {
+        if (_database is null || OpenAdvancedSearchAsync is null) return;
+        var param = await OpenAdvancedSearchAsync();
+        if (param is null) return;
+
+        _customFilterEntries = EntrySearchService.Search(_database, param);
+        _customFilterTitle = string.IsNullOrWhiteSpace(param.Query)
+            ? "高级查找结果"
+            : $"查找「{param.Query}」";
+        ActiveSection = ActiveSection.CustomFilter;
+        SelectedGroup = null;
+        IsAuditViewActive = false;
+        RefreshFilteredEntries();
+        ShowToast($"高级查找完成，共匹配 {_customFilterEntries.Count} 条记录");
+    }
+
+    [RelayCommand]
+    private void ShowQuickFilter(string? preset)
+    {
+        if (_database is null || string.IsNullOrWhiteSpace(preset)) return;
+
+        (_customFilterTitle, _customFilterEntries) = preset switch
+        {
+            "Expired" => ("已过期条目", EntrySearchService.FindExpired(_database)),
+            "Expiring7" => ("7 天内即将过期", EntrySearchService.FindExpiringWithinDays(_database, 7)),
+            "Expiring30" => ("30 天内即将过期", EntrySearchService.FindExpiringWithinDays(_database, 30)),
+            "LastModified" => ("最近修改的条目", EntrySearchService.FindLastModified(_database, 30)),
+            "Large" => ("大体积 / 含附件条目", EntrySearchService.FindLargeEntries(_database, 30)),
+            _ => ("全部条目", _database.EnumerateAllEntries(false).ToList())
+        };
+
+        ActiveSection = ActiveSection.CustomFilter;
+        SelectedGroup = null;
+        IsAuditViewActive = false;
+        RefreshFilteredEntries();
+    }
+
+    [RelayCommand]
+    private void QuickExpireNow(EntryItemViewModel? item) => ApplyQuickExpiry(item, true, DateTimeOffset.UtcNow.AddMinutes(-1), "已设为立即过期");
+
+    [RelayCommand]
+    private void QuickExpireNever(EntryItemViewModel? item) => ApplyQuickExpiry(item, false, DateTimeOffset.UtcNow.AddYears(1), "已设为永不过期");
+
+    [RelayCommand]
+    private void QuickExpireIn30Days(EntryItemViewModel? item) => ApplyQuickExpiry(item, true, DateTimeOffset.UtcNow.AddDays(30), "已设为 30 天后过期");
+
+    [RelayCommand]
+    private void QuickExpireIn90Days(EntryItemViewModel? item) => ApplyQuickExpiry(item, true, DateTimeOffset.UtcNow.AddDays(90), "已设为 90 天后过期");
+
+    private void ApplyQuickExpiry(EntryItemViewModel? item, bool expires, DateTimeOffset expiryTime, string toast)
+    {
+        var target = item ?? SelectedEntry;
+        if (_database is null || target is null) return;
+        target.Model.Expires = expires;
+        target.Model.ExpiryTime = expiryTime;
+        target.Model.LastModificationTime = DateTimeOffset.UtcNow;
+        _database.IsModified = true;
+        SaveVault();
+        RebuildWorkspace();
+        ShowToast($"「{target.Title}」{toast}");
+    }
+
+    [RelayCommand]
+    private async Task ExportKeePassXmlAsync()
+    {
+        if (_database is null || PickSaveFileAsync is null) return;
+        var path = await PickSaveFileAsync($"{_database.Meta.DatabaseName}.xml", "xml");
+        if (string.IsNullOrWhiteSpace(path)) return;
+        await File.WriteAllTextAsync(path, ImportExportService.ExportToKeePassXml(_database));
+        ShowToast($"已导出标准 KeePass 2.x XML：{Path.GetFileName(path)}");
+    }
+
+    [RelayCommand]
+    private async Task ImportKeePassXmlAsync()
+    {
+        if (_database is null || PickOpenFileAsync is null) return;
+        var path = await PickOpenFileAsync("xml");
+        if (string.IsNullOrWhiteSpace(path)) return;
+        try
+        {
+            var xml = await File.ReadAllTextAsync(path);
+            var summary = ImportExportService.ImportFromKeePassXml(_database, xml);
+            SaveVault();
+            RebuildWorkspace();
+            ShowToast($"已导入 KeePass XML：新增 {summary.EntriesAdded} 条目、更新 {summary.EntriesUpdated} 条目");
+        }
+        catch (Exception ex)
+        {
+            ShowToast($"导入 XML 失败：{ex.Message}");
         }
     }
 

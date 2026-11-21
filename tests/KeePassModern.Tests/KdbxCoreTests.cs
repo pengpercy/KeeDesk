@@ -173,4 +173,40 @@ public class KdbxCoreTests
         int emptyRemoved = DatabaseMaintenanceService.DeleteEmptyGroups(db);
         Assert.True(emptyRemoved >= 1);
     }
+
+    [Fact]
+    public void AdvancedSearch_And_KeePassXml_RoundTrip_Works()
+    {
+        using var db = KdbxDatabase.CreateDefault("SearchXmlTest");
+        var e1 = new KdbxEntry
+        {
+            Title = "Prod-AWS-01",
+            UserName = "ops@acme.io",
+            Password = "SuperSecret#99",
+            Expires = true,
+            ExpiryTime = DateTimeOffset.UtcNow.AddDays(-2)
+        };
+        var e2 = new KdbxEntry
+        {
+            Title = "Staging-DB",
+            UserName = "dev@acme.io",
+            Password = "DevPassword#88",
+            Expires = true,
+            ExpiryTime = DateTimeOffset.UtcNow.AddDays(5)
+        };
+        db.RootGroup.Groups[0].AddEntry(e1);
+        db.RootGroup.Groups[0].AddEntry(e2);
+
+        var regexHits = EntrySearchService.Search(db, new EntrySearchParameters { Query = @"^Prod-.*-\d{2}$", UseRegex = true });
+        Assert.Single(regexHits);
+        Assert.Equal("Prod-AWS-01", regexHits[0].Title);
+
+        Assert.Single(EntrySearchService.FindExpired(db));
+        Assert.Single(EntrySearchService.FindExpiringWithinDays(db, 7));
+
+        var xml = ImportExportService.ExportToKeePassXml(db);
+        using var db2 = KdbxDatabase.CreateDefault("TargetXml");
+        var summary = ImportExportService.ImportFromKeePassXml(db2, xml);
+        Assert.Equal(2, summary.EntriesAdded);
+    }
 }

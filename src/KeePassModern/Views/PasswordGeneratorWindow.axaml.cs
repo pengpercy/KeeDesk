@@ -48,6 +48,20 @@ public partial class PasswordGeneratorWindow : Window
             Pattern = PatternBox.Text ?? "uullddss-uullddss"
         };
 
+        if (ModeTabs.SelectedIndex == 3)
+        {
+            var batch = Enumerable.Range(0, 10)
+                .Select(_ => PasswordGenerator.GenerateFromCharset(opts))
+                .ToList();
+            BatchListBox.Text = string.Join(Environment.NewLine, batch);
+            _currentPassword = BatchListBox.Text;
+            PreviewText.Text = batch[0];
+            var res0 = PasswordGenerator.EvaluateStrength(batch[0]);
+            StrengthBar.Value = Math.Clamp(res0.EntropyBits / 120.0, 0.05, 1.0);
+            StrengthText.Text = $"批量 10 条 · 每条约 {res0.EntropyBits:0} bits";
+            return;
+        }
+
         _currentPassword = ModeTabs.SelectedIndex switch
         {
             1 => PasswordGenerator.GeneratePassphrase(opts),

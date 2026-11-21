@@ -177,6 +177,12 @@ public partial class MainWindow : Window
             return await dlg.ShowDialog<bool>(this);
         };
 
+        vm.OpenAdvancedSearchAsync = async () =>
+        {
+            var dlg = new AdvancedSearchWindow();
+            return await dlg.ShowDialog<KeePassModern.Core.Services.EntrySearchParameters?>(this);
+        };
+
         vm.OpenUrlExternal = url =>
         {
             if (string.IsNullOrWhiteSpace(url)) return;
@@ -258,6 +264,11 @@ public partial class MainWindow : Window
         else if (e.Key == Key.U)
         {
             vm.OpenEntryUrlCommand.Execute(vm.SelectedEntry);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.F)
+        {
+            vm.OpenAdvancedSearchAsyncCommandCommand.Execute(null);
             e.Handled = true;
         }
     }

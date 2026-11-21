@@ -44,9 +44,10 @@ public static class ImportExportService
         int idxPass = FindColumn(header, "password", "login_password", "pass");
         int idxUrl = FindColumn(header, "url", "login_uri", "website", "uri");
         int idxNotes = FindColumn(header, "notes", "note", "comments", "extra");
-        int idxTotp = FindColumn(header, "totp", "login_totp", "otp", "2fa");
+        int idxTotp = FindColumn(header, "totp", "login_totp", "otpauth", "otp", "2fa");
         int idxGroup = FindColumn(header, "group", "folder", "grouping", "category");
         int idxTags = FindColumn(header, "tags", "tag");
+        int idxFav = FindColumn(header, "favorite", "starred");
 
         var destRoot = targetGroup ?? db.RootGroup;
         int imported = 0;
@@ -77,6 +78,10 @@ public static class ImportExportService
             var tags = Get(idxTags);
             if (!string.IsNullOrWhiteSpace(tags))
                 entry.Tags = tags.Split([';', ','], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+
+            var fav = Get(idxFav).Trim();
+            if (fav is "1" or "true" or "True" or "TRUE" or "yes")
+                entry.IsFavorite = true;
 
             var groupName = Get(idxGroup).Trim();
             KdbxGroup dest = destRoot;
@@ -119,6 +124,28 @@ public static class ImportExportService
         }
         sb.AppendLine("</tbody></table></body></html>");
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// 导出标准 KeePass 2.x 明文 XML（完整保留分组树、自定义字段、标签、附件与历史记录）。
+    /// </summary>
+    public static string ExportToKeePassXml(KdbxDatabase db)
+    {
+        var binaryPool = new List<KeePassModern.Core.Crypto.ProtectedBinary>();
+        var bytes = KdbxXmlSerializer.WriteXml(db, isKdbx4: false, innerCipher: null, binaryPool);
+        return Encoding.UTF8.GetString(bytes);
+    }
+
+    /// <summary>
+    /// 导入标准 KeePass 2.x XML 并按 UUID 无损合并到当前密码库。
+    /// </summary>
+    public static MergeSummary ImportFromKeePassXml(KdbxDatabase targetDb, string xmlContent)
+    {
+        using var ms = new MemoryStream(Encoding.UTF8.GetBytes(xmlContent));
+        using var tempDb = new KdbxDatabase();
+        var binaryPool = new List<KeePassModern.Core.Crypto.ProtectedBinary>();
+        KdbxXmlSerializer.ReadXml(ms, tempDb, isKdbx4: false, innerCipher: null, binaryPool);
+        return DatabaseMergeService.Merge(targetDb, tempDb);
     }
 
     private static KdbxGroup CreateSubGroup(KdbxGroup parent, string name)

@@ -350,5 +350,23 @@ public partial class EntryEditorWindow : Window
         Close(true);
     }
 
+    private async void InsertUserNameRef_Click(object? sender, RoutedEventArgs e)
+    {
+        if (_database is null) return;
+        var dlg = new FieldReferenceWindow(_database, 'U');
+        var expr = await dlg.ShowDialog<string?>(this);
+        if (!string.IsNullOrEmpty(expr))
+            UserNameBox.Text = expr;
+    }
+
+    private async void InsertPasswordRef_Click(object? sender, RoutedEventArgs e)
+    {
+        if (_database is null) return;
+        var dlg = new FieldReferenceWindow(_database, 'P');
+        var expr = await dlg.ShowDialog<string?>(this);
+        if (!string.IsNullOrEmpty(expr))
+            PasswordBox.Text = expr;
+    }
+
     private void Cancel_Click(object? sender, RoutedEventArgs e) => Close(false);
 }

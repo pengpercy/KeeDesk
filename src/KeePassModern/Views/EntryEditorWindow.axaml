@@ -86,11 +86,17 @@
                                 </Grid>
                             </StackPanel>
 
-                            <!-- 双列：用户名 & 网址 -->
+                            <!-- 双列：用户名（含插入字段引用） & 网址 -->
                             <Grid ColumnDefinitions="*, 12, *">
                                 <StackPanel Grid.Column="0" Spacing="4">
                                     <TextBlock Text="用户名 / 邮箱" FontSize="11.5" FontWeight="Medium" Foreground="{DynamicResource SecondaryTextBrush}" />
-                                    <TextBox x:Name="UserNameBox" Height="32" PlaceholderText="输入登录账号或 {REF:...}..." />
+                                    <Grid ColumnDefinitions="*, 4, Auto">
+                                        <TextBox Grid.Column="0" x:Name="UserNameBox" Height="32" PlaceholderText="输入登录账号或 {REF:...}..." />
+                                        <Button Grid.Column="2" Classes="subtle" Width="30" Height="32" MinHeight="32" Padding="0"
+                                                ToolTip.Tip="插入跨条目字段引用 ({REF:...})" Click="InsertUserNameRef_Click">
+                                            <PathIcon Data="{StaticResource IconLink}" Width="12" Height="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                        </Button>
+                                    </Grid>
                                 </StackPanel>
                                 <StackPanel Grid.Column="2" Spacing="4">
                                     <TextBlock Text="登录网址（URL）" FontSize="11.5" FontWeight="Medium" Foreground="{DynamicResource SecondaryTextBrush}" />
@@ -102,16 +108,19 @@
                                 </StackPanel>
                             </Grid>
 
-                            <!-- 密码 + 显隐 + 生成密码 + 实时强度条 -->
+                            <!-- 密码 + 显隐 + 引用 + 生成密码 + 实时强度条 -->
                             <StackPanel Spacing="5">
                                 <TextBlock Text="密码 *" FontSize="11.5" FontWeight="Medium" Foreground="{DynamicResource SecondaryTextBrush}" />
-                                <Grid ColumnDefinitions="*, 6, Auto, 6, Auto">
+                                <Grid ColumnDefinitions="*, 6, Auto, 4, Auto, 6, Auto">
                                     <TextBox Grid.Column="0" x:Name="PasswordBox" Height="32" PasswordChar="•" FontFamily="Consolas,Menlo,monospace"
                                              PlaceholderText="输入密码，或点击右侧生成强密码..." TextChanged="PasswordBox_TextChanged" />
                                     <Button Grid.Column="2" Height="32" MinHeight="32" Width="34" Padding="0" ToolTip.Tip="显示 / 隐藏密码" Click="TogglePasswordVisibility_Click">
                                         <PathIcon Data="{StaticResource IconEye}" Width="14" Height="14" />
                                     </Button>
-                                    <Button Grid.Column="4" Classes="accent" Height="32" MinHeight="32" Padding="11,0" Click="GeneratePassword_Click">
+                                    <Button Grid.Column="4" Classes="subtle" Height="32" MinHeight="32" Width="30" Padding="0" ToolTip.Tip="插入跨条目密码引用 ({REF:P@...})" Click="InsertPasswordRef_Click">
+                                        <PathIcon Data="{StaticResource IconLink}" Width="12" Height="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                    </Button>
+                                    <Button Grid.Column="6" Classes="accent" Height="32" MinHeight="32" Padding="11,0" Click="GeneratePassword_Click">
                                         <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                                             <PathIcon Data="{StaticResource IconShield}" Width="12" Height="12" VerticalAlignment="Center" />
                                             <TextBlock Text="生成密码" FontSize="12" VerticalAlignment="Center" />
