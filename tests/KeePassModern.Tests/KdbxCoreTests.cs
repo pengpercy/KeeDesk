@@ -209,4 +209,22 @@ public class KdbxCoreTests
         var summary = ImportExportService.ImportFromKeePassXml(db2, xml);
         Assert.Equal(2, summary.EntriesAdded);
     }
+
+    [Fact]
+    public void AutoTypeSequenceParser_ResolvesPlaceholdersAndKeys()
+    {
+        using var db = KdbxDatabase.CreateDefault("AutoTypeTest");
+        var g = db.RootGroup.Groups[0];
+        g.DefaultAutoTypeSequence = "{USERNAME}{TAB 2}{DELAY 150}{PASSWORD}{ENTER}";
+        var entry = new KdbxEntry { Title = "App", UserName = "alice", Password = "Secret#123" };
+        g.AddEntry(entry);
+
+        var steps = AutoTypeSequenceParser.Parse(entry, db);
+        Assert.Equal(5, steps.Count);
+        Assert.Equal(new AutoTypeTextStep("alice"), steps[0]);
+        Assert.Equal(new AutoTypeKeyStep(AutoTypeKey.Tab, 2), steps[1]);
+        Assert.Equal(new AutoTypeDelayStep(150), steps[2]);
+        Assert.Equal(new AutoTypeTextStep("Secret#123"), steps[3]);
+        Assert.Equal(new AutoTypeKeyStep(AutoTypeKey.Enter, 1), steps[4]);
+    }
 }

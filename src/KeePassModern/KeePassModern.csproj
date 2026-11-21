@@ -8,6 +8,7 @@
         <EnableWindowsTargeting Condition="'$(IsWindowsTarget)' == 'true'">true</EnableWindowsTargeting>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <SuppressTrimAnalysisWarnings>false</SuppressTrimAnalysisWarnings>
         <TreatAsLocalProperty>PublishAot;DisableAOT</TreatAsLocalProperty>
         <BuiltInComInteropSupport>true</BuiltInComInteropSupport>

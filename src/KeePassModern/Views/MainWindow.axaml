@@ -52,6 +52,7 @@
                     <NativeMenuItem Header="复制密码" Gesture="Shift+Cmd+C" Command="{Binding CopyPasswordCommand}" />
                     <NativeMenuItem Header="复制动态验证码" Gesture="Shift+Cmd+T" Command="{Binding CopyTotpCommand}" />
                     <NativeMenuItem Header="在浏览器打开网址" Gesture="Cmd+U" Command="{Binding OpenEntryUrlCommand}" />
+                    <NativeMenuItem Header="执行自动输入 (Auto-Type)" Command="{Binding PerformAutoTypeCommand}" />
                     <NativeMenuItemSeparator />
                     <NativeMenuItem Header="还原选中条目" Command="{Binding RestoreSelectedEntryCommand}" />
                     <NativeMenuItem Header="删除 / 移入回收站" Command="{Binding DeleteSelectedEntryCommand}" />
@@ -417,7 +418,7 @@
                                 </StackPanel>
 
                                 <!-- 智能视图（带 Fluent 2 左侧 3px 品牌指示条） -->
-                                <TextBlock Text="智能视图" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource SecondaryTextBrush}" Margin="8,4,0,4" />
+                                <TextBlock Text="{DynamicResource Str_SmartViews}" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource SecondaryTextBrush}" Margin="8,4,0,4" />
 
                                 <Button Classes="navItem" Classes.active="{Binding IsAllEntriesSelected}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Height="{DynamicResource DensityNavItemHeight}"
                                         Command="{Binding SelectSectionCommand}" CommandParameter="AllEntries">
@@ -425,7 +426,7 @@
                                         <Border Grid.Column="0" Width="3" Height="18" CornerRadius="2" Background="{DynamicResource SystemControlHighlightAccentBrush}"
                                                 HorizontalAlignment="Left" IsVisible="{Binding IsAllEntriesSelected}" />
                                         <PathIcon Grid.Column="1" Data="{StaticResource IconVault}" Width="14" Height="14" />
-                                        <TextBlock Grid.Column="2" Classes="navLabel" Text="全部条目" FontSize="{DynamicResource DensityFontSizeBody}" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="2" Classes="navLabel" Text="{DynamicResource Str_AllEntries}" FontSize="{DynamicResource DensityFontSizeBody}" VerticalAlignment="Center" />
                                         <TextBlock Grid.Column="3" Text="{Binding AllCount}" FontSize="{DynamicResource DensityFontSizeCaption}" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center" Margin="0,0,10,0" />
                                     </Grid>
                                 </Button>
@@ -436,7 +437,7 @@
                                         <Border Grid.Column="0" Width="3" Height="18" CornerRadius="2" Background="{DynamicResource SystemControlHighlightAccentBrush}"
                                                 HorizontalAlignment="Left" IsVisible="{Binding IsFavoritesSelected}" />
                                         <PathIcon Grid.Column="1" Data="{StaticResource IconStar}" Width="14" Height="14" />
-                                        <TextBlock Grid.Column="2" Classes="navLabel" Text="收藏夹" FontSize="{DynamicResource DensityFontSizeBody}" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="2" Classes="navLabel" Text="{DynamicResource Str_Favorites}" FontSize="{DynamicResource DensityFontSizeBody}" VerticalAlignment="Center" />
                                         <TextBlock Grid.Column="3" Text="{Binding FavoritesCount}" FontSize="{DynamicResource DensityFontSizeCaption}" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center" Margin="0,0,10,0" />
                                     </Grid>
                                 </Button>
@@ -447,7 +448,7 @@
                                         <Border Grid.Column="0" Width="3" Height="18" CornerRadius="2" Background="{DynamicResource SystemControlHighlightAccentBrush}"
                                                 HorizontalAlignment="Left" IsVisible="{Binding IsTotpSelected}" />
                                         <PathIcon Grid.Column="1" Data="{StaticResource IconClock}" Width="14" Height="14" />
-                                        <TextBlock Grid.Column="2" Classes="navLabel" Text="动态验证码 (2FA)" FontSize="{DynamicResource DensityFontSizeBody}" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="2" Classes="navLabel" Text="{DynamicResource Str_Totp2Fa}" FontSize="{DynamicResource DensityFontSizeBody}" VerticalAlignment="Center" />
                                         <TextBlock Grid.Column="3" Text="{Binding TotpCount}" FontSize="{DynamicResource DensityFontSizeCaption}" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center" Margin="0,0,10,0" />
                                     </Grid>
                                 </Button>
@@ -458,7 +459,7 @@
                                         <Border Grid.Column="0" Width="3" Height="18" CornerRadius="2" Background="{DynamicResource SystemControlHighlightAccentBrush}"
                                                 HorizontalAlignment="Left" IsVisible="{Binding IsAuditSelected}" />
                                         <PathIcon Grid.Column="1" Data="{StaticResource IconShield}" Width="14" Height="14" />
-                                        <TextBlock Grid.Column="2" Classes="navLabel" Text="安全审计" FontSize="{DynamicResource DensityFontSizeBody}" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="2" Classes="navLabel" Text="{DynamicResource Str_SecurityAudit}" FontSize="{DynamicResource DensityFontSizeBody}" VerticalAlignment="Center" />
                                         <Border Grid.Column="3" Background="#FFF9F5" BorderBrush="#F5D0B5" BorderThickness="1" CornerRadius="4" Padding="6,1" Margin="0,0,8,0" IsVisible="{Binding AuditIssueCount}">
                                             <TextBlock Text="{Binding AuditIssueCount}" FontSize="11" Foreground="#8A3707" FontWeight="SemiBold" />
                                         </Border>
@@ -467,7 +468,7 @@
 
                                 <!-- 密码分组（右侧 + 按钮新建根分组，每项支持右键新建子分组 / 重命名 / 删除） -->
                                 <Grid ColumnDefinitions="*, Auto" Margin="8,14,4,4">
-                                    <TextBlock Grid.Column="0" Text="密码分组" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="0" Text="{DynamicResource Str_Groups}" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center" />
                                     <Button Grid.Column="1" Classes="subtle" Width="22" Height="22" MinHeight="22" Padding="0"
                                             ToolTip.Tip="新建分组" Command="{Binding AddRootGroupCommand}">
                                         <PathIcon Data="{StaticResource IconAdd}" Width="11" Height="11" Foreground="{DynamicResource SecondaryTextBrush}" />
@@ -503,7 +504,7 @@
                                 </TreeView>
 
                                 <!-- 标签筛选 -->
-                                <TextBlock Text="标签筛选" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource SecondaryTextBrush}" Margin="8,14,0,4" />
+                                <TextBlock Text="{DynamicResource Str_TagFilter}" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource SecondaryTextBrush}" Margin="8,14,0,4" />
                                 <ItemsControl ItemsSource="{Binding AllTags}">
                                     <ItemsControl.ItemsPanel>
                                         <ItemsPanelTemplate>
@@ -546,7 +547,7 @@
                                     Command="{Binding LockVaultCommand}">
                                 <Grid ColumnDefinitions="Auto, *, Auto" HorizontalAlignment="Stretch">
                                     <PathIcon Grid.Column="0" Data="{StaticResource IconLock}" Width="12" Height="12" Margin="0,0,6,0" />
-                                    <TextBlock Grid.Column="1" Text="锁定密码库" FontSize="12" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="1" Text="{DynamicResource Str_LockVault}" FontSize="12" VerticalAlignment="Center" />
                                     <TextBlock Grid.Column="2" Text="{Binding LockShortcutHint}" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center" Margin="6,0,0,0" />
                                 </Grid>
                             </Button>
@@ -765,6 +766,9 @@
                                                         <MenuItem Header="复制网址" IsVisible="{Binding Url, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                                                   Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).CopyEntryUrlCommand}"
                                                                   CommandParameter="{Binding}" />
+                                                        <MenuItem Header="执行自动输入 (Auto-Type)"
+                                                                  Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).PerformAutoTypeCommand}"
+                                                                  CommandParameter="{Binding}" />
                                                         <Separator />
                                                         <MenuItem Header="编辑条目..."
                                                                   Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).EditEntryCommand}"
@@ -863,6 +867,11 @@
                                             <PathIcon Data="{StaticResource IconSave}" Width="14" Height="14" />
                                         </Button>
                                         <Button Classes="subtle" Width="32" Height="32" MinHeight="32" Padding="0"
+                                                Command="{Binding PerformAutoTypeCommand}" ToolTip.Tip="执行自动输入 (Auto-Type)"
+                                                IsVisible="{Binding SelectedEntry, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                            <PathIcon Data="{StaticResource IconKeyboard}" Width="14" Height="14" />
+                                        </Button>
+                                        <Button Classes="subtle" Width="32" Height="32" MinHeight="32" Padding="0"
                                                 Command="{Binding RestoreSelectedEntryCommand}" ToolTip.Tip="从回收站还原到原分组"
                                                 IsVisible="{Binding IsRecycleBinSelected}">
                                             <PathIcon Data="{StaticResource IconRefresh}" Width="14" Height="14" Foreground="#29C742" />
@@ -913,7 +922,7 @@
                                         <StackPanel Spacing="14">
                                             <Grid ColumnDefinitions="*, Auto">
                                                 <StackPanel Spacing="3">
-                                                    <TextBlock Text="用户名" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                                    <TextBlock Text="{DynamicResource Str_UserName}" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
                                                     <SelectableTextBlock Text="{Binding SelectedEntry.UserName}" FontSize="14" FontWeight="Medium" />
                                                 </StackPanel>
                                                 <Button Grid.Column="1" Classes="subtle" Width="32" Height="32" MinHeight="32" Padding="0"
@@ -929,7 +938,7 @@
 
                                             <Grid ColumnDefinitions="*, Auto">
                                                 <StackPanel Spacing="6">
-                                                    <TextBlock Text="密码" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                                    <TextBlock Text="{DynamicResource Str_Password}" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
                                                     <SelectableTextBlock Text="{Binding SelectedEntry.DisplayedPassword}" FontFamily="Consolas,Menlo,monospace" FontSize="14.5" />
                                                     <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
                                                         <ProgressBar Minimum="0" Maximum="1" Value="{Binding SelectedEntry.StrengthRatio}" Width="180" Height="5" CornerRadius="3"
@@ -956,7 +965,7 @@
                                                 <Border Height="1" Background="{DynamicResource DividerBrush}" />
                                                 <Grid ColumnDefinitions="*, Auto">
                                                     <StackPanel Spacing="4">
-                                                        <TextBlock Text="动态验证码（TOTP）" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                                        <TextBlock Text="{DynamicResource Str_TotpLabel}" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
                                                         <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
                                                             <TextBlock Text="{Binding SelectedEntry.TotpFormatted}" FontFamily="Consolas,Menlo,monospace" FontSize="22" FontWeight="Bold" Foreground="{DynamicResource BrandEmeraldBrush}" />
                                                             <Border Background="{DynamicResource BadgePillBackgroundBrush}" CornerRadius="9999" Padding="8,3" VerticalAlignment="Center">
@@ -978,7 +987,7 @@
                                                 <Border Height="1" Background="{DynamicResource DividerBrush}" />
                                                 <Grid ColumnDefinitions="*, Auto">
                                                     <StackPanel Spacing="3">
-                                                        <TextBlock Text="网址" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                                        <TextBlock Text="{DynamicResource Str_Url}" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
                                                         <SelectableTextBlock Text="{Binding SelectedEntry.Url}" Foreground="{DynamicResource SystemControlForegroundAccentBrush}" FontSize="13.5" />
                                                     </StackPanel>
                                                     <Button Grid.Column="1" Classes="subtle" Width="32" Height="32" MinHeight="32" Padding="0"
@@ -993,7 +1002,7 @@
                                     <!-- 备注与附件卡片 -->
                                     <Border Classes="fluentCard" Padding="20,16">
                                         <StackPanel Spacing="10">
-                                            <TextBlock Text="备注与附件" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                            <TextBlock Text="{DynamicResource Str_NotesAndAttachments}" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource SecondaryTextBrush}" />
                                             <SelectableTextBlock Text="{Binding SelectedEntry.Notes}" FontSize="13.5" LineHeight="22"
                                                                  IsVisible="{Binding SelectedEntry.Notes, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                                             <ItemsControl ItemsSource="{Binding SelectedEntry.CustomFields}">

@@ -192,6 +192,8 @@ public partial class MainWindow : Window
             }
             catch { }
         };
+
+        vm.MinimizeWindowAction = () => WindowState = WindowState.Minimized;
     }
 
     private void OnWindowDragOver(object? sender, DragEventArgs e)

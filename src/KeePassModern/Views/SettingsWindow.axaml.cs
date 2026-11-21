@@ -30,6 +30,7 @@ public partial class SettingsWindow : Window
                 CustomAccentPicker.Color = c;
             ClipClearNumeric.Value = s.ClipboardClearSeconds;
             AutoLockNumeric.Value = s.AutoLockIdleMinutes;
+            LanguageCombo.SelectedIndex = string.Equals(s.Language, "en-US", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
             RefreshCardHighlights(s.ThemeMode, s.UiDensity);
         }
         if (initialTabIndex > 0) SwitchPage(initialTabIndex);
@@ -62,6 +63,16 @@ public partial class SettingsWindow : Window
         Ind2.IsVisible = idx == 2;
         Ind3.IsVisible = idx == 3;
         Ind4.IsVisible = idx == 4;
+    }
+
+    private void LanguageCombo_Changed(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_loading || _vm is null) return;
+        var lang = (LanguageCombo.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "zh-CN";
+        _vm.SettingsService.Settings.Language = lang;
+        _vm.SettingsService.Save();
+        KeePassModern.Services.LocalizationService.Apply(lang);
+        _vm.ShowToast(lang == "en-US" ? "Switched UI language to English" : "已切换界面语言为简体中文");
     }
 
     private void ThemeCard_Click(object? sender, RoutedEventArgs e)

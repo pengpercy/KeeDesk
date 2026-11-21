@@ -85,6 +85,20 @@
                     <StackPanel x:Name="PageAppearance" Spacing="16">
                         <TextBlock Text="外观与界面密度" FontSize="20" FontWeight="SemiBold" />
 
+                        <!-- 界面语言切换卡片（即时生效，无需重启） -->
+                        <Border Classes="fluentCard" Padding="16">
+                            <Grid ColumnDefinitions="*, Auto">
+                                <StackPanel Spacing="2" VerticalAlignment="Center">
+                                    <TextBlock Text="界面语言 / Display Language" FontSize="13.5" FontWeight="SemiBold" />
+                                    <TextBlock Text="切换简体中文或英文界面，立即生效无需重启" FontSize="11.5" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                </StackPanel>
+                                <ComboBox Grid.Column="1" x:Name="LanguageCombo" Width="170" Height="32" VerticalAlignment="Center" SelectionChanged="LanguageCombo_Changed">
+                                    <ComboBoxItem Content="简体中文 (zh-CN)" Tag="zh-CN" />
+                                    <ComboBoxItem Content="English (en-US)" Tag="en-US" />
+                                </ComboBox>
+                            </Grid>
+                        </Border>
+
                         <!-- 外观模式卡片 -->
                         <Border Classes="fluentCard" Padding="16">
                             <StackPanel Spacing="12">

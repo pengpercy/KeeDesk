@@ -156,6 +156,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public Func<KdbxDatabase, Task<bool>>? OpenDatabaseMaintenanceAsync { get; set; }
     public Func<Task<EntrySearchParameters?>>? OpenAdvancedSearchAsync { get; set; }
     public Action<string>? OpenUrlExternal { get; set; }
+    public Action? MinimizeWindowAction { get; set; }
 
     public bool HasRecycleBinItems => RecycleBinCount > 0;
     public bool HasUnlockKeyFile => !string.IsNullOrWhiteSpace(UnlockKeyFilePath);
@@ -1157,6 +1158,16 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         if (target is null || string.IsNullOrWhiteSpace(target.Url)) return;
         var resolved = FieldReferenceResolver.Resolve(target.Url, target.Model, _database);
         OpenUrlExternal?.Invoke(resolved);
+    }
+
+    [RelayCommand]
+    private async Task PerformAutoTypeAsync(EntryItemViewModel? item)
+    {
+        var target = item ?? SelectedEntry;
+        if (target is null) return;
+
+        var res = await AutoTypeService.ExecuteAsync(target.Model, _database, MinimizeWindowAction);
+        ShowToast(res.Message);
     }
 
     [RelayCommand]

@@ -29,6 +29,7 @@ public partial class App : Application
     public override void OnFrameworkInitializationCompleted()
     {
         var settingsService = new AppSettingsService();
+        LocalizationService.Apply(settingsService.Settings.Language);
         ThemeAccentService.ApplyThemeVariant(settingsService.Settings.ThemeMode);
         ThemeAccentService.ApplyAccent(settingsService.Settings.AccentMode, settingsService.Settings.CustomAccentHex);
         DensityService.Apply(settingsService.Settings.UiDensity);
