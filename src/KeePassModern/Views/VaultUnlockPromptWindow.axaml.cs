@@ -9,7 +9,12 @@ using KeePassModern.Helpers;
 namespace KeePassModern.Views;
 
 /// <summary>
-/// 合并 / 同步外部 .kdbx 密码库时用于输入目标库主密钥并异步解密的对话框。
+/// 弹窗解锁结果（用于多标签打开新密码库或合并同步外部密码库）。
+/// </summary>
+public sealed record VaultUnlockResult(KdbxDatabase Database, CompositeKey MasterKey, string KeyFilePath);
+
+/// <summary>
+/// 解锁外部 .kdbx 密码库时用于输入目标库主密钥并异步解密的通用对话框。
 /// </summary>
 public partial class VaultUnlockPromptWindow : Window
 {
@@ -17,12 +22,15 @@ public partial class VaultUnlockPromptWindow : Window
     private string _keyFilePath = string.Empty;
     private bool _isWorking;
 
-    public VaultUnlockPromptWindow() : this(string.Empty) { }
+    public VaultUnlockPromptWindow() : this(string.Empty, "解锁密码库", "解锁") { }
 
-    public VaultUnlockPromptWindow(string vaultPath)
+    public VaultUnlockPromptWindow(string vaultPath, string heading = "合并 / 同步其他密码库", string confirmButtonText = "解密并合并")
     {
         InitializeComponent();
         _vaultPath = vaultPath;
+        Title = heading;
+        DialogHeading.Text = heading;
+        MergeBtn.Content = confirmButtonText;
         FilePathLabel.Text = Path.GetFileName(vaultPath);
         MacTitleBarInsets.AttachTrafficLightsCentering(this, 40);
         Opened += (_, _) => PasswordBox.Focus();
@@ -56,12 +64,13 @@ public partial class VaultUnlockPromptWindow : Window
         var keyFile = _keyFilePath;
         try
         {
-            var db = await Task.Run(() =>
+            var (db, key) = await Task.Run(() =>
             {
-                using var key = CompositeKey.FromPasswordAndKeyFile(pwd, keyFile);
-                return KdbxFormat.Load(_vaultPath, key);
+                var k = CompositeKey.FromPasswordAndKeyFile(pwd, keyFile);
+                var loaded = KdbxFormat.Load(_vaultPath, k);
+                return (loaded, k);
             });
-            Close(db);
+            Close(new VaultUnlockResult(db, key, keyFile));
         }
         catch (Exception ex)
         {

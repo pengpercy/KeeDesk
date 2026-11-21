@@ -21,11 +21,13 @@
         <NativeMenu>
             <NativeMenuItem Header="文件">
                 <NativeMenu>
-                    <NativeMenuItem Header="打开密码库..." Gesture="Cmd+O" Command="{Binding BrowseVaultFileCommand}" />
+                    <NativeMenuItem Header="打开其他密码库（新标签页）..." Gesture="Cmd+O" Command="{Binding OpenAnotherVaultCommand}" />
                     <NativeMenuItem Header="新建密码库..." Gesture="Shift+Cmd+N" Command="{Binding CreateNewVaultCommand}" />
                     <NativeMenuItem Header="保存密码库" Gesture="Cmd+S" Command="{Binding SaveVaultCommand}" />
+                    <NativeMenuItem Header="另存为..." Gesture="Shift+Cmd+S" Command="{Binding SaveVaultAsCommand}" />
                     <NativeMenuItemSeparator />
                     <NativeMenuItem Header="密码库设置与主密钥..." Command="{Binding OpenDatabaseSettingsAsyncCommandCommand}" />
+                    <NativeMenuItem Header="密码库维护工具..." Command="{Binding OpenDatabaseMaintenanceAsyncCommandCommand}" />
                     <NativeMenuItem Header="合并 / 同步其他密码库..." Command="{Binding MergeDatabaseCommand}" />
                     <NativeMenuItem Header="生成密钥文件 (.keyx)..." Command="{Binding GenerateKeyFileCommand}" />
                     <NativeMenuItemSeparator />
@@ -33,7 +35,8 @@
                     <NativeMenuItem Header="导出 CSV..." Command="{Binding ExportCsvCommand}" />
                     <NativeMenuItem Header="生成 HTML 应急表..." Command="{Binding ExportEmergencySheetCommand}" />
                     <NativeMenuItemSeparator />
-                    <NativeMenuItem Header="锁定密码库" Gesture="Cmd+L" Command="{Binding LockVaultCommand}" />
+                    <NativeMenuItem Header="关闭当前密码库标签页" Command="{Binding CloseVaultTabCommand}" />
+                    <NativeMenuItem Header="锁定全部密码库" Gesture="Cmd+L" Command="{Binding LockVaultCommand}" />
                 </NativeMenu>
             </NativeMenuItem>
             <NativeMenuItem Header="条目">
@@ -353,16 +356,50 @@
 
                         <ScrollViewer Grid.Row="1" Padding="12,8,12,8">
                             <StackPanel Spacing="{DynamicResource DensityItemSpacing}">
-                                <!-- 当前密码库胶囊（点击可打开密码库设置与主密钥；状态圆点固定 #29C742） -->
-                                <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="12,9" Margin="0,0,0,8"
-                                        Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8"
-                                        ToolTip.Tip="点击打开密码库设置与主密钥"
-                                        Command="{Binding OpenDatabaseSettingsAsyncCommandCommand}">
-                                    <Grid ColumnDefinitions="Auto, *">
-                                        <Ellipse Grid.Column="0" Width="10" Height="10" Fill="#29C742" Margin="0,0,8,0" VerticalAlignment="Center" />
-                                        <TextBlock Grid.Column="1" Text="{Binding VaultDisplayName}" FontWeight="SemiBold" FontSize="{DynamicResource DensityFontSizeBody}" TextTrimming="CharacterEllipsis" />
+                                <!-- 当前密码库胶囊 + 打开新密码库标签页（支持多密码库同时打开切换） -->
+                                <StackPanel Spacing="6" Margin="0,0,0,8">
+                                    <Grid ColumnDefinitions="*, 6, Auto">
+                                        <Button Grid.Column="0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="12,9"
+                                                Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8"
+                                                ToolTip.Tip="点击打开密码库设置与主密钥"
+                                                Command="{Binding OpenDatabaseSettingsAsyncCommandCommand}">
+                                            <Grid ColumnDefinitions="Auto, *">
+                                                <Ellipse Grid.Column="0" Width="10" Height="10" Fill="#29C742" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                                <TextBlock Grid.Column="1" Text="{Binding VaultDisplayName}" FontWeight="SemiBold" FontSize="{DynamicResource DensityFontSizeBody}" TextTrimming="CharacterEllipsis" />
+                                            </Grid>
+                                        </Button>
+                                        <Button Grid.Column="2" Classes="subtle" Width="32" Height="34" MinHeight="32" Padding="0"
+                                                ToolTip.Tip="打开其他密码库（多标签页）"
+                                                Command="{Binding OpenAnotherVaultCommand}">
+                                            <PathIcon Data="{StaticResource IconAdd}" Width="13" Height="13" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                        </Button>
                                     </Grid>
-                                </Button>
+
+                                    <!-- 多密码库标签页列表（仅在打开 2 个及以上密码库时展示） -->
+                                    <ItemsControl ItemsSource="{Binding OpenVaults}" IsVisible="{Binding HasMultipleVaults}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid ColumnDefinitions="*, Auto" Margin="0,2,0,0">
+                                                    <Button Grid.Column="0" Classes="navItem" Classes.active="{Binding IsActive}"
+                                                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Height="28" MinHeight="28" Padding="8,0"
+                                                            Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).SwitchVaultTabCommand}"
+                                                            CommandParameter="{Binding}">
+                                                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                            <Ellipse Width="6" Height="6" Fill="#29C742" VerticalAlignment="Center" IsVisible="{Binding IsActive}" />
+                                                            <TextBlock Text="{Binding DisplayName}" FontSize="12" TextTrimming="CharacterEllipsis" />
+                                                        </StackPanel>
+                                                    </Button>
+                                                    <Button Grid.Column="1" Classes="subtle" Width="24" Height="24" MinHeight="24" Padding="0"
+                                                            ToolTip.Tip="关闭并锁定此密码库"
+                                                            Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).CloseVaultTabCommand}"
+                                                            CommandParameter="{Binding}">
+                                                        <PathIcon Data="{StaticResource IconClose}" Width="9" Height="9" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                                    </Button>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
 
                                 <!-- 智能视图（带 Fluent 2 左侧 3px 品牌指示条） -->
                                 <TextBlock Text="智能视图" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource SecondaryTextBrush}" Margin="8,4,0,4" />
@@ -424,7 +461,10 @@
                                 <TreeView ItemsSource="{Binding RootGroups}" SelectedItem="{Binding SelectedGroup}" Background="Transparent" BorderThickness="0">
                                     <TreeView.ItemTemplate>
                                         <TreeDataTemplate ItemsSource="{Binding Children}">
-                                            <Grid ColumnDefinitions="18, *, Auto" Height="{DynamicResource DensityNavItemHeight}" Background="Transparent">
+                                            <Grid ColumnDefinitions="18, *, Auto" Height="{DynamicResource DensityNavItemHeight}" Background="Transparent"
+                                                  DragDrop.AllowDrop="True"
+                                                  DragDrop.DragOver="GroupItem_DragOver"
+                                                  DragDrop.Drop="GroupItem_Drop">
                                                 <Grid.ContextMenu>
                                                     <ContextMenu>
                                                         <MenuItem Header="新建子分组..."
@@ -506,7 +546,9 @@
                                         </MenuItem>
                                         <MenuItem Header="强密码生成器" Command="{Binding OpenPasswordGeneratorCommandCommand}" />
                                         <MenuItem Header="密码库设置与主密钥..." Command="{Binding OpenDatabaseSettingsAsyncCommandCommand}" />
+                                        <MenuItem Header="密码库维护工具..." Command="{Binding OpenDatabaseMaintenanceAsyncCommandCommand}" />
                                         <MenuItem Header="合并 / 同步其他密码库..." Command="{Binding MergeDatabaseCommand}" />
+                                        <MenuItem Header="另存为 .kdbx..." Command="{Binding SaveVaultAsCommand}" />
                                         <MenuItem Header="生成密钥文件 (.keyx)..." Command="{Binding GenerateKeyFileCommand}" />
                                         <Separator />
                                         <MenuItem Header="导入 CSV..." Command="{Binding ImportCsvCommand}" />
@@ -678,11 +720,13 @@
                                     </StackPanel>
                                 </Grid>
 
-                                <!-- 条目列表（对齐画板 02 / 03 / 12 选中高亮 + 完整右键快捷菜单） -->
+                                <!-- 条目列表（对齐画板 02 / 03 / 12 选中高亮 + 完整右键快捷菜单 + 拖拽到分组树） -->
                                 <ListBox Grid.Row="2" Classes="entryList" ItemsSource="{Binding FilteredEntries}" SelectedItem="{Binding SelectedEntry}" Background="Transparent" BorderThickness="0" Padding="10,2">
                                     <ListBox.ItemTemplate>
                                         <DataTemplate>
-                                            <Border Classes="entryCard" Height="{DynamicResource DensityRowHeight}">
+                                            <Border Classes="entryCard" Height="{DynamicResource DensityRowHeight}"
+                                                    PointerPressed="EntryCard_PointerPressed"
+                                                    PointerMoved="EntryCard_PointerMoved">
                                                 <Border.ContextMenu>
                                                     <ContextMenu>
                                                         <MenuItem Header="复制用户名"
@@ -706,6 +750,10 @@
                                                                   CommandParameter="{Binding}" />
                                                         <MenuItem Header="克隆条目"
                                                                   Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).DuplicateEntryCommand}"
+                                                                  CommandParameter="{Binding}" />
+                                                        <MenuItem Header="移动到分组..."
+                                                                  IsVisible="{Binding !$parent[Window].((vm:MainWindowViewModel)DataContext).IsRecycleBinSelected}"
+                                                                  Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).MoveEntryToGroupCommand}"
                                                                   CommandParameter="{Binding}" />
                                                         <MenuItem Header="收藏 / 取消收藏"
                                                                   Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ToggleFavoriteEntryCommand}"

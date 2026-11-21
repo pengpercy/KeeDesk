@@ -12,11 +12,21 @@ namespace KeePassModern.Views;
 
 public partial class MainWindow : Window
 {
+    private const string EntryDragFormatId = "keepassmodern/entry-uuid";
+    private static readonly DataFormat<string> EntryDragFormat = DataFormat.CreateStringApplicationFormat(EntryDragFormatId);
+    private Avalonia.Point? _entryDragStartPoint;
+    private PointerPressedEventArgs? _entryDragPressedEvent;
+    private EntryItemViewModel? _entryDragCandidate;
+
     public MainWindow()
     {
         InitializeComponent();
         Opened += (_, _) => WireViewModelCallbacks();
         KeyDown += OnWindowKeyDown;
+
+        // 监听用户交互以刷新空闲自动锁定计时器
+        AddHandler(PointerPressedEvent, OnUserActivity, RoutingStrategies.Tunnel);
+        AddHandler(KeyDownEvent, OnUserActivity, RoutingStrategies.Tunnel);
 
         // 注册全局文件拖拽打开（支持拖入 .kdbx 密码库或 .keyx 密钥文件）
         AddHandler(DragDrop.DragOverEvent, OnWindowDragOver);
@@ -28,6 +38,12 @@ public partial class MainWindow : Window
             if (DataContext is MainWindowViewModel vm)
                 vm.UpdateMacTitleBarInsets(right);
         });
+    }
+
+    private void OnUserActivity(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is MainWindowViewModel vm)
+            vm.RecordUserActivity();
     }
 
     private void WireViewModelCallbacks()
@@ -142,10 +158,23 @@ public partial class MainWindow : Window
             return res is null ? (false, null, null) : (res.Saved, res.NewMasterKey, res.NewKeyFilePath);
         };
 
-        vm.OpenVaultUnlockPromptAsync = async vaultPath =>
+        vm.OpenVaultUnlockPromptAsync = async (vaultPath, heading, confirmText) =>
         {
-            var dlg = new VaultUnlockPromptWindow(vaultPath);
-            return await dlg.ShowDialog<KeePassModern.Core.Kdbx.KdbxDatabase?>(this);
+            var dlg = new VaultUnlockPromptWindow(vaultPath, heading, confirmText);
+            var res = await dlg.ShowDialog<VaultUnlockResult?>(this);
+            return res is null ? null : (res.Database, res.MasterKey, res.KeyFilePath);
+        };
+
+        vm.OpenMoveToGroupAsync = async (db, entry) =>
+        {
+            var dlg = new MoveToGroupWindow(db, entry);
+            return await dlg.ShowDialog<KeePassModern.Core.Kdbx.KdbxGroup?>(this);
+        };
+
+        vm.OpenDatabaseMaintenanceAsync = async db =>
+        {
+            var dlg = new DatabaseMaintenanceWindow(db);
+            return await dlg.ShowDialog<bool>(this);
         };
 
         vm.OpenUrlExternal = url =>
@@ -274,5 +303,67 @@ public partial class MainWindow : Window
     {
         if (DataContext is MainWindowViewModel vm)
             vm.OpenEntryUrlCommand.Execute(vm.SelectedEntry);
+    }
+
+    // ==================== 条目拖拽到左侧分组树 ====================
+    private void EntryCard_PointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
+        if (sender is Control { DataContext: EntryItemViewModel item })
+        {
+            _entryDragStartPoint = e.GetPosition(this);
+            _entryDragPressedEvent = e;
+            _entryDragCandidate = item;
+        }
+    }
+
+    private async void EntryCard_PointerMoved(object? sender, PointerEventArgs e)
+    {
+        if (_entryDragStartPoint is null || _entryDragCandidate is null || _entryDragPressedEvent is null) return;
+        if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+        {
+            _entryDragStartPoint = null;
+            _entryDragPressedEvent = null;
+            _entryDragCandidate = null;
+            return;
+        }
+
+        var pos = e.GetPosition(this);
+        if (Math.Abs(pos.X - _entryDragStartPoint.Value.X) < 8 &&
+            Math.Abs(pos.Y - _entryDragStartPoint.Value.Y) < 8)
+            return;
+
+        var entry = _entryDragCandidate;
+        var pressedEvent = _entryDragPressedEvent;
+        _entryDragStartPoint = null;
+        _entryDragPressedEvent = null;
+        _entryDragCandidate = null;
+
+        var data = new DataTransfer();
+        data.Add(DataTransferItem.Create(EntryDragFormat, entry.Model.Uuid.ToString("D")));
+        await DragDrop.DoDragDropAsync(pressedEvent, data, DragDropEffects.Move);
+    }
+
+    private void GroupItem_DragOver(object? sender, DragEventArgs e)
+    {
+        if (e.DataTransfer.Contains(EntryDragFormat))
+        {
+            e.DragEffects = DragDropEffects.Move;
+            e.Handled = true;
+        }
+    }
+
+    private void GroupItem_Drop(object? sender, DragEventArgs e)
+    {
+        if (DataContext is not MainWindowViewModel vm) return;
+        if (sender is not Control { DataContext: GroupItemViewModel targetGroup }) return;
+        if (!e.DataTransfer.Contains(EntryDragFormat)) return;
+
+        var raw = e.DataTransfer.TryGetValue(EntryDragFormat);
+        if (Guid.TryParse(raw, out var entryUuid))
+        {
+            vm.MoveEntryByUuidToGroup(entryUuid, targetGroup);
+            e.Handled = true;
+        }
     }
 }

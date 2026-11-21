@@ -1,0 +1,37 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:chrome="clr-namespace:Avalonia.Controls.Chrome;assembly=Avalonia.Controls"
+        x:Class="KeePassModern.Views.MoveToGroupWindow"
+        Title="移动到分组"
+        Width="400" Height="440"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        ExtendClientAreaToDecorationsHint="True"
+        WindowDecorations="Full"
+        ExtendClientAreaTitleBarHeightHint="40"
+        Background="{DynamicResource WorkspaceBackgroundBrush}"
+        Foreground="{DynamicResource PrimaryTextBrush}">
+
+    <Grid RowDefinitions="Auto, *, 1, Auto">
+        <Border Grid.Row="0" Padding="24,36,24,10" Background="Transparent"
+                chrome:WindowDecorationProperties.ElementRole="TitleBar"
+                PointerPressed="TitleBar_PointerPressed">
+            <StackPanel Spacing="3">
+                <TextBlock Text="移动条目到分组" FontSize="18" FontWeight="SemiBold" />
+                <TextBlock x:Name="EntryTitleLabel" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+        </Border>
+
+        <ListBox Grid.Row="1" x:Name="GroupListBox" Margin="18,4,18,14"
+                 Background="{DynamicResource CardBackgroundBrush}"
+                 BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8"
+                 DoubleTapped="GroupListBox_DoubleTapped" />
+
+        <Border Grid.Row="2" Background="{DynamicResource DividerBrush}" />
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="24,12">
+            <Button Width="84" Height="34" Content="取消" Click="Cancel_Click" />
+            <Button Classes="accent" Height="34" Padding="16,0" Content="移动到此分组" Click="Confirm_Click" />
+        </StackPanel>
+    </Grid>
+</Window>

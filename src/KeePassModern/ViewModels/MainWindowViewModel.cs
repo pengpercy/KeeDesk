@@ -20,14 +20,43 @@ public enum ActiveSection
     Tag
 }
 
+/// <summary>
+/// 表示一个已解锁的密码库标签页会话，支持同时打开多个 .kdbx 自由切换。
+/// </summary>
+public sealed partial class VaultTabSession : ObservableObject
+{
+    public Guid Id { get; } = Guid.NewGuid();
+    public KdbxDatabase Database { get; }
+    public CompositeKey MasterKey { get; set; }
+
+    [ObservableProperty] private string _displayName;
+    [ObservableProperty] private bool _isActive;
+
+    public ActiveSection SavedSection { get; set; } = ActiveSection.AllEntries;
+    public Guid? SavedGroupUuid { get; set; }
+    public Guid? SavedEntryUuid { get; set; }
+
+    public VaultTabSession(KdbxDatabase database, CompositeKey masterKey, string displayName)
+    {
+        Database = database;
+        MasterKey = masterKey;
+        _displayName = displayName;
+    }
+}
+
 public sealed partial class MainWindowViewModel : ViewModelBase
 {
     public AppSettingsService SettingsService { get; }
     private KdbxDatabase? _database;
     private CompositeKey? _masterKey;
+    private VaultTabSession? _activeSession;
+    private DateTimeOffset _lastActivityUtc = DateTimeOffset.UtcNow;
     private readonly DispatcherTimer _tickTimer;
     private CancellationTokenSource? _clipboardClearCts;
     private string? _lastCopiedSecret;
+
+    public ObservableCollection<VaultTabSession> OpenVaults { get; } = new();
+    public bool HasMultipleVaults => OpenVaults.Count > 1;
 
     public bool IsMacOS { get; } = OperatingSystem.IsMacOS();
     public bool IsWindowsOrLinux => !IsMacOS;
@@ -119,7 +148,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public Func<string, string, Task<string?>>? PickSaveFileAsync { get; set; }
     public Func<string, string, string, Task<(string Name, string Notes)?>>? OpenGroupDialogAsync { get; set; }
     public Func<KdbxDatabase, Task<(bool Saved, CompositeKey? NewKey, string? NewKeyFile)>>? OpenDatabaseSettingsAsync { get; set; }
-    public Func<string, Task<KdbxDatabase?>>? OpenVaultUnlockPromptAsync { get; set; }
+    public Func<string, string, string, Task<(KdbxDatabase Database, CompositeKey MasterKey, string KeyFilePath)?>>? OpenVaultUnlockPromptAsync { get; set; }
+    public Func<KdbxDatabase, KdbxEntry, Task<KdbxGroup?>>? OpenMoveToGroupAsync { get; set; }
+    public Func<KdbxDatabase, Task<bool>>? OpenDatabaseMaintenanceAsync { get; set; }
     public Action<string>? OpenUrlExternal { get; set; }
 
     public bool HasRecycleBinItems => RecycleBinCount > 0;
@@ -148,9 +179,21 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         MacTrafficLightsPadding = Math.Max(68, trafficLightsRight + 12);
     }
 
+    public void RecordUserActivity() => _lastActivityUtc = DateTimeOffset.UtcNow;
+
     private void OnSecondTick()
     {
         if (!IsUnlocked) return;
+
+        // 空闲超时自动锁定（对标原版 KeePass WorkspaceLocking）
+        int idleMins = SettingsService.Settings.AutoLockIdleMinutes;
+        if (idleMins > 0 && (DateTimeOffset.UtcNow - _lastActivityUtc).TotalMinutes >= idleMins)
+        {
+            LockVault();
+            ShowToast($"已连续 {idleMins} 分钟无操作，密码库已自动锁定");
+            return;
+        }
+
         foreach (var item in FilteredEntries)
         {
             if (item.HasTotp) item.RefreshTotp();
@@ -482,27 +525,177 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     private void ActivateDatabase(KdbxDatabase db, CompositeKey key)
     {
-        _database?.Dispose();
-        _masterKey?.Dispose();
-        _database = db;
-        _masterKey = key;
-        VaultDisplayName = string.IsNullOrWhiteSpace(db.FilePath) ? db.Meta.DatabaseName : Path.GetFileName(db.FilePath);
+        // 如果已打开相同路径的密码库，直接切换过去，避免重复打开
+        if (!string.IsNullOrWhiteSpace(db.FilePath))
+        {
+            var existing = OpenVaults.FirstOrDefault(s =>
+                string.Equals(s.Database.FilePath, db.FilePath, StringComparison.OrdinalIgnoreCase));
+            if (existing is not null)
+            {
+                db.Dispose();
+                key.Dispose();
+                SwitchVaultTab(existing);
+                return;
+            }
+        }
+
+        var display = string.IsNullOrWhiteSpace(db.FilePath) ? db.Meta.DatabaseName : Path.GetFileName(db.FilePath);
+        var session = new VaultTabSession(db, key, display);
+        OpenVaults.Add(session);
+        OnPropertyChanged(nameof(HasMultipleVaults));
+        SwitchVaultTab(session);
+    }
+
+    [RelayCommand]
+    private void SwitchVaultTab(VaultTabSession? session)
+    {
+        if (session is null || session == _activeSession) return;
+
+        // 保存当前标签页的视图状态
+        if (_activeSession is not null)
+        {
+            _activeSession.SavedSection = ActiveSection;
+            _activeSession.SavedGroupUuid = SelectedGroup?.Model.Uuid;
+            _activeSession.SavedEntryUuid = SelectedEntry?.Model.Uuid;
+            _activeSession.IsActive = false;
+        }
+
+        _activeSession = session;
+        session.IsActive = true;
+        _database = session.Database;
+        _masterKey = session.MasterKey;
+        VaultDisplayName = session.DisplayName;
         IsUnlocked = true;
-        ActiveSection = ActiveSection.AllEntries;
-        IsAuditViewActive = false;
+        RecordUserActivity();
+
+        ActiveSection = session.SavedSection;
+        IsAuditViewActive = ActiveSection == ActiveSection.SecurityAudit;
         RebuildWorkspace();
+
+        if (session.SavedGroupUuid.HasValue)
+            SelectedGroup = FindGroupVm(RootGroups, session.SavedGroupUuid.Value);
+        if (session.SavedEntryUuid.HasValue)
+            SelectedEntry = FilteredEntries.FirstOrDefault(e => e.Model.Uuid == session.SavedEntryUuid.Value) ?? SelectedEntry;
+    }
+
+    private static GroupItemViewModel? FindGroupVm(IEnumerable<GroupItemViewModel> list, Guid uuid)
+    {
+        foreach (var g in list)
+        {
+            if (g.Model.Uuid == uuid) return g;
+            var child = FindGroupVm(g.Children, uuid);
+            if (child is not null) return child;
+        }
+        return null;
+    }
+
+    [RelayCommand]
+    private void CloseVaultTab(VaultTabSession? session)
+    {
+        var target = session ?? _activeSession;
+        if (target is null) return;
+
+        if (target.Database.IsModified && !string.IsNullOrEmpty(target.Database.FilePath))
+        {
+            try { KdbxFormat.Save(target.Database, target.Database.FilePath, target.MasterKey); } catch { }
+        }
+
+        var closedName = target.DisplayName;
+        target.Database.Dispose();
+        target.MasterKey.Dispose();
+        OpenVaults.Remove(target);
+        OnPropertyChanged(nameof(HasMultipleVaults));
+
+        if (OpenVaults.Count > 0)
+        {
+            if (target == _activeSession)
+            {
+                _activeSession = null;
+                SwitchVaultTab(OpenVaults[^1]);
+            }
+            ShowToast($"已关闭并锁定密码库：{closedName}");
+        }
+        else
+        {
+            _activeSession = null;
+            _database = null;
+            _masterKey = null;
+            FilteredEntries.Clear();
+            RootGroups.Clear();
+            AllTags.Clear();
+            SelectedEntry = null;
+            IsUnlocked = false;
+            IsModified = false;
+            ShowToast($"已关闭并锁定密码库：{closedName}");
+        }
+    }
+
+    [RelayCommand]
+    private async Task OpenAnotherVaultAsync()
+    {
+        if (PickOpenFileAsync is null || OpenVaultUnlockPromptAsync is null) return;
+        var path = await PickOpenFileAsync("kdbx");
+        if (string.IsNullOrWhiteSpace(path)) return;
+
+        var existing = OpenVaults.FirstOrDefault(s =>
+            string.Equals(s.Database.FilePath, path, StringComparison.OrdinalIgnoreCase));
+        if (existing is not null)
+        {
+            SwitchVaultTab(existing);
+            ShowToast($"已切换到已打开的密码库：{existing.DisplayName}");
+            return;
+        }
+
+        var res = await OpenVaultUnlockPromptAsync(path, "打开其他密码库", "解锁并打开");
+        if (res is null) return;
+
+        ActivateDatabase(res.Value.Database, res.Value.MasterKey);
+        SettingsService.AddRecentVault(path, string.IsNullOrWhiteSpace(res.Value.KeyFilePath) ? null : res.Value.KeyFilePath, res.Value.Database.Meta.DatabaseName);
+        RefreshRecentVaults();
+        ShowToast($"已在新标签页打开：{Path.GetFileName(path)}");
+    }
+
+    [RelayCommand]
+    private async Task SaveVaultAsAsync()
+    {
+        if (_database is null || _masterKey is null || PickSaveFileAsync is null) return;
+        var suggested = string.IsNullOrWhiteSpace(_database.FilePath)
+            ? $"{_database.Meta.DatabaseName}.kdbx"
+            : Path.GetFileName(_database.FilePath);
+        var path = await PickSaveFileAsync(suggested, "kdbx");
+        if (string.IsNullOrWhiteSpace(path)) return;
+
+        try
+        {
+            KdbxFormat.Save(_database, path, _masterKey);
+            IsModified = false;
+            VaultDisplayName = Path.GetFileName(path);
+            if (_activeSession is not null) _activeSession.DisplayName = VaultDisplayName;
+            SettingsService.AddRecentVault(path, null, _database.Meta.DatabaseName);
+            RefreshRecentVaults();
+            ShowToast($"已另存为：{Path.GetFileName(path)}");
+        }
+        catch (Exception ex)
+        {
+            ShowToast($"另存为失败：{ex.Message}");
+        }
     }
 
     [RelayCommand]
     private void LockVault()
     {
-        if (_database is not null && _database.IsModified && !string.IsNullOrEmpty(_database.FilePath) && _masterKey is not null)
+        foreach (var session in OpenVaults.ToList())
         {
-            try { KdbxFormat.Save(_database, _database.FilePath, _masterKey); } catch { }
+            if (session.Database.IsModified && !string.IsNullOrEmpty(session.Database.FilePath))
+            {
+                try { KdbxFormat.Save(session.Database, session.Database.FilePath, session.MasterKey); } catch { }
+            }
+            session.Database.Dispose();
+            session.MasterKey.Dispose();
         }
-
-        _database?.Dispose();
-        _masterKey?.Dispose();
+        OpenVaults.Clear();
+        OnPropertyChanged(nameof(HasMultipleVaults));
+        _activeSession = null;
         _database = null;
         _masterKey = null;
         FilteredEntries.Clear();
@@ -511,7 +704,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         SelectedEntry = null;
         IsUnlocked = false;
         IsModified = false;
-        ShowToast("密码库已锁定，内存敏感数据已清零");
+        ShowToast("全部密码库已锁定，内存敏感数据已清零");
     }
 
     [RelayCommand]
@@ -1001,6 +1194,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         {
             _masterKey?.Dispose();
             _masterKey = newKey;
+            if (_activeSession is not null) _activeSession.MasterKey = newKey;
             if (!string.IsNullOrWhiteSpace(_database.FilePath))
                 SettingsService.AddRecentVault(_database.FilePath, newKeyFile, _database.Meta.DatabaseName);
         }
@@ -1008,6 +1202,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         VaultDisplayName = string.IsNullOrWhiteSpace(_database.FilePath)
             ? _database.Meta.DatabaseName
             : Path.GetFileName(_database.FilePath);
+        if (_activeSession is not null) _activeSession.DisplayName = VaultDisplayName;
         SaveVault();
         RebuildWorkspace();
         ShowToast(newKey is not null ? "密码库设置与主密钥已更新并重新加密保存" : "密码库设置已更新并保存");
@@ -1020,13 +1215,59 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         var path = await PickOpenFileAsync("kdbx");
         if (string.IsNullOrWhiteSpace(path)) return;
 
-        using var sourceDb = await OpenVaultUnlockPromptAsync(path);
-        if (sourceDb is null) return;
+        var res = await OpenVaultUnlockPromptAsync(path, "合并 / 同步其他密码库", "解密并合并");
+        if (res is null) return;
 
+        using var sourceDb = res.Value.Database;
+        using var sourceKey = res.Value.MasterKey;
         var summary = DatabaseMergeService.Merge(_database, sourceDb);
         SaveVault();
         RebuildWorkspace();
         ShowToast($"合并完成：新增 {summary.EntriesAdded} 条目、更新 {summary.EntriesUpdated} 条目、新增 {summary.GroupsAdded} 分组");
+    }
+
+    [RelayCommand]
+    private async Task MoveEntryToGroupAsync(EntryItemViewModel? item)
+    {
+        var target = item ?? SelectedEntry;
+        if (_database is null || target is null || OpenMoveToGroupAsync is null) return;
+        var dest = await OpenMoveToGroupAsync(_database, target.Model);
+        if (dest is null) return;
+
+        if (DatabaseMaintenanceService.MoveEntryToGroup(_database, target.Model, dest))
+        {
+            SaveVault();
+            RebuildWorkspace();
+            ShowToast($"已将「{target.Title}」移动到分组「{dest.Name}」");
+        }
+    }
+
+    /// <summary>
+    /// 供拖拽条目到左侧分组树时直接调用。
+    /// </summary>
+    public void MoveEntryByUuidToGroup(Guid entryUuid, GroupItemViewModel targetGroup)
+    {
+        if (_database is null) return;
+        var entry = _database.FindEntryByUuid(entryUuid);
+        if (entry is null) return;
+        if (DatabaseMaintenanceService.MoveEntryToGroup(_database, entry, targetGroup.Model))
+        {
+            SaveVault();
+            RebuildWorkspace();
+            ShowToast($"已将「{entry.Title}」移动到分组「{targetGroup.Name}」");
+        }
+    }
+
+    [RelayCommand]
+    private async Task OpenDatabaseMaintenanceAsyncCommand()
+    {
+        if (_database is null || OpenDatabaseMaintenanceAsync is null) return;
+        if (await OpenDatabaseMaintenanceAsync(_database))
+        {
+            SaveVault();
+            RebuildWorkspace();
+            ShowToast("密码库维护完成并已保存");
+        }
     }
 
     private static void FlashCopiedFlag(Action<bool> setter)

@@ -17,7 +17,7 @@
                 chrome:WindowDecorationProperties.ElementRole="TitleBar"
                 PointerPressed="TitleBar_PointerPressed">
             <StackPanel Spacing="4">
-                <TextBlock Text="合并 / 同步其他密码库" FontSize="18" FontWeight="SemiBold" />
+                <TextBlock x:Name="DialogHeading" Text="合并 / 同步其他密码库" FontSize="18" FontWeight="SemiBold" />
                 <TextBlock x:Name="FilePathLabel" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" TextTrimming="CharacterEllipsis" />
             </StackPanel>
         </Border>

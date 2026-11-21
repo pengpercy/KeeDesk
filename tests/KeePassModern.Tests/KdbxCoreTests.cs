@@ -143,4 +143,34 @@ public class KdbxCoreTests
         int count = ImportExportService.ImportFromCsv(db3, csv);
         Assert.Equal(3, count);
     }
+
+    [Fact]
+    public void Maintenance_Duplicate_And_MoveEntry_Works()
+    {
+        using var db = KdbxDatabase.CreateDefault("MaintTest");
+        var g1 = db.RootGroup.Groups[0];
+        var g2 = db.RootGroup.Groups[1];
+
+        var e1 = new KdbxEntry { Title = "Dup", UserName = "u", Password = "p", LastModificationTime = DateTimeOffset.UtcNow.AddMinutes(1) };
+        e1.CreateHistorySnapshot();
+        var e2 = new KdbxEntry { Title = "Dup", UserName = "u", Password = "p", LastModificationTime = DateTimeOffset.UtcNow };
+        g1.AddEntry(e1);
+        g1.AddEntry(e2);
+
+        var cloned = db.DuplicateEntry(e1);
+        Assert.NotEqual(e1.Uuid, cloned.Uuid);
+        Assert.EndsWith("副本", cloned.Title);
+
+        Assert.True(DatabaseMaintenanceService.MoveEntryToGroup(db, cloned, g2));
+        Assert.Equal(g2, cloned.Parent);
+
+        int dupRemoved = DatabaseMaintenanceService.DeleteDuplicateEntries(db);
+        Assert.Equal(1, dupRemoved);
+
+        int histRemoved = DatabaseMaintenanceService.PurgeHistoryOlderThan(db, 0);
+        Assert.True(histRemoved >= 1);
+
+        int emptyRemoved = DatabaseMaintenanceService.DeleteEmptyGroups(db);
+        Assert.True(emptyRemoved >= 1);
+    }
 }
