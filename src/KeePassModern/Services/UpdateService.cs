@@ -121,29 +121,43 @@ public sealed class ReleaseAsset
 public partial class GitHubUpdateJsonContext : JsonSerializerContext;
 
 /// <summary>
-/// 按当前操作系统与 CPU 架构（x64 / arm64）自动匹配最合适的 GitHub Release 安装包。
+/// 按当前操作系统与 CPU 架构（x64 / arm64 / win7-x64）自动匹配最合适的 GitHub Release 安装包（与 Downio 命名规范完全一致）。
 /// </summary>
 public static class UpdateAssetSelector
 {
     public static ReleaseAsset? SelectPreferredAsset(ReleaseInfo release)
     {
+        var version = release.TagName.TrimStart('v', 'V');
         var arch = RuntimeInformation.ProcessArchitecture;
 
         if (OperatingSystem.IsWindows())
         {
-            var rid = arch == Architecture.Arm64 ? "win-arm64" : "win-x64";
-            return release.Assets.FirstOrDefault(a => a.Name.Contains(rid, StringComparison.OrdinalIgnoreCase) && a.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase));
+            var runtime = arch == Architecture.Arm64 ? "win-arm64"
+                : OperatingSystem.IsWindowsVersionAtLeast(10) ? "win-x64"
+                : "win7-x64";
+            var exact = $"KeePassModern_{version}.{runtime}.zip";
+            return release.Assets.FirstOrDefault(a => a.Name.Equals(exact, StringComparison.OrdinalIgnoreCase))
+                   ?? release.Assets.FirstOrDefault(a => a.Name.EndsWith($".{runtime}.zip", StringComparison.OrdinalIgnoreCase))
+                   ?? release.Assets.FirstOrDefault(a => a.Name.Contains(runtime, StringComparison.OrdinalIgnoreCase) && a.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase));
         }
 
         if (OperatingSystem.IsMacOS())
         {
-            var rid = arch == Architecture.Arm64 ? "osx-arm64" : "osx-x64";
-            return release.Assets.FirstOrDefault(a => a.Name.Contains(rid, StringComparison.OrdinalIgnoreCase) && a.Name.EndsWith(".dmg", StringComparison.OrdinalIgnoreCase))
-                   ?? release.Assets.FirstOrDefault(a => a.Name.Contains(rid, StringComparison.OrdinalIgnoreCase) && a.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase));
+            var runtime = arch == Architecture.Arm64 ? "osx-arm64" : "osx-x64";
+            var zipExact = $"KeePassModern_{version}.{runtime}.zip";
+            var dmgExact = $"KeePassModern_{version}.{runtime}.dmg";
+
+            // 优先匹配 ditto 打包的 .zip（可直接在进程内解压更新，无需挂载 hdiutil）
+            return release.Assets.FirstOrDefault(a => a.Name.Equals(zipExact, StringComparison.OrdinalIgnoreCase))
+                   ?? release.Assets.FirstOrDefault(a => a.Name.Equals(dmgExact, StringComparison.OrdinalIgnoreCase))
+                   ?? release.Assets.FirstOrDefault(a => a.Name.EndsWith($".{runtime}.zip", StringComparison.OrdinalIgnoreCase))
+                   ?? release.Assets.FirstOrDefault(a => a.Name.EndsWith($".{runtime}.dmg", StringComparison.OrdinalIgnoreCase));
         }
 
-        var linuxArch = arch == Architecture.Arm64 ? "aarch64" : "x86_64";
-        return release.Assets.FirstOrDefault(a => a.Name.Contains(linuxArch, StringComparison.OrdinalIgnoreCase) && a.Name.EndsWith(".AppImage", StringComparison.OrdinalIgnoreCase))
+        var linuxRuntime = arch == Architecture.Arm64 ? "aarch64" : "x86_64";
+        var appImageExact = $"KeePassModern-{version}.linux.{linuxRuntime}.AppImage";
+        return release.Assets.FirstOrDefault(a => a.Name.Equals(appImageExact, StringComparison.OrdinalIgnoreCase))
+               ?? release.Assets.FirstOrDefault(a => a.Name.EndsWith($".linux.{linuxRuntime}.AppImage", StringComparison.OrdinalIgnoreCase))
                ?? release.Assets.FirstOrDefault(a => a.Name.EndsWith(".AppImage", StringComparison.OrdinalIgnoreCase));
     }
 }

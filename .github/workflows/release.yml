@@ -1,112 +1,80 @@
-name: Release Build (NativeAOT)
+name: Release
 
 on:
-  workflow_dispatch:
   push:
     tags:
       - 'v*'
 
-permissions:
-  contents: write
-
 jobs:
-  publish:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: windows-2022
-            rids: win-x64
-            platform: win
-          # 单台 Apple Silicon runner 同时编译 osx-arm64 与 osx-x64，避免申请两台 macOS runner 排队与 10x 计费浪费
-          - os: macos-15
-            rids: osx-arm64 osx-x64
-            platform: macos
-          - os: ubuntu-24.04
-            rids: linux-x64
-            platform: linux
-          - os: ubuntu-24.04-arm
-            rids: linux-arm64
-            platform: linux
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v7
+  build:
+    name: Build
+    uses: ./.github/workflows/build.yml
 
-      - uses: actions/setup-dotnet@v6
-        with:
-          dotnet-version: '10.0.x'
-
-      - name: Install Linux NativeAOT prerequisites
-        if: matrix.platform == 'linux'
-        run: sudo apt-get update && sudo apt-get install -y clang zlib1g-dev
-
-      - name: Read Version
-        id: ver
-        shell: bash
-        run: echo "version=$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_OUTPUT"
-
-      - name: Publish & Package macOS (osx-arm64 + osx-x64 on single runner)
-        if: matrix.platform == 'macos'
-        run: |
-          chmod +x build/scripts/package-macos.sh
-          for rid in ${{ matrix.rids }}; do
-            dotnet publish src/KeePassModern/KeePassModern.csproj -c Release -r "$rid" --self-contained true -o "publish/$rid"
-            bash build/scripts/package-macos.sh "publish/$rid" "dist" "$rid" "${{ steps.ver.outputs.version }}"
-          done
-
-      - name: Publish & Package Windows ZIP
-        if: matrix.platform == 'win'
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force -Path dist | Out-Null
-          foreach ($rid in "${{ matrix.rids }}".Split(' ')) {
-            dotnet publish src/KeePassModern/KeePassModern.csproj -c Release -r $rid --self-contained true -o "publish/$rid"
-            Compress-Archive -Path "publish/$rid/*" -DestinationPath "dist/KeePassModern-${{ steps.ver.outputs.version }}-$rid.zip" -Force
-          }
-
-      - name: Publish & Package Linux tar.gz
-        if: matrix.platform == 'linux'
-        run: |
-          mkdir -p dist
-          for rid in ${{ matrix.rids }}; do
-            dotnet publish src/KeePassModern/KeePassModern.csproj -c Release -r "$rid" --self-contained true -o "publish/$rid"
-            tar -czf "dist/KeePassModern-${{ steps.ver.outputs.version }}-$rid.tar.gz" -C "publish/$rid" .
-          done
-
-      - uses: actions/upload-artifact@v7
-        with:
-          name: release-${{ matrix.platform }}-${{ matrix.os }}
-          path: |
-            dist/*.dmg
-            dist/*.zip
-            dist/*.tar.gz
-
-  create-release:
-    needs: publish
-    if: startsWith(github.ref, 'refs/tags/v')
+  version:
+    name: Prepare Version
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/download-artifact@v8
-        with:
-          path: artifacts
-          pattern: release-*
-          merge-multiple: true
+      - name: Output version string
+        id: version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
 
-      - name: Create or Update GitHub Release
+  package:
+    needs: [build, version]
+    name: Package
+    uses: ./.github/workflows/package.yml
+    with:
+      version: ${{ needs.version.outputs.version }}
+    secrets: inherit
+
+  release:
+    needs: [package, version]
+    name: Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v7
+      - name: Extract release notes
+        id: release_notes
+        env:
+          TAG: ${{ github.ref_name }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          NOTES_FILE="$RUNNER_TEMP/release-notes.md"
+          awk -v version="$VERSION" '
+            $0 ~ "^## " version "([[:space:]-]|$)" { found = 1; next }
+            found && /^## / { exit }
+            found { print }
+          ' CHANGELOG.md | sed '/./,$!d' > "$NOTES_FILE"
+
+          if [ ! -s "$NOTES_FILE" ]; then
+            echo "No CHANGELOG.md entry found for $VERSION; falling back to tag message."
+            git fetch --tags --force
+            git tag -l --format='%(contents)' "$TAG" > "$NOTES_FILE"
+          fi
+
+          echo "file=$NOTES_FILE" >> "$GITHUB_OUTPUT"
+      - name: Create release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+          VERSION: ${{ needs.version.outputs.version }}
+          RELEASE_NOTES_FILE: ${{ steps.release_notes.outputs.file }}
         run: |
-          TAG="${GITHUB_REF_NAME}"
-          FILES=()
-          while IFS= read -r -d '' f; do
-            FILES+=("$f")
-          done < <(find artifacts -type f -print0)
-
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" "${FILES[@]}" --clobber
-          else
-            gh release create "$TAG" "${FILES[@]}" \
-              --title "KeePassModern $TAG" \
-              --generate-notes
-          fi
+          gh release create "$TAG" -t "$VERSION" -F "$RELEASE_NOTES_FILE" || gh release edit "$TAG" -t "$VERSION" -F "$RELEASE_NOTES_FILE"
+      - name: Download artifacts
+        uses: actions/download-artifact@v8
+        with:
+          pattern: package.*
+          path: packages
+          merge-multiple: true
+      - name: Upload assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: gh release upload "$TAG" packages/* --clobber

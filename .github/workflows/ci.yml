@@ -1,25 +1,50 @@
-name: CI
+name: Continuous Integration
 
 on:
   push:
     branches: [ main, master ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'screenshots/**'
   pull_request:
     branches: [ main, master ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'screenshots/**'
+  workflow_dispatch:
+  workflow_call:
+
+# 新提交自动取消同分支正在运行的旧 CI
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  test-and-build:
-    strategy:
-      matrix:
-        os: [ ubuntu-latest, windows-latest, macos-latest ]
-    runs-on: ${{ matrix.os }}
+  build:
+    # "release: vX" 提交会连同 tag 一起推送，由 Release 工作流执行完整构建与打包，此处跳过以避免重复占用 macOS runner
+    if: github.event_name != 'push' || !startsWith(github.event.head_commit.message, 'release:')
+    name: Build
+    uses: ./.github/workflows/build.yml
+
+  version:
+    if: github.event_name != 'push' || !startsWith(github.event.head_commit.message, 'release:')
+    name: Prepare version string
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-dotnet@v6
-        with:
-          dotnet-version: '10.0.x'
-      - name: Restore
-        run: dotnet restore KeePassModern.sln
-      - name: Build
-        run: dotnet build KeePassModern.sln -c Debug --no-restore
-      - name: Test
-        run: dotnet test tests/KeePassModern.Tests/KeePassModern.Tests.csproj -c Debug --no-build
+      - name: Checkout sources
+        uses: actions/checkout@v7
+      - name: Output version string
+        id: version
+        run: echo "version=$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_OUTPUT"
+
+  package:
+    needs: [build, version]
+    name: Package
+    uses: ./.github/workflows/package.yml
+    with:
+      version: ${{ needs.version.outputs.version }}
+    secrets: inherit

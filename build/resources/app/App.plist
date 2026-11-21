@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleIconFile</key>
+	<string>App</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.pengpercy.keepassmodern</string>
+	<key>CFBundleName</key>
+	<string>KeePassModern</string>
+	<key>CFBundleDisplayName</key>
+	<string>KeePassModern</string>
+	<key>CFBundleVersion</key>
+	<string>KeePassModern_VERSION</string>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+		<string>zh-Hans</string>
+	</array>
+	<key>LSMinimumSystemVersion</key>
+	<string>12.0</string>
+	<key>CFBundleExecutable</key>
+	<string>KeePassModern</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>KeePassModern_VERSION</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>NSAccessibilityUsageDescription</key>
+	<string>KeePassModern 需要辅助功能权限以执行跨窗口自动输入（Auto-Type）。</string>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>kdbx</string>
+			</array>
+			<key>CFBundleTypeName</key>
+			<string>KeePass Password Database</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+		</dict>
+	</array>
+</dict>
+</plist>

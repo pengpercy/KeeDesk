@@ -26,6 +26,15 @@
         <DefineConstants>$(DefineConstants);WINDOWS</DefineConstants>
     </PropertyGroup>
 
+    <!-- Win7 兼容包 (-p:Win7Compat=true, 仅限 win-x64)：参考 Downio 使用 YY-Thunks 补齐 Windows 8+ API，VC-LTL 链接 msvcrt.dll -->
+    <PropertyGroup Condition="'$(Win7Compat)' == 'true' and '$(RuntimeIdentifier)' == 'win-x64'">
+        <SupportedOSPlatformVersion>7.0</SupportedOSPlatformVersion>
+    </PropertyGroup>
+    <ItemGroup Condition="'$(Win7Compat)' == 'true' and '$(RuntimeIdentifier)' == 'win-x64'">
+        <PackageReference Include="YY-Thunks" Version="1.2.3" PrivateAssets="all" />
+        <PackageReference Include="VC-LTL" Version="5.3.1" PrivateAssets="all" />
+    </ItemGroup>
+
     <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('OSX'))">
         <DefineConstants>$(DefineConstants);MACOS</DefineConstants>
     </PropertyGroup>
@@ -71,17 +80,18 @@
 
     <ItemGroup>
         <AvaloniaResource Include="Assets\**" Exclude="Assets\**\*.axaml" />
-        <Content Include="Assets\Branding\app_icon.png">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-        </Content>
         <!-- macOS 本地化资源目录（在 Solution 中专门归类到 Platform/macOS/ 下方便维护，并与打包脚本共用单一事实源） -->
-        <None Include="..\..\build\macos\Resources\zh-Hans.lproj\**"
-              Link="Platform\macOS\zh-Hans.lproj\%(RecursiveDir)%(Filename)%(Extension)"
-              CopyToOutputDirectory="PreserveNewest" />
-        <None Include="..\..\build\macos\Resources\en.lproj\**"
-              Link="Platform\macOS\en.lproj\%(RecursiveDir)%(Filename)%(Extension)"
-              CopyToOutputDirectory="PreserveNewest" />
+        <Content Include="..\..\build\resources\app\*.lproj\**" Condition="$([MSBuild]::IsOSPlatform('OSX'))">
+            <Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+        </Content>
+        <None Include="..\..\build\resources\app\zh-Hans.lproj\**"
+              Link="Platform\macOS\zh-Hans.lproj\%(RecursiveDir)%(Filename)%(Extension)" />
+        <None Include="..\..\build\resources\app\en.lproj\**"
+              Link="Platform\macOS\en.lproj\%(RecursiveDir)%(Filename)%(Extension)" />
+        <None Include="..\..\build\resources\app\App.plist"
+              Link="Platform\macOS\App.plist" />
     </ItemGroup>
 
     <ItemGroup>
