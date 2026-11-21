@@ -14,6 +14,7 @@ public sealed class CompositeKey : IDisposable
 
     public bool HasPassword { get; private set; }
     public bool HasKeyFile { get; private set; }
+    public bool HasWindowsUserAccount { get; private set; }
 
     public static CompositeKey FromPassword(string password)
     {
@@ -22,16 +23,24 @@ public sealed class CompositeKey : IDisposable
         return key;
     }
 
-    public static CompositeKey FromPasswordAndKeyFile(string? password, string? keyFilePath)
+    public static CompositeKey FromPasswordAndKeyFile(string? password, string? keyFilePath, bool useWindowsUserAccount = false)
     {
         var key = new CompositeKey();
         if (!string.IsNullOrEmpty(password))
             key.AddPassword(password);
         if (!string.IsNullOrWhiteSpace(keyFilePath))
             key.AddKeyFile(keyFilePath);
+        if (useWindowsUserAccount)
+            key.AddWindowsUserAccountKey();
         if (key._keyParts.Count == 0)
             key.AddPassword(string.Empty);
         return key;
+    }
+
+    public void AddWindowsUserAccountKey()
+    {
+        _keyParts.Add(WindowsUserAccountKey.GetOrCreateKeyHash());
+        HasWindowsUserAccount = true;
     }
 
     public void AddPassword(string password)

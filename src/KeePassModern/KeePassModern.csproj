@@ -75,6 +75,13 @@
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
         </Content>
+        <!-- macOS 本地化资源目录（在 Solution 中专门归类到 Platform/macOS/ 下方便维护，并与打包脚本共用单一事实源） -->
+        <None Include="..\..\build\macos\Resources\zh-Hans.lproj\**"
+              Link="Platform\macOS\zh-Hans.lproj\%(RecursiveDir)%(Filename)%(Extension)"
+              CopyToOutputDirectory="PreserveNewest" />
+        <None Include="..\..\build\macos\Resources\en.lproj\**"
+              Link="Platform\macOS\en.lproj\%(RecursiveDir)%(Filename)%(Extension)"
+              CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 
     <ItemGroup>

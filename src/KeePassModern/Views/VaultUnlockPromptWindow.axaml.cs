@@ -32,6 +32,7 @@ public partial class VaultUnlockPromptWindow : Window
         DialogHeading.Text = heading;
         MergeBtn.Content = confirmButtonText;
         FilePathLabel.Text = Path.GetFileName(vaultPath);
+        UseWindowsUserAccountCheck.IsVisible = OperatingSystem.IsWindows();
         MacTitleBarInsets.AttachTrafficLightsCentering(this, 40);
         Opened += (_, _) => PasswordBox.Focus();
     }
@@ -62,11 +63,12 @@ public partial class VaultUnlockPromptWindow : Window
 
         var pwd = PasswordBox.Text ?? string.Empty;
         var keyFile = _keyFilePath;
+        var useWua = OperatingSystem.IsWindows() && UseWindowsUserAccountCheck.IsChecked == true;
         try
         {
             var (db, key) = await Task.Run(() =>
             {
-                var k = CompositeKey.FromPasswordAndKeyFile(pwd, keyFile);
+                var k = CompositeKey.FromPasswordAndKeyFile(pwd, keyFile, useWua);
                 var loaded = KdbxFormat.Load(_vaultPath, k);
                 return (loaded, k);
             });

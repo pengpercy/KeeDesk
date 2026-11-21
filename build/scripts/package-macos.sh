@@ -38,20 +38,9 @@ if [[ -f "${ICON_PNG}" ]] && command -v sips >/dev/null 2>&1 && command -v iconu
     rm -rf "$(dirname "${ICONSET_DIR}")"
 fi
 
-# 3. 写入 zh-Hans.lproj 与 en.lproj 本地化资源（让 macOS 原生菜单/文件选择器正确显示简体中文）
-cat > "${RESOURCES_DIR}/zh-Hans.lproj/InfoPlist.strings" <<'EOF'
-"CFBundleDisplayName" = "KeePassModern";
-"CFBundleName" = "KeePassModern";
-"NSHumanReadableCopyright" = "Copyright © 2026 KeePassModern. All rights reserved.";
-"NSAccessibilityUsageDescription" = "KeePassModern 需要辅助功能权限以执行跨窗口自动输入（Auto-Type）。";
-EOF
-
-cat > "${RESOURCES_DIR}/en.lproj/InfoPlist.strings" <<'EOF'
-"CFBundleDisplayName" = "KeePassModern";
-"CFBundleName" = "KeePassModern";
-"NSHumanReadableCopyright" = "Copyright © 2026 KeePassModern. All rights reserved.";
-"NSAccessibilityUsageDescription" = "KeePassModern requires Accessibility permission to perform Auto-Type across windows.";
-EOF
+# 3. 拷贝仓库中的 zh-Hans.lproj 与 en.lproj 本地化资源（单一事实源，便于在 IDE Solution 中直接维护）
+cp -R "build/macos/Resources/zh-Hans.lproj" "${RESOURCES_DIR}/"
+cp -R "build/macos/Resources/en.lproj" "${RESOURCES_DIR}/"
 
 # 4. 生成 Info.plist（声明 CFBundleLocalizations、.kdbx 关联与高分屏支持）
 cat > "${CONTENTS_DIR}/Info.plist" <<EOF

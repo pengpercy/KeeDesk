@@ -60,6 +60,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public bool HasMultipleVaults => OpenVaults.Count > 1;
 
     public bool IsMacOS { get; } = OperatingSystem.IsMacOS();
+    public bool IsWindows { get; } = OperatingSystem.IsWindows();
     public bool IsWindowsOrLinux => !IsMacOS;
     public string SearchShortcutHint => IsMacOS ? "⌘K" : "Ctrl+K";
     public string LockShortcutHint => IsMacOS ? "⌘L" : "Ctrl+L";
@@ -88,6 +89,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private string _unlockVaultPath = string.Empty;
     [ObservableProperty] private string _unlockKeyFilePath = string.Empty;
     [ObservableProperty] private string _unlockMasterPassword = string.Empty;
+    [ObservableProperty] private bool _unlockUseWindowsUserAccount;
     [ObservableProperty] private string _unlockError = string.Empty;
     [ObservableProperty] private string _newVaultName = "个人密码库";
     [ObservableProperty] private RecentVaultItem? _selectedRecentVault;
@@ -373,13 +375,14 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         var vaultPath = UnlockVaultPath;
         var pwd = UnlockMasterPassword;
         var keyFile = UnlockKeyFilePath;
+        var useWua = UnlockUseWindowsUserAccount && IsWindows;
 
         try
         {
             // 后台线程执行 Argon2id / AES-KDF 解密，保持 60fps 动画完全流畅不卡顿
             var (db, key) = await Task.Run(() =>
             {
-                var k = CompositeKey.FromPasswordAndKeyFile(pwd, keyFile);
+                var k = CompositeKey.FromPasswordAndKeyFile(pwd, keyFile, useWua);
                 var loaded = KdbxFormat.Load(vaultPath, k);
                 return (loaded, k);
             });
@@ -421,7 +424,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             var db = KdbxDatabase.CreateDefault(NewVaultName);
             PopulateSampleEntries(db);
 
-            var key = CompositeKey.FromPasswordAndKeyFile(UnlockMasterPassword, UnlockKeyFilePath);
+            var key = CompositeKey.FromPasswordAndKeyFile(UnlockMasterPassword, UnlockKeyFilePath, UnlockUseWindowsUserAccount && IsWindows);
             KdbxFormat.Save(db, savePath, key);
             ActivateDatabase(db, key);
             SettingsService.AddRecentVault(savePath, string.IsNullOrWhiteSpace(UnlockKeyFilePath) ? null : UnlockKeyFilePath, db.Meta.DatabaseName);

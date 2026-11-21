@@ -36,6 +36,8 @@
                 </Grid>
             </StackPanel>
 
+            <CheckBox x:Name="UseWindowsUserAccountCheck" Content="使用 Windows 用户账户（DPAPI）" FontSize="12.5" IsVisible="False" />
+
             <ProgressBar x:Name="UnlockProgress" IsIndeterminate="True" Height="3" CornerRadius="2"
                          Foreground="{DynamicResource AccentButtonBackgroundBrush}" IsVisible="False" />
             <TextBlock x:Name="ErrorText" Foreground="{DynamicResource DangerBrush}" FontSize="12" TextWrapping="Wrap" IsVisible="False" />

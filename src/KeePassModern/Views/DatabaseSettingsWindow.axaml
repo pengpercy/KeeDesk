@@ -161,6 +161,8 @@
                                     </Button>
                                 </Grid>
                             </StackPanel>
+
+                            <CheckBox x:Name="UseWindowsUserAccountCheck" Content="绑定当前 Windows 用户账户（DPAPI，兼容原版 KeePass 2.x）" FontSize="12.5" IsVisible="False" />
                         </StackPanel>
                     </StackPanel>
                 </Border>

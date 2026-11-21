@@ -62,6 +62,7 @@ public partial class DatabaseSettingsWindow : Window
 
         RecycleBinToggle.IsChecked = _database.Meta.RecycleBinEnabled;
         HistoryMaxItemsNum.Value = Math.Clamp(_database.Meta.HistoryMaxItems, 0, 100);
+        UseWindowsUserAccountCheck.IsVisible = OperatingSystem.IsWindows();
         UpdateKdfPanels();
     }
 
@@ -148,13 +149,14 @@ public partial class DatabaseSettingsWindow : Window
                 ErrorText.IsVisible = true;
                 return;
             }
-            if (string.IsNullOrEmpty(pwd) && string.IsNullOrWhiteSpace(_newKeyFilePath))
+            bool useWua = OperatingSystem.IsWindows() && UseWindowsUserAccountCheck.IsChecked == true;
+            if (string.IsNullOrEmpty(pwd) && string.IsNullOrWhiteSpace(_newKeyFilePath) && !useWua)
             {
-                ErrorText.Text = "主密码和密钥文件不能同时为空。";
+                ErrorText.Text = "主密码、密钥文件与 Windows 用户账户不能同时为空。";
                 ErrorText.IsVisible = true;
                 return;
             }
-            newKey = CompositeKey.FromPasswordAndKeyFile(pwd, _newKeyFilePath);
+            newKey = CompositeKey.FromPasswordAndKeyFile(pwd, _newKeyFilePath, useWua);
             _database.Meta.MasterKeyChanged = DateTimeOffset.UtcNow;
         }
 

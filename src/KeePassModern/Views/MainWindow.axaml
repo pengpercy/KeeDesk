@@ -337,6 +337,11 @@
                             </Grid>
                         </StackPanel>
 
+                        <!-- Windows 专属：使用当前 Windows 用户账户（DPAPI，100% 互通原版 KeePass 2.x） -->
+                        <CheckBox Content="使用 Windows 用户账户（DPAPI）" FontSize="12.5"
+                                  IsVisible="{Binding IsWindows}"
+                                  IsChecked="{Binding UnlockUseWindowsUserAccount}" />
+
                         <TextBlock Text="{Binding UnlockError}" Foreground="{DynamicResource DangerBrush}" FontSize="12.5" TextAlignment="Center"
                                    IsVisible="{Binding UnlockError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 

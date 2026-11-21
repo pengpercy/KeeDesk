@@ -1,0 +1,4 @@
+"CFBundleDisplayName" = "KeePassModern";
+"CFBundleName" = "KeePassModern";
+"NSHumanReadableCopyright" = "Copyright © 2026 KeePassModern. All rights reserved.";
+"NSAccessibilityUsageDescription" = "KeePassModern 需要辅助功能权限以执行跨窗口自动输入（Auto-Type）。";
