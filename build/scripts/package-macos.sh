@@ -24,8 +24,8 @@ mkdir -p "${MACOS_DIR}" "${RESOURCES_DIR}/zh-Hans.lproj" "${RESOURCES_DIR}/en.lp
 cp -R "${PUBLISH_DIR}/"* "${MACOS_DIR}/"
 chmod +x "${MACOS_DIR}/${APP_NAME}"
 
-# 2. 生成标准多分辨率 AppIcon.icns
-ICON_PNG="src/KeePassModern/Assets/Branding/app_icon.png"
+# 2. 生成标准多分辨率 AppIcon.icns（使用遵守 Apple HIG 透明边距规范的 1024×1024 macOS 专属图标）
+ICON_PNG="src/KeePassModern/Assets/Branding/app_icon_macos.png"
 if [[ -f "${ICON_PNG}" ]] && command -v sips >/dev/null 2>&1 && command -v iconutil >/dev/null 2>&1; then
     ICONSET_DIR="$(mktemp -d)/AppIcon.iconset"
     mkdir -p "${ICONSET_DIR}"

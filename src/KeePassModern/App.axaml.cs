@@ -95,6 +95,8 @@ public partial class App : Application
                 Menu = menu,
                 IsVisible = true
             };
+            if (OperatingSystem.IsMacOS())
+                MacOSProperties.SetIsTemplateIcon(_trayIcon, true);
             _trayIcon.Clicked += (_, _) => RestoreMainWindow(mainWindow);
 
             var icons = new TrayIcons { _trayIcon };
