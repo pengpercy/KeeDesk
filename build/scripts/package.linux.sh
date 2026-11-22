@@ -26,8 +26,8 @@ APPIMAGETOOL_URL=https://github.com/AppImage/appimagetool/releases/download/cont
 
 cd build
 
-ICON_SOURCE="../src/KeePassModern/Assets/Branding/app_icon.png"
-ICON_OUT="resources/_common/icons/KeePassModern.png"
+ICON_SOURCE="../src/KeeDesk/Assets/Branding/app_icon.png"
+ICON_OUT="resources/_common/icons/KeeDesk.png"
 mkdir -p "resources/_common/icons"
 
 if [[ -f "$ICON_SOURCE" ]]; then
@@ -44,32 +44,32 @@ if [[ ! -f "appimagetool" ]]; then
     chmod +x appimagetool
 fi
 
-rm -f KeePassModern/*.dbg
-chmod +x KeePassModern/KeePassModern
+rm -f KeeDesk/*.dbg
+chmod +x KeeDesk/KeeDesk
 
-rm -rf KeePassModern.AppDir
-mkdir -p KeePassModern.AppDir/opt
-mkdir -p KeePassModern.AppDir/usr/share/metainfo
-mkdir -p KeePassModern.AppDir/usr/share/applications
+rm -rf KeeDesk.AppDir
+mkdir -p KeeDesk.AppDir/opt
+mkdir -p KeeDesk.AppDir/usr/share/metainfo
+mkdir -p KeeDesk.AppDir/usr/share/applications
 
-cp -r KeePassModern KeePassModern.AppDir/opt/KeePassModern
-desktop-file-install resources/_common/applications/KeePassModern.desktop --dir KeePassModern.AppDir/usr/share/applications \
-    --set-icon com.KeePassModern.app --set-key=Exec --set-value=AppRun
-mv KeePassModern.AppDir/usr/share/applications/{KeePassModern,com.KeePassModern.app}.desktop
-cp resources/_common/icons/KeePassModern.png KeePassModern.AppDir/com.KeePassModern.app.png
-ln -rsf KeePassModern.AppDir/opt/KeePassModern/KeePassModern KeePassModern.AppDir/AppRun
-ln -rsf KeePassModern.AppDir/usr/share/applications/com.KeePassModern.app.desktop KeePassModern.AppDir
-cp resources/appimage/KeePassModern.appdata.xml KeePassModern.AppDir/usr/share/metainfo/com.KeePassModern.app.appdata.xml
+cp -r KeeDesk KeeDesk.AppDir/opt/KeeDesk
+desktop-file-install resources/_common/applications/KeeDesk.desktop --dir KeeDesk.AppDir/usr/share/applications \
+    --set-icon com.KeeDesk.app --set-key=Exec --set-value=AppRun
+mv KeeDesk.AppDir/usr/share/applications/{KeeDesk,com.KeeDesk.app}.desktop
+cp resources/_common/icons/KeeDesk.png KeeDesk.AppDir/com.KeeDesk.app.png
+ln -rsf KeeDesk.AppDir/opt/KeeDesk/KeeDesk KeeDesk.AppDir/AppRun
+ln -rsf KeeDesk.AppDir/usr/share/applications/com.KeeDesk.app.desktop KeeDesk.AppDir
+cp resources/appimage/KeeDesk.appdata.xml KeeDesk.AppDir/usr/share/metainfo/com.KeeDesk.app.appdata.xml
 
-ARCH="$appimage_arch" ./appimagetool -v KeePassModern.AppDir "KeePassModern-$VERSION.linux.$appimage_arch.AppImage"
+ARCH="$appimage_arch" ./appimagetool -v KeeDesk.AppDir "KeeDesk-$VERSION.linux.$appimage_arch.AppImage"
 
 rm -rf resources/deb/opt resources/deb/usr
-mkdir -p resources/deb/opt/KeePassModern/
+mkdir -p resources/deb/opt/KeeDesk/
 mkdir -p resources/deb/usr/bin
 mkdir -p resources/deb/usr/share/applications
 mkdir -p resources/deb/usr/share/icons
-cp -a KeePassModern/. resources/deb/opt/KeePassModern/
-ln -rsf resources/deb/opt/KeePassModern/KeePassModern resources/deb/usr/bin
+cp -a KeeDesk/. resources/deb/opt/KeeDesk/
+ln -rsf resources/deb/opt/KeeDesk/KeeDesk resources/deb/usr/bin
 cp -r resources/_common/applications resources/deb/usr/share
 cp -r resources/_common/icons resources/deb/usr/share
 
@@ -80,7 +80,7 @@ sed -i -e "s/^Version:.*/Version: $VERSION/" \
     resources/deb/DEBIAN/control
 
 # xz 压缩使 AOT 二进制 deb 包比 gzip 小约 30%
-dpkg-deb -Zxz --root-owner-group --build resources/deb "KeePassModern_$VERSION-1_$arch.deb"
+dpkg-deb -Zxz --root-owner-group --build resources/deb "KeeDesk_$VERSION-1_$arch.deb"
 
 rpmbuild -bb --target="$target" resources/rpm/SPECS/build.spec --define "_topdir $(pwd)/resources/rpm" --define "_version $VERSION"
-mv "resources/rpm/RPMS/$target/KeePassModern-$VERSION-1.$target.rpm" ./
+mv "resources/rpm/RPMS/$target/KeeDesk-$VERSION-1.$target.rpm" ./

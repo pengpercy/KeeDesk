@@ -1,0 +1,546 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:KeeDesk.Controls"
+        xmlns:primitives="using:Avalonia.Controls.Primitives"
+        xmlns:conv="using:Avalonia.Controls.Converters"
+        xmlns:vm="using:KeeDesk.ViewModels"
+        xmlns:chrome="clr-namespace:Avalonia.Controls.Chrome;assembly=Avalonia.Controls"
+        x:Class="KeeDesk.Views.SettingsWindow"
+        Title="偏好设置"
+        Width="760" Height="560" MinWidth="660" MinHeight="460"
+        WindowStartupLocation="CenterOwner"
+        CanResize="True"
+        ExtendClientAreaToDecorationsHint="True"
+        WindowDecorations="Full"
+        ExtendClientAreaTitleBarHeightHint="40"
+        Background="{DynamicResource WorkspaceBackgroundBrush}"
+        Foreground="{DynamicResource PrimaryTextBrush}">
+
+    <Window.Resources>
+        <conv:ToBrushConverter x:Key="AccentSwatchBrush" />
+        <StreamGeometry x:Key="IconGitHub">M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z</StreamGeometry>
+    </Window.Resources>
+    <Window.Styles>
+        <Style Selector="ColorPicker.accentEditor">
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Button Classes="subtle" Width="44" Height="26" MinWidth="0" MinHeight="0" Padding="4,0"
+                            AutomationProperties.Name="选择自定义强调色" ToolTip.Tip="选择自定义强调色">
+                        <Grid ColumnDefinitions="16,10" ColumnSpacing="4">
+                            <Border Width="16" Height="16" CornerRadius="3" BorderThickness="1" BorderBrush="{DynamicResource CardBorderBrush}"
+                                    Background="{TemplateBinding Color, Converter={StaticResource AccentSwatchBrush}}" />
+                            <PathIcon Grid.Column="1" Width="9" Height="9" Data="{StaticResource IconChevronDown}"
+                                      Foreground="{DynamicResource SecondaryTextBrush}" />
+                        </Grid>
+                        <Button.Flyout>
+                            <controls:PickerFlyout Placement="BottomEdgeAlignedLeft" VerticalOffset="4" FlyoutPresenterClasses="accentPalette">
+                                <StackPanel Width="180" Spacing="8">
+                                    <TextBlock Text="自定义强调色" Classes="settingLabel" />
+                                    <Border CornerRadius="4" ClipToBounds="True">
+                                        <primitives:ColorSpectrum Height="162" HorizontalAlignment="Stretch" Components="SaturationValue"
+                                                                  HsvColor="{TemplateBinding HsvColor, Mode=TwoWay}" AutomationProperties.Name="饱和度与明度" />
+                                    </Border>
+                                    <primitives:ColorSlider Classes="accentHue" Height="20" MinHeight="0" ColorModel="Hsva" ColorComponent="Component1"
+                                                            HsvColor="{TemplateBinding HsvColor, Mode=TwoWay}" AutomationProperties.Name="色相" />
+                                    <Grid ColumnDefinitions="30,*,Auto" ColumnSpacing="8">
+                                        <Border Height="28" CornerRadius="4" BorderThickness="1" BorderBrush="{DynamicResource CardBorderBrush}"
+                                                Background="{TemplateBinding Color, Converter={StaticResource AccentSwatchBrush}}" />
+                                        <TextBox x:Name="PART_HexTextBox" Grid.Column="1" Height="28" MinHeight="28" Padding="7,0" FontSize="12"
+                                                 AutomationProperties.Name="十六进制颜色" />
+                                        <TextBlock Grid.Column="2" Text="HEX" FontSize="11" VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource SecondaryTextBrush}" />
+                                    </Grid>
+                                </StackPanel>
+                            </controls:PickerFlyout>
+                        </Button.Flyout>
+                    </Button>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="primitives|ColorSlider.accentHue /template/ Thumb#ColorSliderThumb">
+            <Setter Property="Background" Value="{Binding Color, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource AccentSwatchBrush}}" />
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border CornerRadius="10" Background="{TemplateBinding Background}"
+                            BorderBrush="{DynamicResource ControlAccessibleStrokeBrush}" BorderThickness="1"
+                            BoxShadow="0 1 4 0 #32000000">
+                        <Border CornerRadius="9" BorderBrush="White" BorderThickness="2" />
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="primitives|ColorSlider.accentHue:pointerover /template/ Thumb#ColorSliderThumb">
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="TextBlock.pageTitle">
+            <Setter Property="FontSize" Value="22" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="TextBlock.sectionTitle">
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="0,4,0,0" />
+        </Style>
+        <Style Selector="TextBlock.settingLabel">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="TextBlock.settingDescription">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}" />
+        </Style>
+        <Style Selector="Border.settingsCard">
+            <Setter Property="Padding" Value="12,8" />
+            <Setter Property="CornerRadius" Value="6" />
+        </Style>
+        <Style Selector="Button.settingsNav">
+            <Setter Property="MinHeight" Value="32" />
+            <Setter Property="Padding" Value="0,3,6,3" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        </Style>
+        <Style Selector="Button.settingsNav PathIcon">
+            <Setter Property="Width" Value="14" />
+            <Setter Property="Height" Value="14" />
+        </Style>
+        <Style Selector="Button.settingsNav TextBlock.navLabel">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="PathIcon.settingIcon">
+            <Setter Property="Width" Value="16" />
+            <Setter Property="Height" Value="16" />
+            <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}" />
+        </Style>
+        <Style Selector="ComboBox.settingsChoice">
+            <Setter Property="Width" Value="160" />
+            <Setter Property="MinHeight" Value="30" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.accentSwatch">
+            <Setter Property="Padding" Value="2,2" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+        </Style>
+        <Style Selector="Border.accentRing">
+            <Setter Property="Width" Value="24" />
+            <Setter Property="Height" Value="24" />
+            <Setter Property="CornerRadius" Value="5" />
+            <Setter Property="BorderThickness" Value="2" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="Padding" Value="1" />
+        </Style>
+        <Style Selector="TextBlock.swatchLabel">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="TextWrapping" Value="NoWrap" />
+        </Style>
+        <Style Selector="Button.settingsAction">
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+        <Style Selector="ItemsControl.shortcutKeys">
+            <Setter Property="HorizontalAlignment" Value="Right" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="ItemsPanel">
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal" Spacing="5" />
+                </ItemsPanelTemplate>
+            </Setter>
+            <Setter Property="ItemTemplate">
+                <DataTemplate x:DataType="x:String">
+                    <Border MinWidth="24" Height="26" Padding="5,0" CornerRadius="4" BorderThickness="1"
+                            Background="{DynamicResource CardSubtleBackgroundBrush}"
+                            BorderBrush="{DynamicResource InputBorderBrush}">
+                        <TextBlock Text="{Binding}" FontSize="12" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource PrimaryTextBrush}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                </DataTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="Grid.shortcutRow">
+            <Setter Property="ColumnSpacing" Value="12" />
+            <Setter Property="MinHeight" Value="39" />
+        </Style>
+        <Style Selector="Grid.shortcutRow > TextBlock">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Border.shortcutDivider">
+            <Setter Property="Height" Value="1" />
+            <Setter Property="Background" Value="{DynamicResource DividerBrush}" />
+        </Style>
+        <Style Selector="Button.checkUpdate">
+            <Setter Property="AutomationProperties.Name" Value="{DynamicResource Str_CheckForUpdates}" />
+        </Style>
+        <Style Selector="Button.checkUpdate.checking">
+            <Setter Property="AutomationProperties.Name" Value="{DynamicResource Str_CheckingForUpdates}" />
+        </Style>
+        <Style Selector="Button.checkUpdate.checking TextBlock.updateIdle, Button.checkUpdate TextBlock.updateBusy">
+            <Setter Property="Opacity" Value="0" />
+        </Style>
+        <Style Selector="Button.checkUpdate.checking TextBlock.updateBusy">
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="Button.checkUpdate.checking PathIcon.animateUpdate">
+            <Setter Property="RenderTransformOrigin" Value="50%,50%" />
+            <Style.Animations>
+                <Animation Duration="0:0:1" IterationCount="Infinite">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="RotateTransform.Angle" Value="0" />
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="RotateTransform.Angle" Value="360" />
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+    </Window.Styles>
+
+    <Grid ColumnDefinitions="184,1,*">
+        <!-- 左侧导航栏 -->
+        <Border Grid.Column="0" Background="{DynamicResource SidebarBackgroundBrush}">
+            <Grid RowDefinitions="40,Auto,*">
+                <Border Background="Transparent" chrome:WindowDecorationProperties.ElementRole="TitleBar"
+                        PointerPressed="TitleBar_PointerPressed">
+                    <StackPanel x:Name="DesktopSettingsChrome" Orientation="Horizontal" Spacing="8">
+                        <Button x:Name="BackButton" Classes="subtle" Width="36" Height="40" MinWidth="0" Padding="0" CornerRadius="0"
+                                Click="Back_Click" AutomationProperties.Name="返回" ToolTip.Tip="返回">
+                            <PathIcon Data="{StaticResource IconBack}" Width="14" Height="14" />
+                        </Button>
+                        <controls:BrandLogo Width="16" Height="16" />
+                        <TextBlock Text="KeeDesk" FontSize="12" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+                <TextBlock Grid.Row="1" Classes="pageTitle" Text="{DynamicResource Str_SettingsTitle}" Margin="16,16,12,12" />
+
+                <StackPanel Grid.Row="2" Spacing="2" Margin="8,0">
+                    <Button x:Name="NavAppearance" Classes="navItem settingsNav" Click="NavClick" Tag="0">
+                        <Grid ColumnDefinitions="6,22,*">
+                            <Border x:Name="Ind0" Grid.Column="0" Width="2" Height="14" CornerRadius="1" Background="{DynamicResource SystemControlHighlightAccentBrush}" HorizontalAlignment="Left" />
+                            <PathIcon Grid.Column="1" Data="{StaticResource IconSettings}" />
+                            <TextBlock Grid.Column="2" Classes="navLabel" Text="{DynamicResource Str_NavAppearance}" />
+                        </Grid>
+                    </Button>
+
+                    <Button x:Name="NavSecurity" Classes="navItem settingsNav" Click="NavClick" Tag="1">
+                        <Grid ColumnDefinitions="6,22,*">
+                            <Border x:Name="Ind1" Grid.Column="0" Width="2" Height="14" CornerRadius="1" Background="{DynamicResource SystemControlHighlightAccentBrush}" HorizontalAlignment="Left" IsVisible="False" />
+                            <PathIcon Grid.Column="1" Data="{StaticResource IconShield}" />
+                            <TextBlock Grid.Column="2" Classes="navLabel" Text="{DynamicResource Str_NavSecurity}" />
+                        </Grid>
+                    </Button>
+
+                    <Button x:Name="NavAutoType" Classes="navItem settingsNav" Click="NavClick" Tag="2">
+                        <Grid ColumnDefinitions="6,22,*">
+                            <Border x:Name="Ind2" Grid.Column="0" Width="2" Height="14" CornerRadius="1" Background="{DynamicResource SystemControlHighlightAccentBrush}" HorizontalAlignment="Left" IsVisible="False" />
+                            <PathIcon Grid.Column="1" Data="{StaticResource IconKeyboard}" />
+                            <TextBlock Grid.Column="2" Classes="navLabel" Text="{DynamicResource Str_NavAutoType}" />
+                        </Grid>
+                    </Button>
+
+                    <Button x:Name="NavData" Classes="navItem settingsNav" Click="NavClick" Tag="3">
+                        <Grid ColumnDefinitions="6,22,*">
+                            <Border x:Name="Ind3" Grid.Column="0" Width="2" Height="14" CornerRadius="1" Background="{DynamicResource SystemControlHighlightAccentBrush}" HorizontalAlignment="Left" IsVisible="False" />
+                            <PathIcon Grid.Column="1" Data="{StaticResource IconExport}" />
+                            <TextBlock Grid.Column="2" Classes="navLabel" Text="{DynamicResource Str_NavData}" />
+                        </Grid>
+                    </Button>
+
+                    <Button x:Name="NavAbout" Classes="navItem settingsNav" Click="NavClick" Tag="4">
+                        <Grid ColumnDefinitions="6,22,*">
+                            <Border x:Name="Ind4" Grid.Column="0" Width="2" Height="14" CornerRadius="1" Background="{DynamicResource SystemControlHighlightAccentBrush}" HorizontalAlignment="Left" IsVisible="False" />
+                            <PathIcon Grid.Column="1" Data="{StaticResource IconVault}" />
+                            <TextBlock Grid.Column="2" Classes="navLabel" Text="{DynamicResource Str_NavAbout}" />
+                        </Grid>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- 垂直分割线直通顶部 -->
+        <Border Grid.Column="1" Background="{DynamicResource DividerBrush}" />
+
+        <!-- 右侧内容区 -->
+        <Grid Grid.Column="2" RowDefinitions="40,*" Background="{DynamicResource ListPaneBackgroundBrush}">
+            <!-- 顶部拖动区 -->
+            <Border Grid.Row="0" Background="Transparent"
+                    chrome:WindowDecorationProperties.ElementRole="TitleBar"
+                    PointerPressed="TitleBar_PointerPressed" />
+
+            <ScrollViewer Grid.Row="1" Padding="20,16,20,20" HorizontalScrollBarVisibility="Disabled">
+                <Panel>
+                    <StackPanel x:Name="PageAppearance" Spacing="8">
+                        <StackPanel Spacing="2">
+                            <TextBlock Classes="pageTitle" Text="外观" />
+                            <TextBlock Classes="settingDescription" Text="调整主题、强调色和条目列表的显示密度。" />
+                        </StackPanel>
+                        <TextBlock Classes="sectionTitle" Text="主题与颜色" />
+                        <Border Classes="fluentCard settingsCard">
+                            <Grid ColumnDefinitions="16,*,Auto" ColumnSpacing="10">
+                                <PathIcon Classes="settingIcon" Data="{StaticResource IconPanel}" />
+                                <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                    <TextBlock Classes="settingLabel" Text="应用主题" />
+                                    <TextBlock Classes="settingDescription" Text="用于应用的窗口、菜单和对话框。" />
+                                </StackPanel>
+                                <ComboBox Grid.Column="2" x:Name="ThemeCombo" Classes="settingsChoice"
+                                          AutomationProperties.Name="应用主题" SelectionChanged="ThemeCombo_Changed">
+                                    <ComboBoxItem Content="跟随系统" Tag="Default" />
+                                    <ComboBoxItem Content="浅色" Tag="Light" />
+                                    <ComboBoxItem Content="深色" Tag="Dark" />
+                                </ComboBox>
+                            </Grid>
+                        </Border>
+                        <Border Classes="fluentCard settingsCard">
+                            <Grid ColumnDefinitions="16,*,Auto" ColumnSpacing="10">
+                                <PathIcon Classes="settingIcon" Data="{StaticResource IconRefresh}" />
+                                <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                    <TextBlock Classes="settingLabel" Text="跟随系统强调色" />
+                                    <TextBlock Classes="settingDescription" Text="开启后使用操作系统的强调色。" />
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="2" x:Name="FollowSystemAccentCheck" OnContent="" OffContent=""
+                                              VerticalAlignment="Center"
+                                              AutomationProperties.Name="跟随系统强调色" IsCheckedChanged="FollowSystemAccent_Changed" />
+                            </Grid>
+                        </Border>
+                        <Border Classes="fluentCard settingsCard">
+                            <Grid ColumnDefinitions="16,*" ColumnSpacing="10">
+                                <PathIcon Classes="settingIcon" Data="{StaticResource IconEdit}" VerticalAlignment="Top" />
+                                <StackPanel Grid.Column="1" Spacing="4">
+                                    <TextBlock Classes="settingLabel" Text="应用强调色" />
+                                    <WrapPanel ItemWidth="52" ItemSpacing="2" LineSpacing="4">
+                                        <Button Classes="subtle accentSwatch" Click="AccentPreset_Click" Tag="Emerald"
+                                                AutomationProperties.Name="{DynamicResource Str_AccentOliveGreen}" ToolTip.Tip="#508252">
+                                            <StackPanel Spacing="2" HorizontalAlignment="Center">
+                                                <Border x:Name="RingEmerald" Classes="accentRing">
+                                                    <Border CornerRadius="3" Background="#508252" />
+                                                </Border>
+                                                <TextBlock Classes="swatchLabel" Text="{DynamicResource Str_AccentOliveGreen}" />
+                                            </StackPanel>
+                                        </Button>
+                                        <Button Classes="subtle accentSwatch" Click="AccentPreset_Click" Tag="ClassicBlue">
+                                            <StackPanel Spacing="2" HorizontalAlignment="Center">
+                                                <Border x:Name="RingClassicBlue" Classes="accentRing">
+                                                    <Border CornerRadius="3" Background="#3B82F6" />
+                                                </Border>
+                                                <TextBlock Classes="swatchLabel" Text="经典蓝" />
+                                            </StackPanel>
+                                        </Button>
+                                        <Button Classes="subtle accentSwatch" Click="AccentPreset_Click" Tag="Indigo">
+                                            <StackPanel Spacing="2" HorizontalAlignment="Center">
+                                                <Border x:Name="RingIndigo" Classes="accentRing">
+                                                    <Border CornerRadius="3" Background="#6366F1" />
+                                                </Border>
+                                                <TextBlock Classes="swatchLabel" Text="极光靛" />
+                                            </StackPanel>
+                                        </Button>
+                                        <Button Classes="subtle accentSwatch" Click="AccentPreset_Click" Tag="Amber">
+                                            <StackPanel Spacing="2" HorizontalAlignment="Center">
+                                                <Border x:Name="RingAmber" Classes="accentRing">
+                                                    <Border CornerRadius="3" Background="#D97706" />
+                                                </Border>
+                                                <TextBlock Classes="swatchLabel" Text="琥珀金" />
+                                            </StackPanel>
+                                        </Button>
+                                        <Button Classes="subtle accentSwatch" Click="AccentPreset_Click" Tag="Rose">
+                                            <StackPanel Spacing="2" HorizontalAlignment="Center">
+                                                <Border x:Name="RingRose" Classes="accentRing">
+                                                    <Border CornerRadius="3" Background="#E11D48" />
+                                                </Border>
+                                                <TextBlock Classes="swatchLabel" Text="玫瑰红" />
+                                            </StackPanel>
+                                        </Button>
+                                        <Button Classes="subtle accentSwatch" Click="AccentPreset_Click" Tag="Slate">
+                                            <StackPanel Spacing="2" HorizontalAlignment="Center">
+                                                <Border x:Name="RingSlate" Classes="accentRing">
+                                                    <Border CornerRadius="3" Background="#64748B" />
+                                                </Border>
+                                                <TextBlock Classes="swatchLabel" Text="石墨灰" />
+                                            </StackPanel>
+                                        </Button>
+                                        <StackPanel Spacing="2" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <ColorPicker x:Name="CustomAccentPicker" Classes="accentEditor" Color="#508252" Width="44" MinWidth="0"
+                                                         Height="26" MinHeight="0" IsAlphaEnabled="False" AutomationProperties.Name="自定义强调色"
+                                                         ColorChanged="CustomAccent_Changed" />
+                                            <TextBlock Classes="swatchLabel" Text="自定义" />
+                                        </StackPanel>
+                                    </WrapPanel>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <TextBlock Classes="sectionTitle" Text="布局" />
+                        <Border Classes="fluentCard settingsCard">
+                            <Grid ColumnDefinitions="16,*,Auto" ColumnSpacing="10">
+                                <PathIcon Classes="settingIcon" Data="{StaticResource IconSort}" />
+                                <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                    <TextBlock Classes="settingLabel" Text="条目列表密度" />
+                                    <TextBlock Classes="settingDescription" Text="改变列表行高和摘要间距。" />
+                                </StackPanel>
+                                <ComboBox Grid.Column="2" x:Name="DensityCombo" Classes="settingsChoice"
+                                          AutomationProperties.Name="条目列表密度" SelectionChanged="DensityCombo_Changed">
+                                    <ComboBoxItem Content="紧凑" Tag="Compact" />
+                                    <ComboBoxItem Content="标准" Tag="Normal" />
+                                    <ComboBoxItem Content="宽松" Tag="Comfortable" />
+                                </ComboBox>
+                            </Grid>
+                        </Border>
+                        <Border Classes="fluentCard settingsCard">
+                            <Grid ColumnDefinitions="16,*,Auto" ColumnSpacing="10">
+                                <PathIcon Classes="settingIcon" Data="{StaticResource IconGlobe}" />
+                                <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                    <TextBlock Classes="settingLabel" Text="界面语言 / Display Language" />
+                                    <TextBlock Classes="settingDescription" Text="切换简体中文或英文界面，立即生效无需重启。" />
+                                </StackPanel>
+                                <ComboBox Grid.Column="2" x:Name="LanguageCombo" Classes="settingsChoice"
+                                          AutomationProperties.Name="界面语言" SelectionChanged="LanguageCombo_Changed">
+                                    <ComboBoxItem Content="简体中文 (zh-CN)" Tag="zh-CN" />
+                                    <ComboBoxItem Content="English (en-US)" Tag="en-US" />
+                                </ComboBox>
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+
+                    <StackPanel x:Name="PageSecurity" Spacing="10" IsVisible="False">
+                        <TextBlock Classes="pageTitle" Text="安全与自动锁定" />
+                        <Border Classes="fluentCard settingsCard">
+                            <StackPanel Spacing="8">
+                                <Grid ColumnDefinitions="16,*,112" ColumnSpacing="10">
+                                    <PathIcon Classes="settingIcon" Data="{StaticResource IconCopy}" />
+                                    <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="settingLabel" Text="安全剪贴板自动清空时间（秒）" />
+                                        <TextBlock Classes="settingDescription" Text="复制密码或验证码后，倒计时结束自动清零剪贴板" />
+                                    </StackPanel>
+                                    <NumericUpDown Grid.Column="2" x:Name="ClipClearNumeric" Minimum="5" Maximum="120" Value="15"
+                                                   FontSize="13" VerticalAlignment="Center" ValueChanged="SecurityChanged" />
+                                </Grid>
+                                <Border Height="1" Background="{DynamicResource DividerBrush}" />
+                                <Grid ColumnDefinitions="16,*,Auto" ColumnSpacing="10">
+                                    <PathIcon Classes="settingIcon" Data="{StaticResource IconLock}" />
+                                    <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="settingLabel" Text="启用无操作自动锁定" />
+                                        <TextBlock Classes="settingDescription" Text="长时间无鼠标或键盘操作时自动锁定全部已打开的密码库" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="2" x:Name="AutoLockEnabledSwitch" OnContent="" OffContent=""
+                                                  VerticalAlignment="Center" IsCheckedChanged="AutoLockEnabled_Changed" />
+                                </Grid>
+                                <Grid ColumnDefinitions="16,*,112" ColumnSpacing="10">
+                                    <PathIcon Classes="settingIcon" Data="{StaticResource IconClock}" />
+                                    <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Classes="settingLabel" Text="空闲自动锁定时间（分钟）" />
+                                        <TextBlock Classes="settingDescription" Text="超过指定空闲时间后自动锁定并清零内存敏感数据" />
+                                    </StackPanel>
+                                    <NumericUpDown Grid.Column="2" x:Name="AutoLockNumeric" Minimum="1" Maximum="120" Value="10"
+                                                   FontSize="13" VerticalAlignment="Center" ValueChanged="SecurityChanged" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <StackPanel x:Name="PageAutoType" Spacing="12" IsVisible="False">
+                        <TextBlock Classes="pageTitle" Text="{DynamicResource Str_NavAutoType}" />
+                        <Border Classes="fluentCard settingsCard" Padding="12,10">
+                            <Grid ColumnDefinitions="32,*,Auto" ColumnSpacing="10" MinHeight="48">
+                                <Border Width="32" Height="32" VerticalAlignment="Center" CornerRadius="6"
+                                        Background="{DynamicResource BadgePillBackgroundBrush}">
+                                    <PathIcon Data="{StaticResource IconKeyboard}" Width="16" Height="16"
+                                              Foreground="{DynamicResource BadgePillForegroundBrush}" />
+                                </Border>
+                                <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                                    <TextBlock Classes="settingLabel" Text="{DynamicResource Str_GlobalAutoType}" />
+                                    <TextBlock x:Name="GlobalAutoTypeHint" Classes="settingDescription" TextWrapping="Wrap"
+                                               Text="{DynamicResource Str_GlobalAutoTypeHint}" />
+                                    <TextBlock x:Name="ManualAutoTypeHint" Classes="settingDescription" TextWrapping="Wrap"
+                                               Text="{DynamicResource Str_GlobalAutoTypeUnavailable}" IsVisible="False" />
+                                </StackPanel>
+                                <ItemsControl x:Name="GlobalAutoTypeKeys" Grid.Column="2" Classes="shortcutKeys" />
+                            </Grid>
+                        </Border>
+                        <StackPanel Spacing="10">
+                            <TextBlock Classes="sectionTitle" Text="{DynamicResource Str_AppShortcuts}" />
+                            <Border Classes="fluentCard settingsCard" Padding="12,0">
+                                <StackPanel>
+                                    <Grid Classes="shortcutRow" ColumnDefinitions="*,Auto">
+                                        <TextBlock Text="{DynamicResource Str_SearchEntriesShortcut}" />
+                                        <ItemsControl x:Name="SearchShortcutKeys" Grid.Column="1" Classes="shortcutKeys" />
+                                    </Grid>
+                                    <Border Classes="shortcutDivider" />
+                                    <Grid Classes="shortcutRow" ColumnDefinitions="*,Auto">
+                                        <TextBlock Text="{DynamicResource Str_NewEntryShortcut}" />
+                                        <ItemsControl x:Name="NewEntryShortcutKeys" Grid.Column="1" Classes="shortcutKeys" />
+                                    </Grid>
+                                    <Border Classes="shortcutDivider" />
+                                    <Grid Classes="shortcutRow" ColumnDefinitions="*,Auto">
+                                        <TextBlock Text="{DynamicResource Str_SaveVaultShortcut}" />
+                                        <ItemsControl x:Name="SaveShortcutKeys" Grid.Column="1" Classes="shortcutKeys" />
+                                    </Grid>
+                                    <Border Classes="shortcutDivider" />
+                                    <Grid Classes="shortcutRow" ColumnDefinitions="*,Auto">
+                                        <TextBlock Text="{DynamicResource Str_LockVault}" />
+                                        <ItemsControl x:Name="LockShortcutKeys" Grid.Column="1" Classes="shortcutKeys" />
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel x:Name="PageData" Spacing="10" IsVisible="False">
+                        <TextBlock Classes="pageTitle" Text="同步与导入导出" />
+                        <Border Classes="fluentCard settingsCard">
+                            <Grid ColumnDefinitions="16,*" ColumnSpacing="10">
+                                <PathIcon Classes="settingIcon" Data="{StaticResource IconExport}" VerticalAlignment="Top" />
+                                <StackPanel Grid.Column="1" Spacing="6">
+                                    <TextBlock Classes="settingLabel" Text="数据迁移与纸质应急备份" />
+                                    <TextBlock Classes="settingDescription" Text="支持 Chrome / Firefox / Bitwarden / 1Password 通用 CSV 导入，以及导出可打印 HTML 应急表。" />
+                                    <WrapPanel ItemSpacing="6" LineSpacing="6" Margin="0,2,0,0">
+                                        <Button Classes="settingsAction" Content="导入 CSV" Click="ImportCsv_Click" />
+                                        <Button Classes="settingsAction" Content="导出 CSV" Click="ExportCsv_Click" />
+                                        <Button Classes="accent settingsAction" Content="生成 HTML 应急表" Click="ExportEmergency_Click" />
+                                    </WrapPanel>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+
+                    <StackPanel x:Name="PageAbout" Spacing="10" IsVisible="False">
+                        <TextBlock Classes="pageTitle" Text="关于 KeeDesk" />
+                        <Border Classes="fluentCard settingsCard" Padding="12">
+                            <StackPanel Spacing="8">
+                                <Grid ColumnDefinitions="32,*" ColumnSpacing="10">
+                                    <controls:BrandLogo Width="32" Height="32" />
+                                    <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock x:Name="AboutVersionText" Text="KeeDesk 1.0.0" FontSize="14" FontWeight="SemiBold" />
+                                        <TextBlock Classes="settingDescription" Text="{DynamicResource Str_AboutTagline}" />
+                                    </StackPanel>
+                                </Grid>
+                                <TextBlock Classes="settingDescription" Text="{DynamicResource Str_AboutDescription}" LineHeight="18" />
+                                <WrapPanel x:Name="AboutActions" x:DataType="vm:MainWindowViewModel"
+                                           ItemSpacing="6" LineSpacing="6" Margin="0,2,0,0">
+                                    <Button Classes="accent settingsAction checkUpdate" Classes.checking="{Binding IsCheckingForUpdates}"
+                                            Command="{Binding CheckForUpdatesCommand}">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <PathIcon x:Name="CheckUpdateIcon" Data="{StaticResource IconRefresh}" Width="14" Height="14" />
+                                            <Panel VerticalAlignment="Center">
+                                                <TextBlock Classes="updateIdle" Text="{DynamicResource Str_CheckForUpdates}" />
+                                                <TextBlock Classes="updateBusy" Text="{DynamicResource Str_CheckingForUpdates}" />
+                                            </Panel>
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Classes="settingsAction" Click="OpenGitHub_Click"
+                                            AutomationProperties.Name="{DynamicResource Str_OpenGitHubRepository}">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <PathIcon Data="{StaticResource IconGitHub}" Width="14" Height="14" />
+                                            <TextBlock Text="{DynamicResource Str_OpenGitHubRepository}" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Panel>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</Window>

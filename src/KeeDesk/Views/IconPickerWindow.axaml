@@ -1,0 +1,66 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:chrome="clr-namespace:Avalonia.Controls.Chrome;assembly=Avalonia.Controls"
+        x:Class="KeeDesk.Views.IconPickerWindow"
+        Title="选择图标"
+        Width="480" Height="460"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        ExtendClientAreaToDecorationsHint="True"
+        WindowDecorations="Full"
+        ExtendClientAreaTitleBarHeightHint="40"
+        Background="{DynamicResource WorkspaceBackgroundBrush}"
+        Foreground="{DynamicResource PrimaryTextBrush}">
+
+    <Grid RowDefinitions="Auto, *, 1, Auto">
+        <Border Grid.Row="0" Padding="24,36,24,10" Background="Transparent"
+                chrome:WindowDecorationProperties.ElementRole="TitleBar"
+                PointerPressed="TitleBar_PointerPressed">
+            <StackPanel Spacing="3">
+                <TextBlock Text="选择条目 / 分组图标" FontSize="18" FontWeight="SemiBold" />
+                <TextBlock Text="支持 KeePass 标准图标与自定义 PNG 图标（完整写入 KDBX）" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+            </StackPanel>
+        </Border>
+
+        <ScrollViewer Grid.Row="1" Padding="24,4,24,16">
+            <StackPanel Spacing="14">
+                <!-- 从官网域名或图片 URL 自动获取 Favicon（借鉴现代供应商图标设置体验） -->
+                <Border Classes="fluentCard" Padding="14">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="自动获取官网 Favicon / 图片 URL" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource SecondaryTextBrush}" />
+                        <Grid ColumnDefinitions="*, 8, Auto">
+                            <TextBox Grid.Column="0" x:Name="FetchUrlBox" Height="32" PlaceholderText="输入网址/域名（如 github.com）或图片 URL..." />
+                            <Button Grid.Column="2" x:Name="FetchBtn" Classes="accent" Height="32" MinHeight="32" Padding="12,0" Content="获取图标" Click="FetchFavicon_Click" />
+                        </Grid>
+                        <TextBlock x:Name="FetchStatusText" FontSize="11.5" Foreground="{DynamicResource SecondaryTextBrush}" IsVisible="False" />
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="fluentCard" Padding="14">
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="标准 Fluent 矢量图标" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource SecondaryTextBrush}" />
+                        <WrapPanel x:Name="StandardIconsPanel" Orientation="Horizontal" />
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="fluentCard" Padding="14">
+                    <StackPanel Spacing="10">
+                        <Grid ColumnDefinitions="*, Auto">
+                            <TextBlock Text="自定义 PNG 图标" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center" />
+                            <Button Grid.Column="1" Height="28" MinHeight="28" Padding="10,0" FontSize="12" Content="+ 导入 PNG 图标..." Click="ImportCustomIcon_Click" />
+                        </Grid>
+                        <WrapPanel x:Name="CustomIconsPanel" Orientation="Horizontal" />
+                        <TextBlock x:Name="NoCustomIconsHint" Text="暂无自定义图标，可点击右上角导入本地 PNG 图片" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="2" Background="{DynamicResource DividerBrush}" />
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="24,12">
+            <Button Width="84" Height="34" Content="取消" Click="Cancel_Click" />
+            <Button Classes="accent" Width="96" Height="34" Content="应用图标" Click="Confirm_Click" />
+        </StackPanel>
+    </Grid>
+</Window>

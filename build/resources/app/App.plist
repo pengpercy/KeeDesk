@@ -5,13 +5,14 @@
 	<key>CFBundleIconFile</key>
 	<string>App</string>
 	<key>CFBundleIdentifier</key>
+	<!-- Keep the bundle identifier for upgrades and existing macOS permissions. -->
 	<string>com.pengpercy.keepassmodern</string>
 	<key>CFBundleName</key>
-	<string>KeePassModern</string>
+	<string>KeeDesk</string>
 	<key>CFBundleDisplayName</key>
-	<string>KeePassModern</string>
+	<string>KeeDesk</string>
 	<key>CFBundleVersion</key>
-	<string>KeePassModern_VERSION</string>
+	<string>KeeDesk_VERSION</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleLocalizations</key>
@@ -22,19 +23,19 @@
 	<key>LSMinimumSystemVersion</key>
 	<string>12.0</string>
 	<key>CFBundleExecutable</key>
-	<string>KeePassModern</string>
+	<string>KeeDesk</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>KeePassModern_VERSION</string>
+	<string>KeeDesk_VERSION</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>NSAccessibilityUsageDescription</key>
-	<string>KeePassModern 需要辅助功能权限以执行跨窗口自动输入（Auto-Type）。</string>
+	<string>KeeDesk 需要辅助功能权限以执行跨窗口自动输入（Auto-Type）。</string>
 	<key>CFBundleDocumentTypes</key>
 	<array>
 		<dict>

@@ -1,0 +1,123 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:chrome="clr-namespace:Avalonia.Controls.Chrome;assembly=Avalonia.Controls"
+        x:Class="KeeDesk.Views.DatabaseMaintenanceWindow"
+        Title="密码库维护工具"
+        Width="580" Height="560"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        ExtendClientAreaToDecorationsHint="True"
+        WindowDecorations="Full"
+        ExtendClientAreaTitleBarHeightHint="44"
+        Background="{DynamicResource WorkspaceBackgroundBrush}"
+        Foreground="{DynamicResource PrimaryTextBrush}">
+
+    <Grid RowDefinitions="Auto, *, 1, Auto">
+        <Border Grid.Row="0" Padding="24,38,24,10" Background="Transparent"
+                chrome:WindowDecorationProperties.ElementRole="TitleBar"
+                PointerPressed="TitleBar_PointerPressed">
+            <StackPanel Spacing="3">
+                <TextBlock Text="密码库维护工具" FontSize="20" FontWeight="SemiBold" />
+                <TextBlock Text="清理冗余历史版本、重复条目、空分组与已删除对象元数据" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+            </StackPanel>
+        </Border>
+
+        <ScrollViewer Grid.Row="1" Padding="24,6,24,18">
+            <StackPanel Spacing="14">
+                <!-- 统计概览 -->
+                <UniformGrid Columns="4" Rows="1">
+                    <Border Classes="fluentCard" Padding="12" Margin="0,0,6,0">
+                        <StackPanel Spacing="3">
+                            <TextBlock Text="条目总数" FontSize="11.5" Foreground="{DynamicResource SecondaryTextBrush}" />
+                            <TextBlock x:Name="StatEntries" Text="0" FontSize="20" FontWeight="Bold" />
+                        </StackPanel>
+                    </Border>
+                    <Border Classes="fluentCard" Padding="12" Margin="3,0">
+                        <StackPanel Spacing="3">
+                            <TextBlock Text="历史快照" FontSize="11.5" Foreground="{DynamicResource SecondaryTextBrush}" />
+                            <TextBlock x:Name="StatHistory" Text="0" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource BrandEmeraldBrush}" />
+                        </StackPanel>
+                    </Border>
+                    <Border Classes="fluentCard" Padding="12" Margin="3,0">
+                        <StackPanel Spacing="3">
+                            <TextBlock Text="已删除记录" FontSize="11.5" Foreground="{DynamicResource SecondaryTextBrush}" />
+                            <TextBlock x:Name="StatDeleted" Text="0" FontSize="20" FontWeight="Bold" />
+                        </StackPanel>
+                    </Border>
+                    <Border Classes="fluentCard" Padding="12" Margin="6,0,0,0">
+                        <StackPanel Spacing="3">
+                            <TextBlock Text="附件体积" FontSize="11.5" Foreground="{DynamicResource SecondaryTextBrush}" />
+                            <TextBlock x:Name="StatAttachments" Text="0 KB" FontSize="18" FontWeight="Bold" />
+                        </StackPanel>
+                    </Border>
+                </UniformGrid>
+
+                <!-- 历史版本清理 -->
+                <Border Classes="fluentCard" Padding="16,14">
+                    <Grid ColumnDefinitions="*, 12, Auto">
+                        <StackPanel Spacing="4" VerticalAlignment="Center">
+                            <TextBlock Text="清理过期历史版本" FontSize="13.5" FontWeight="SemiBold" />
+                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <TextBlock Text="删除早于" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center" />
+                                <NumericUpDown x:Name="HistoryDaysNum" Minimum="0" Maximum="3650" Value="365" FormatString="0" Width="100" Height="28" />
+                                <TextBlock Text="天的历史快照（设为 0 则清空全部）" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </StackPanel>
+                        <Button Grid.Column="2" Height="32" Padding="14,0" Content="立即清理" VerticalAlignment="Center" Click="PurgeHistory_Click" />
+                    </Grid>
+                </Border>
+
+                <!-- 其他维护操作 -->
+                <Border Classes="fluentCard" Padding="16,14">
+                    <StackPanel Spacing="12">
+                        <Grid ColumnDefinitions="*, Auto">
+                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                <TextBlock Text="删除完全重复的条目" FontSize="13.5" FontWeight="Medium" />
+                                <TextBlock Text="标题、用户名、密码、网址与备注完全一致时，仅保留最新一条" FontSize="11.5" Foreground="{DynamicResource SecondaryTextBrush}" />
+                            </StackPanel>
+                            <Button Grid.Column="1" Height="30" Padding="12,0" Content="扫描清理" Click="DeleteDuplicates_Click" />
+                        </Grid>
+
+                        <Border Height="1" Background="{DynamicResource DividerBrush}" />
+
+                        <Grid ColumnDefinitions="*, Auto">
+                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                <TextBlock Text="清理空分组" FontSize="13.5" FontWeight="Medium" />
+                                <TextBlock Text="递归移除没有任何条目和子分组的空文件夹（保留回收站）" FontSize="11.5" Foreground="{DynamicResource SecondaryTextBrush}" />
+                            </StackPanel>
+                            <Button Grid.Column="1" Height="30" Padding="12,0" Content="清理空分组" Click="DeleteEmptyGroups_Click" />
+                        </Grid>
+
+                        <Border Height="1" Background="{DynamicResource DividerBrush}" />
+
+                        <Grid ColumnDefinitions="*, Auto">
+                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                <TextBlock Text="清空已删除对象元数据 (DeletedObjects)" FontSize="13.5" FontWeight="Medium" />
+                                <TextBlock Text="释放历史删除追踪记录，减小 .kdbx 文件体积" FontSize="11.5" Foreground="{DynamicResource SecondaryTextBrush}" />
+                            </StackPanel>
+                            <Button Grid.Column="1" Height="30" Padding="12,0" Content="清空记录" Click="ClearDeletedObjects_Click" />
+                        </Grid>
+
+                        <Border Height="1" Background="{DynamicResource DividerBrush}" />
+
+                        <Grid ColumnDefinitions="*, Auto">
+                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                <TextBlock Text="清理未使用的自定义图标" FontSize="13.5" FontWeight="Medium" />
+                                <TextBlock x:Name="UnusedIconsDesc" Text="移除未被任何条目或分组引用的自定义图标数据" FontSize="11.5" Foreground="{DynamicResource SecondaryTextBrush}" />
+                            </StackPanel>
+                            <Button Grid.Column="1" Height="30" Padding="12,0" Content="清理图标" Click="DeleteUnusedIcons_Click" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <TextBlock x:Name="ResultText" FontSize="12.5" Foreground="{DynamicResource BrandEmeraldBrush}" IsVisible="False" />
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="2" Background="{DynamicResource DividerBrush}" />
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="24,12">
+            <Button Classes="accent" Width="96" Height="34" Content="完成" Click="Close_Click" />
+        </StackPanel>
+    </Grid>
+</Window>

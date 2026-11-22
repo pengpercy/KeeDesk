@@ -67,7 +67,7 @@ jobs:
 
       - name: Publish
         run: |
-          dotnet publish src/KeePassModern/KeePassModern.csproj -c Release -o publish -r ${{ matrix.runtime }} --self-contained -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true ${{ matrix.publish-args }}
+          dotnet publish src/KeeDesk/KeeDesk.csproj -c Release -o publish -r ${{ matrix.runtime }} --self-contained -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true ${{ matrix.publish-args }}
 
       # 将调试符号 (.dSYM, .dbg, .pdb) 从发布目录剥离并单独归档，不打入最终用户安装包
       - name: Split off debug symbols
@@ -86,13 +86,13 @@ jobs:
       - name: Tar artifact
         if: startsWith(matrix.runtime, 'linux-') || startsWith(matrix.runtime, 'osx-')
         run: |
-          tar -cvf "keepassmodern.${{ matrix.runtime }}.tar" -C publish .
+          tar -cvf "keedesk.${{ matrix.runtime }}.tar" -C publish .
           rm -r publish/*
-          mv "keepassmodern.${{ matrix.runtime }}.tar" publish
+          mv "keedesk.${{ matrix.runtime }}.tar" publish
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
-          name: keepassmodern.${{ matrix.package || matrix.runtime }}
+          name: keedesk.${{ matrix.package || matrix.runtime }}
           path: publish/*
           retention-days: 1

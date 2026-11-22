@@ -1,0 +1,1474 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:KeeDesk.ViewModels"
+        xmlns:controls="using:KeeDesk.Controls"
+        xmlns:helpers="using:KeeDesk.Helpers"
+        xmlns:chrome="clr-namespace:Avalonia.Controls.Chrome;assembly=Avalonia.Controls"
+        x:Class="KeeDesk.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="KeeDesk"
+        Icon="/Assets/Branding/app_ico.ico"
+        Width="1080" Height="720"
+        MinWidth="720" MinHeight="640"
+        CanResize="False"
+        ExtendClientAreaToDecorationsHint="True"
+        WindowDecorations="Full"
+        ExtendClientAreaTitleBarHeightHint="48"
+        DragDrop.AllowDrop="True"
+        Foreground="{DynamicResource PrimaryTextBrush}">
+
+    <!-- macOS 原生顶部菜单栏（文件 / 条目 / 工具 / 视图） -->
+    <NativeMenu.Menu>
+        <NativeMenu>
+            <NativeMenuItem Header="文件">
+                <NativeMenu>
+                    <NativeMenuItem Header="打开其他密码库（新标签页）..." Gesture="Cmd+O" Command="{Binding OpenAnotherVaultCommand}" />
+                    <NativeMenuItem Header="新建密码库..." Gesture="Shift+Cmd+N" Command="{Binding CreateNewVaultCommand}" />
+                    <NativeMenuItem Header="保存密码库" Gesture="Cmd+S" Command="{Binding SaveVaultCommand}" />
+                    <NativeMenuItem Header="另存为..." Gesture="Shift+Cmd+S" Command="{Binding SaveVaultAsCommand}" />
+                    <NativeMenuItemSeparator />
+                    <NativeMenuItem Header="密码库设置与主密钥..." Command="{Binding OpenDatabaseSettingsAsyncCommandCommand}" />
+                    <NativeMenuItem Header="密码库维护工具..." Command="{Binding OpenDatabaseMaintenanceAsyncCommandCommand}" />
+                    <NativeMenuItem Header="合并 / 同步其他密码库..." Command="{Binding MergeDatabaseCommand}" />
+                    <NativeMenuItem Header="生成密钥文件 (.keyx)..." Command="{Binding GenerateKeyFileCommand}" />
+                    <NativeMenuItemSeparator />
+                    <NativeMenuItem Header="导入 CSV (通用/Chrome/Bitwarden/1Password)..." Command="{Binding ImportCsvCommand}" />
+                    <NativeMenuItem Header="导入 KeePass 2.x XML..." Command="{Binding ImportKeePassXmlCommand}" />
+                    <NativeMenuItem Header="导出 CSV..." Command="{Binding ExportCsvCommand}" />
+                    <NativeMenuItem Header="导出 KeePass 2.x XML..." Command="{Binding ExportKeePassXmlCommand}" />
+                    <NativeMenuItem Header="生成 HTML 应急表..." Command="{Binding ExportEmergencySheetCommand}" />
+                    <NativeMenuItemSeparator />
+                    <NativeMenuItem Header="关闭当前密码库标签页" Command="{Binding CloseVaultTabCommand}" />
+                    <NativeMenuItem Header="锁定全部密码库" Gesture="Cmd+L" Command="{Binding LockVaultCommand}" />
+                </NativeMenu>
+            </NativeMenuItem>
+            <NativeMenuItem Header="条目">
+                <NativeMenu>
+                    <NativeMenuItem Header="新建" Gesture="Cmd+N" Command="{Binding AddEntryCommand}" />
+                    <NativeMenuItem Header="编辑选中条目" Gesture="Cmd+E" Command="{Binding EditSelectedEntryCommand}" />
+                    <NativeMenuItem Header="克隆选中条目" Gesture="Cmd+D" Command="{Binding DuplicateEntryCommand}" />
+                    <NativeMenuItem Header="收藏 / 取消收藏" Command="{Binding ToggleFavoriteSelectedCommand}" />
+                    <NativeMenuItemSeparator />
+                    <NativeMenuItem Header="复制用户名" Gesture="Cmd+B" Command="{Binding CopyUserNameCommand}" />
+                    <NativeMenuItem Header="复制密码" Gesture="Shift+Cmd+C" Command="{Binding CopyPasswordCommand}" />
+                    <NativeMenuItem Header="复制动态验证码" Gesture="Shift+Cmd+T" Command="{Binding CopyTotpCommand}" />
+                    <NativeMenuItem Header="在浏览器打开网址" Gesture="Cmd+U" Command="{Binding OpenEntryUrlCommand}" />
+                    <NativeMenuItem Header="执行自动输入 (Auto-Type)" Command="{Binding PerformAutoTypeCommand}" />
+                    <NativeMenuItemSeparator />
+                    <NativeMenuItem Header="还原选中条目" Command="{Binding RestoreSelectedEntryCommand}" />
+                    <NativeMenuItem Header="删除 / 移入回收站" Command="{Binding DeleteSelectedEntryCommand}" />
+                    <NativeMenuItem Header="清空回收站" Command="{Binding EmptyRecycleBinCommand}" />
+                </NativeMenu>
+            </NativeMenuItem>
+            <NativeMenuItem Header="工具">
+                <NativeMenu>
+                    <NativeMenuItem Header="新建根分组..." Command="{Binding AddRootGroupCommand}" />
+                    <NativeMenuItemSeparator />
+                    <NativeMenuItem Header="强密码生成器" Gesture="Cmd+G" Command="{Binding OpenPasswordGeneratorCommandCommand}" />
+                    <NativeMenuItem Header="安全审计仪表盘" Command="{Binding SelectSectionCommand}" CommandParameter="SecurityAudit" />
+                </NativeMenu>
+            </NativeMenuItem>
+            <NativeMenuItem Header="查找">
+                <NativeMenu>
+                    <NativeMenuItem Header="快速搜索" Gesture="Cmd+K" Command="{Binding FocusSearchCommand}" />
+                    <NativeMenuItem Header="高级查找（支持正则）..." Gesture="Cmd+F" Command="{Binding OpenAdvancedSearchAsyncCommandCommand}" />
+                    <NativeMenuItemSeparator />
+                    <NativeMenuItem Header="已过期条目" Command="{Binding ShowQuickFilterCommand}" CommandParameter="Expired" />
+                    <NativeMenuItem Header="7 天内即将过期" Command="{Binding ShowQuickFilterCommand}" CommandParameter="Expiring7" />
+                    <NativeMenuItem Header="30 天内即将过期" Command="{Binding ShowQuickFilterCommand}" CommandParameter="Expiring30" />
+                    <NativeMenuItemSeparator />
+                    <NativeMenuItem Header="最近修改的条目" Command="{Binding ShowQuickFilterCommand}" CommandParameter="LastModified" />
+                    <NativeMenuItem Header="大体积 / 含附件条目" Command="{Binding ShowQuickFilterCommand}" CommandParameter="Large" />
+                </NativeMenu>
+            </NativeMenuItem>
+            <NativeMenuItem Header="视图">
+                <NativeMenu>
+                    <NativeMenuItem Header="搜索密码库" Gesture="Cmd+K" Command="{Binding FocusSearchCommand}" />
+                    <NativeMenuItemSeparator />
+                    <NativeMenuItem Header="全部条目" Command="{Binding SelectSectionCommand}" CommandParameter="AllEntries" />
+                    <NativeMenuItem Header="收藏夹" Command="{Binding SelectSectionCommand}" CommandParameter="Favorites" />
+                    <NativeMenuItem Header="动态验证码 (2FA)" Command="{Binding SelectSectionCommand}" CommandParameter="TotpOnly" />
+                    <NativeMenuItemSeparator />
+                    <NativeMenuItem Header="切换界面密度（紧凑 / 标准 / 宽松）" Command="{Binding CycleDensityCommand}" />
+                    <NativeMenuItem Header="切换排序方式" Command="{Binding ToggleSortOrderCommand}" />
+                </NativeMenu>
+            </NativeMenuItem>
+        </NativeMenu>
+    </NativeMenu.Menu>
+
+    <Window.Resources>
+        <DataTemplate x:Key="VaultSwitcherLabel" x:DataType="vm:VaultTabSession">
+            <Grid ColumnDefinitions="*,14" ColumnSpacing="8">
+                <TextBlock Classes="vaultOptionName" Classes.current="{Binding IsActive}" Text="{Binding DisplayName}"
+                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                <PathIcon Grid.Column="1" Data="{StaticResource IconCheck}" Width="12" Height="12"
+                          Foreground="{DynamicResource AccentTextBrush}" IsVisible="{Binding IsActive}" />
+            </Grid>
+        </DataTemplate>
+        <DataTemplate x:Key="VaultSwitcherIcon" x:DataType="vm:VaultTabSession">
+            <Border Classes="vaultIconBadge" Classes.current="{Binding IsActive}" Width="22" Height="22" CornerRadius="5">
+                <PathIcon Data="{StaticResource IconDatabase}" Width="12" Height="12" />
+            </Border>
+        </DataTemplate>
+        <helpers:GlassMenuFlyout x:Key="VaultSwitcherMenu" Placement="BottomEdgeAlignedLeft" VerticalOffset="4"
+                                 FlyoutPresenterClasses="workspaceMenu compactMenu vaultSwitcher">
+            <Separator />
+            <MenuItem Header="打开其他密码库…" Command="{Binding OpenAnotherVaultCommand}">
+                <MenuItem.Icon><PathIcon Data="{StaticResource IconFolder}" Width="14" Height="14" Foreground="{DynamicResource SecondaryTextBrush}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="关闭当前密码库" Command="{Binding CloseVaultTabCommand}">
+                <MenuItem.Icon><PathIcon Data="{StaticResource IconClose}" Width="11" Height="11" Foreground="{DynamicResource SecondaryTextBrush}" /></MenuItem.Icon>
+            </MenuItem>
+        </helpers:GlassMenuFlyout>
+        <helpers:GlassMenuFlyout x:Key="SidebarSettingsMenu" Placement="TopEdgeAlignedLeft" VerticalOffset="-4"
+                                 FlyoutPresenterClasses="workspaceMenu compactMenu">
+            <MenuItem Header="偏好设置…" Command="{Binding OpenSettingsCommandCommand}">
+                <MenuItem.Icon><PathIcon Data="{StaticResource IconSettings}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="{Binding CurrentThemeLabel, StringFormat='应用主题 · {0}'}">
+                <MenuItem.Icon><PathIcon Data="{StaticResource IconPanel}" /></MenuItem.Icon>
+                <MenuItem Header="跟随系统" Command="{Binding SetThemeModeCommand}" CommandParameter="Default" />
+                <MenuItem Header="浅色" Command="{Binding SetThemeModeCommand}" CommandParameter="Light" />
+                <MenuItem Header="深色" Command="{Binding SetThemeModeCommand}" CommandParameter="Dark" />
+            </MenuItem>
+            <MenuItem Header="{Binding CurrentDensityLabel, StringFormat='界面密度 · {0}'}">
+                <MenuItem.Icon><PathIcon Data="{StaticResource IconSort}" /></MenuItem.Icon>
+                <MenuItem Header="紧凑" Command="{Binding SetDensityCommand}" CommandParameter="Compact" />
+                <MenuItem Header="标准" Command="{Binding SetDensityCommand}" CommandParameter="Normal" />
+                <MenuItem Header="宽松" Command="{Binding SetDensityCommand}" CommandParameter="Comfortable" />
+            </MenuItem>
+            <Separator />
+            <MenuItem Header="检查更新…" Command="{Binding CheckForUpdatesCommand}">
+                <MenuItem.Icon><PathIcon Data="{StaticResource IconRefresh}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="关于 KeeDesk" Command="{Binding OpenAboutAsyncCommandCommand}">
+                <MenuItem.Icon><PathIcon Data="{StaticResource IconInfo}" /></MenuItem.Icon>
+            </MenuItem>
+        </helpers:GlassMenuFlyout>
+        <DataTemplate x:Key="SearchSuggestionTemplate" x:DataType="vm:EntryItemViewModel">
+            <StackPanel Spacing="2" Margin="4,2">
+                <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                <TextBlock Text="{Binding UserName}" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+        </DataTemplate>
+        <DataTemplate x:Key="AuditFindingTemplate" x:DataType="vm:EntryItemViewModel">
+            <Border BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,1,0,0" Padding="12,7">
+                <Grid ColumnDefinitions="*,*,Auto" ColumnSpacing="12">
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="{Binding UserName}" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                    <TextBlock Grid.Column="1" Text="{Binding GroupPath}" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}"
+                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                    <Button Grid.Column="2" Classes="subtle" Content="打开条目"
+                            Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).JumpToAuditEntryCommand}"
+                            CommandParameter="{Binding}" Click="AuditEntry_Click" />
+                </Grid>
+            </Border>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Window.Styles>
+        <Style Selector=":is(Window)">
+            <Setter Property="Background" Value="{DynamicResource WorkspaceBackgroundBrush}" />
+        </Style>
+        <Style Selector=":is(Window).mica">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="Border.desktopTitleSurface">
+            <Setter Property="Background" Value="{DynamicResource TitleBarBackgroundBrush}" />
+        </Style>
+        <Style Selector=":is(Window).mica Border.desktopTitleSurface">
+            <Setter Property="Background" Value="{DynamicResource MicaTintBrush}" />
+        </Style>
+        <Style Selector="Border#WorkspaceSidebar">
+            <Setter Property="Background" Value="{DynamicResource SidebarBackgroundBrush}" />
+        </Style>
+        <Style Selector=":is(Window).mica Border#WorkspaceSidebar">
+            <Setter Property="Background" Value="{DynamicResource MicaTintBrush}" />
+        </Style>
+        <Style Selector="Expander.disclosure">
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <StackPanel>
+                        <ToggleButton Classes="disclosureHeader" Content="{TemplateBinding Header}"
+                                      IsChecked="{TemplateBinding IsExpanded, Mode=TwoWay}" />
+                        <controls:ExpanderContentSlide IsExpanded="{TemplateBinding IsExpanded}">
+                            <ContentPresenter x:Name="PART_ContentPresenter" Content="{TemplateBinding Content}" />
+                        </controls:ExpanderContentSlide>
+                    </StackPanel>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="ToggleButton.disclosureHeader">
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="Height" Value="32" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Padding" Value="12,0" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <ContentPresenter Content="{TemplateBinding Content}" Background="{TemplateBinding Background}"
+                                      CornerRadius="{TemplateBinding CornerRadius}" Padding="{TemplateBinding Padding}"
+                                      HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                      VerticalContentAlignment="Center" />
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="ToggleButton.disclosureHeader:pointerover">
+            <Setter Property="Background" Value="{DynamicResource SidebarItemHoverBackgroundBrush}" />
+        </Style>
+        <Style Selector="ToggleButton.disclosureHeader:pressed">
+            <Setter Property="Background" Value="{DynamicResource SidebarItemSelectedBackgroundBrush}" />
+        </Style>
+        <Style Selector="Expander.unlockOptions /template/ ToggleButton.disclosureHeader">
+            <Setter Property="HorizontalAlignment" Value="Left" />
+        </Style>
+        <Style Selector="Expander.sidebarTags /template/ ToggleButton.disclosureHeader">
+            <Setter Property="Height" Value="{DynamicResource DensityNavItemHeight}" />
+        </Style>
+        <Style Selector="PathIcon.disclosureChevron">
+            <Setter Property="RenderTransform" Value="rotate(-90deg)" />
+        </Style>
+        <Style Selector="Expander.disclosure:expanded PathIcon.disclosureChevron">
+            <Setter Property="RenderTransform" Value="rotate(0deg)" />
+        </Style>
+        <Style Selector="TextBlock.keyDisclosureLabel">
+            <Setter Property="Text" Value="使用密钥文件" />
+        </Style>
+        <Style Selector="Expander.unlockOptions:expanded TextBlock.keyDisclosureLabel">
+            <Setter Property="Text" Value="密钥文件" />
+        </Style>
+        <Style Selector="Grid#UnlockStage Button.welcomeAction">
+            <Setter Property="Height" Value="36" />
+        </Style>
+        <Style Selector="Grid#UnlockStage Button.unlockAction, Grid#UnlockStage TextBox.unlockField">
+            <Setter Property="Height" Value="40" />
+            <Setter Property="FontSize" Value="14" />
+        </Style>
+        <Style Selector="ListBox.recentList ListBoxItem:selected Border.entryIndicator">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+        <Style Selector="Button.chromeBack">
+            <Setter Property="Width" Value="44" />
+            <Setter Property="Height" Value="47" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="CornerRadius" Value="0" />
+        </Style>
+        <Style Selector="Button.vaultPicker">
+            <Setter Property="Background" Value="{DynamicResource SidebarItemHoverBackgroundBrush}" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Padding" Value="8,0" />
+        </Style>
+        <Style Selector="Button.sidebarSettings">
+            <Setter Property="Height" Value="40" />
+            <Setter Property="Padding" Value="12,0" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+        </Style>
+        <Style Selector=":is(Window).rail Border#WorkspaceSidebar Button.sidebarSettings">
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="PathIcon.settingsGear">
+            <Setter Property="RenderTransform" Value="rotate(0deg)" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.22" Easing="CubicEaseOut" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.sidebarSettings:pointerover PathIcon.settingsGear">
+            <Setter Property="RenderTransform" Value="rotate(40deg)" />
+        </Style>
+        <Style Selector="Button.sidebarSettings:flyout-open PathIcon.settingsGear">
+            <Setter Property="RenderTransform" Value="rotate(90deg)" />
+        </Style>
+        <Style Selector="PathIcon.toastIcon">
+            <Setter Property="Data" Value="{StaticResource IconInfo}" />
+            <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}" />
+            <Setter Property="Width" Value="18" />
+            <Setter Property="Height" Value="18" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="PathIcon.toastIcon.success">
+            <Setter Property="Data" Value="{StaticResource IconCheckCircle}" />
+            <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}" />
+        </Style>
+        <Style Selector="PathIcon.toastIcon.error">
+            <Setter Property="Data" Value="{StaticResource IconWarning}" />
+            <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
+        </Style>
+        <Style Selector="TextBlock.vaultTitle">
+            <Setter Property="TextWrapping" Value="NoWrap" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.detailCommand">
+            <Setter Property="Width" Value="28" />
+            <Setter Property="Height" Value="28" />
+            <Setter Property="MinHeight" Value="28" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="Padding" Value="0" />
+        </Style>
+        <Style Selector="Border.vaultTab.active">
+            <Setter Property="Background" Value="{DynamicResource ListPaneBackgroundBrush}" />
+            <Setter Property="CornerRadius" Value="6,6,0,0" />
+        </Style>
+        <Style Selector=":is(Control).compactOnly">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+        <Style Selector=":is(Window).compactChrome :is(Control).compactOnly">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+        <Style Selector=":is(Window).compactChrome StackPanel#DesktopVaultTabs, :is(Window).compactChrome :is(Control).wideOnly">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+        <Style Selector=":is(Control).compactExpandedOnly">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+        <Style Selector=":is(Window).compactChrome:not(.rail) :is(Control).compactExpandedOnly">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+        <Style Selector=":is(Control).railOnly, :is(Window).rail :is(Control).expandedOnly">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+        <Style Selector=":is(Window).rail :is(Control).railOnly">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+        <Style Selector=":is(Window).rail Border#WorkspaceSidebar Button.navItem">
+            <Setter Property="Padding" Value="5,0" />
+        </Style>
+    </Window.Styles>
+
+    <Grid x:Name="PresentationRoot" RowDefinitions="Auto,*">
+        <Border Grid.Row="0" Height="48" IsVisible="{Binding !UsesLeftWindowChrome}" Classes="desktopTitleSurface"
+                BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,0,0,1"
+                chrome:WindowDecorationProperties.ElementRole="TitleBar" PointerPressed="TitleBar_PointerPressed">
+            <Grid ColumnDefinitions="*,Auto,*">
+                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                    <Button x:Name="WorkspaceBackButton" Classes="subtle chromeBack" IsVisible="False" Click="WorkspaceBack_Click"
+                            ToolTip.Tip="返回" AutomationProperties.Name="返回">
+                        <PathIcon Data="{StaticResource IconBack}" Width="16" Height="16" />
+                    </Button>
+                    <controls:BrandLogo Width="20" Height="20" Margin="16,0,0,0" />
+                    <TextBlock x:Name="DesktopWelcomeTitle" Text="KeeDesk" FontSize="14" Margin="4,0,0,0" VerticalAlignment="Center" />
+                    <Panel x:Name="DesktopVaultPanel" IsVisible="False">
+                    <StackPanel x:Name="DesktopVaultTabs" Classes="wideOnly" Orientation="Horizontal" Spacing="4">
+                        <Button Classes="subtle chromeCommand" Click="ToggleSidebar_Click" ToolTip.Tip="切换导航栏" AutomationProperties.Name="切换导航栏">
+                            <PathIcon Data="{StaticResource IconPanel}" Width="16" Height="16" />
+                        </Button>
+                        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" MaxWidth="292">
+                            <ItemsControl ItemsSource="{Binding OpenVaults}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="4" /></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:VaultTabSession">
+                                        <Border Classes="vaultTab" Classes.active="{Binding IsActive}" Width="144">
+                                            <Grid ColumnDefinitions="*,28">
+                                                <Button Classes="subtle" Padding="8,0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                                                        Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).SwitchVaultTabCommand}"
+                                                        CommandParameter="{Binding}" ToolTip.Tip="{Binding DisplayName}">
+                                                    <Grid ColumnDefinitions="16,*" ColumnSpacing="8">
+                                                        <PathIcon Data="{StaticResource IconVault}" Width="16" Height="16" />
+                                                        <TextBlock Grid.Column="1" Classes="vaultTitle" Text="{Binding DisplayName}" />
+                                                    </Grid>
+                                                </Button>
+                                                <Button Grid.Column="1" Classes="subtle" Width="28" MinWidth="0" Padding="0"
+                                                        Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).CloseVaultTabCommand}"
+                                                        CommandParameter="{Binding}" ToolTip.Tip="关闭密码库" AutomationProperties.Name="关闭密码库">
+                                                    <PathIcon Data="{StaticResource IconClose}" Width="14" Height="14" />
+                                                </Button>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                        <Button Classes="subtle chromeCommand" Command="{Binding OpenAnotherVaultCommand}" ToolTip.Tip="打开其他密码库" AutomationProperties.Name="打开其他密码库">
+                            <PathIcon Data="{StaticResource IconAdd}" Width="16" Height="16" />
+                        </Button>
+                    </StackPanel>
+                    <Button x:Name="DesktopVaultPicker" Classes="subtle vaultPicker compactOnly" Width="144"
+                            ToolTip.Tip="{Binding VaultDisplayName}" AutomationProperties.Name="切换密码库"
+                            Flyout="{StaticResource VaultSwitcherMenu}">
+                        <Grid ColumnDefinitions="14,*,12" ColumnSpacing="6">
+                            <PathIcon Data="{StaticResource IconDatabase}" Width="14" Height="14" Foreground="{DynamicResource SecondaryTextBrush}" />
+                            <TextBlock Grid.Column="1" Classes="vaultTitle" Text="{Binding VaultDisplayName}" FontWeight="SemiBold" />
+                            <PathIcon Grid.Column="2" Data="{StaticResource IconChevronDown}" Width="12" Height="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                        </Grid>
+                    </Button>
+                    </Panel>
+                </StackPanel>
+                <Border x:Name="DesktopSearchSlot" Grid.Column="1" Width="360" VerticalAlignment="Center" IsVisible="False">
+                    <Grid>
+                        <TextBox x:Name="WinGlobalSearchBox" Text="{Binding SearchQuery}" PlaceholderText="搜索当前密码库"
+                                 AutomationProperties.Name="搜索当前密码库" Padding="34,0,58,0" Height="32" KeyDown="Search_KeyDown" GotFocus="Search_FocusChanged" LostFocus="Search_FocusChanged" TextChanged="Search_TextChanged" />
+                        <PathIcon Data="{StaticResource IconSearch}" Width="16" Height="16" Foreground="{DynamicResource SecondaryTextBrush}"
+                                  HorizontalAlignment="Left" Margin="10,0,0,0" IsHitTestVisible="False" />
+                        <Border Background="{DynamicResource SidebarItemHoverBackgroundBrush}" CornerRadius="3" Padding="6,2"
+                                IsVisible="{Binding !HasSearchQuery}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,6,0" IsHitTestVisible="False">
+                            <TextBlock Text="{Binding SearchShortcutHint}" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                        </Border>
+                        <Button Classes="subtle chromeCommand" HorizontalAlignment="Right" IsVisible="{Binding HasSearchQuery}"
+                                Click="ClearSearch_Click" ToolTip.Tip="清除搜索" AutomationProperties.Name="清除搜索"><PathIcon Data="{StaticResource IconClose}" Width="16" Height="16" /></Button>
+                        <Popup x:Name="WinSearchPopup" PlacementTarget="{Binding #WinGlobalSearchBox}" Placement="BottomEdgeAlignedLeft"
+                               VerticalOffset="4" ShouldUseOverlayLayer="True">
+                            <Border Width="{Binding #WinGlobalSearchBox.Bounds.Width}" Background="{DynamicResource DetailBackgroundBrush}"
+                                    BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="4">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Text="当前密码库中的匹配" Margin="8,4" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                    <ListBox x:Name="WinSearchSuggestions" MaxHeight="228" Background="Transparent"
+                                             ItemTemplate="{StaticResource SearchSuggestionTemplate}" Tapped="SearchSuggestion_Tapped"
+                                             KeyDown="Search_KeyDown" LostFocus="Search_FocusChanged" AutomationProperties.Name="搜索建议" />
+                                </StackPanel>
+                            </Border>
+                        </Popup>
+                    </Grid>
+                </Border>
+                <StackPanel x:Name="DesktopCommands" Grid.Column="2" IsVisible="False" Orientation="Horizontal" Spacing="4"
+                            HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,192,0">
+                    <Button Classes="subtle chromeCommand" AutomationProperties.Name="密码生成器" ToolTip.Tip="密码生成器" Command="{Binding OpenPasswordGeneratorCommandCommand}" ><PathIcon Data="{StaticResource IconGenerator}" Width="16" Height="16" /></Button>
+                    <Button Classes="subtle chromeCommand" AutomationProperties.Name="锁定密码库 (Ctrl+L)" ToolTip.Tip="锁定密码库 (Ctrl+L)" Command="{Binding LockVaultCommand}" ><PathIcon Data="{StaticResource IconLock}" Width="16" Height="16" /></Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1">
+            <Grid x:Name="UnlockStage" ColumnDefinitions="Auto,1,*">
+                <Border x:Name="UnlockSidebar" Grid.Column="0" Width="248" Background="{DynamicResource SidebarBackgroundBrush}">
+                    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
+                        <!-- macOS 顶部 48px 交通灯安全拖动区 -->
+                        <Border Grid.Row="0" Height="48" IsVisible="{Binding UsesLeftWindowChrome}" Background="Transparent"
+                                chrome:WindowDecorationProperties.ElementRole="TitleBar"
+                                PointerPressed="TitleBar_PointerPressed" />
+
+                        <StackPanel Grid.Row="1" Margin="20,22,20,6" Spacing="12">
+                            <TextBlock Text="密码库" FontSize="24" FontWeight="SemiBold" />
+                            <WrapPanel ItemSpacing="6" LineSpacing="6">
+                                <Button Classes="welcomeAction" Command="{Binding BrowseVaultFileCommand}" Padding="8,0">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <PathIcon Data="{StaticResource IconFolder}" Width="16" Height="16" />
+                                        <TextBlock Text="打开文件" />
+                                    </StackPanel>
+                                </Button>
+                                <Button Classes="subtle welcomeAction" Command="{Binding CreateNewVaultCommand}" Padding="8,0" Content="新建密码库" />
+                            </WrapPanel>
+                            <Border Height="1" Margin="0,4,0,0" Background="{DynamicResource DividerBrush}" />
+                            <TextBlock Text="最近打开" FontWeight="SemiBold" Foreground="{DynamicResource SecondaryTextBrush}" />
+                        </StackPanel>
+
+                        <!-- 最近打开的密码库列表（悬停右侧显示移除图标，支持右键移除/清空） -->
+                        <ListBox Grid.Row="2" Classes="entryList workspaceList recentList" ItemsSource="{Binding RecentVaults}" SelectedItem="{Binding SelectedRecentVault}"
+                                 IsVisible="{Binding HasRecentVaults}" MaxHeight="264" Background="Transparent" BorderThickness="0" Padding="12,0">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Classes="entryCard" Height="52">
+                                        <Border.ContextMenu>
+                                            <helpers:GlassContextMenu>
+                                                <MenuItem Header="从最近列表移除"
+                                                          Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).RemoveRecentVaultCommand}"
+                                                          CommandParameter="{Binding}">
+                                                    <MenuItem.Icon>
+                                                        <PathIcon Data="{StaticResource IconClose}" Width="12" Height="12" />
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
+                                                <Separator />
+                                                <MenuItem Header="清空全部最近记录"
+                                                          Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ClearRecentVaultsCommand}">
+                                                    <MenuItem.Icon>
+                                                        <PathIcon Data="{StaticResource IconTrash}" Width="13" Height="13" />
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
+                                            </helpers:GlassContextMenu>
+                                        </Border.ContextMenu>
+                                        <Grid ColumnDefinitions="6,28,*,Auto">
+                                            <Border Grid.Column="0" Classes="entryIndicator" Width="3" Height="24" CornerRadius="2"
+                                                    Background="{DynamicResource SystemControlHighlightAccentBrush}"
+                                                    HorizontalAlignment="Left" VerticalAlignment="Center" />
+                                            <PathIcon Grid.Column="1" Data="{StaticResource IconVault}" Width="16" Height="16" />
+                                            <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="2" Margin="4,0,6,0">
+                                                <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" FontSize="14" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Text="{Binding FileName}" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" TextTrimming="CharacterEllipsis" />
+                                            </StackPanel>
+                                            <Button Grid.Column="3" Classes="subtle recentRemoveBtn" Width="26" Height="26" MinHeight="26" Padding="0" Margin="0,0,8,0"
+                                                    VerticalAlignment="Center" ToolTip.Tip="从最近列表移除（不删除本地文件）"
+                                                    Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).RemoveRecentVaultCommand}"
+                                                    CommandParameter="{Binding}">
+                                                <PathIcon Data="{StaticResource IconClose}" Width="10" Height="10" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                            </Button>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <TextBlock Grid.Row="2" Margin="20,8,20,12" IsVisible="{Binding !HasRecentVaults}"
+                                   Text="暂无最近打开的密码库" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                        <StackPanel Grid.Row="3" VerticalAlignment="Top" Spacing="4" Margin="12,12,12,0">
+                            <Button Classes="subtle welcomeAction" HorizontalAlignment="Left" Command="{Binding OpenDemoVaultCommand}">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <PathIcon Data="{StaticResource IconBook}" Width="16" Height="16" />
+                                    <TextBlock Text="打开演示密码库" />
+                                </StackPanel>
+                            </Button>
+                            <TextBlock Text="可拖入 .kdbx 文件打开。" Margin="8,0" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                        </StackPanel>
+                        <StackPanel Grid.Row="4" Spacing="8" Margin="8,0,8,12">
+                            <Border Height="1" Background="{DynamicResource DividerBrush}" />
+                            <Button x:Name="WelcomeSettingsButton" Classes="subtle sidebarSettings" Flyout="{StaticResource SidebarSettingsMenu}"
+                                    ToolTip.Tip="{DynamicResource Str_SettingsTitle}" AutomationProperties.Name="{DynamicResource Str_SettingsTitle}">
+                                <StackPanel Orientation="Horizontal" Spacing="12">
+                                    <PathIcon Classes="settingsGear" Data="{StaticResource IconSettings}" Width="16" Height="16" />
+                                    <TextBlock Text="{DynamicResource Str_SettingsTitle}" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- 直通顶部的 1px 垂直分割线 -->
+                <Border Grid.Column="1" Background="{DynamicResource DividerBrush}" />
+
+                <!-- 右侧纯净解锁主表单区 -->
+                <Grid Grid.Column="2" RowDefinitions="Auto,*" Background="{DynamicResource ListPaneBackgroundBrush}">
+                    <!-- 右侧顶部透明拖动区 -->
+                    <Border Grid.Row="0" Height="48" IsVisible="{Binding UsesLeftWindowChrome}" Background="Transparent"
+                            chrome:WindowDecorationProperties.ElementRole="TitleBar"
+                            PointerPressed="TitleBar_PointerPressed" />
+
+                    <ScrollViewer Grid.Row="1" Padding="24,60,24,24">
+                    <StackPanel MaxWidth="400" Spacing="12">
+                        <Border x:Name="UnlockBadge" Width="44" Height="44" CornerRadius="8" HorizontalAlignment="Left"
+                                Background="{DynamicResource BadgePillBackgroundBrush}">
+                            <PathIcon Data="{StaticResource IconLock}" Width="20" Height="20" Foreground="{DynamicResource AccentTextBrush}" />
+                        </Border>
+                        <StackPanel Spacing="2" Margin="0,0,0,8">
+                            <TextBlock Text="{Binding UnlockVaultHeading}" FontSize="24" FontWeight="SemiBold" />
+                            <TextBlock Text="{Binding UnlockVaultFileName}" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                        </StackPanel>
+
+                        <!-- 主密码（解锁失败时触发 macOS 风格水平微颤动画） -->
+                        <StackPanel x:Name="UnlockPasswordContainer" Spacing="4">
+                            <TextBlock Text="主密码" FontSize="14" Foreground="{DynamicResource SecondaryTextBrush}" />
+                            <TextBox x:Name="UnlockPasswordBox" Classes="unlockField" Text="{Binding UnlockMasterPassword}" PasswordChar="•"
+                                     AutomationProperties.Name="主密码" PlaceholderText="输入主密码" KeyDown="UnlockPassword_KeyDown" IsEnabled="{Binding !IsUnlocking}" />
+                            <TextBlock Text="{Binding UnlockError}" Foreground="{DynamicResource DangerBrush}" FontSize="12"
+                                       AutomationProperties.LiveSetting="Polite"
+                                       IsVisible="{Binding UnlockError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                        </StackPanel>
+
+                        <Expander x:Name="UnlockKeyOptions" Classes="disclosure unlockOptions" HorizontalAlignment="Stretch"
+                                  AutomationProperties.Name="使用密钥文件">
+                            <Expander.Header>
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <PathIcon Classes="disclosureChevron" Data="{StaticResource IconChevronDown}" Width="12" Height="12" />
+                                    <TextBlock Classes="keyDisclosureLabel" FontSize="14" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Expander.Header>
+                            <Border Height="44" Margin="0,4,0,0" Padding="12,0,3,0" CornerRadius="4"
+                                    Background="{DynamicResource InputBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                <Grid ColumnDefinitions="20,*,Auto,Auto,Auto" ColumnSpacing="6">
+                                    <PathIcon Data="{StaticResource IconKey}" Width="20" Height="20" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                    <TextBlock Grid.Column="1" Text="{Binding UnlockKeyFileDisplay}" FontSize="14" Margin="4,0,0,0"
+                                               Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center"
+                                               TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding UnlockKeyFileDisplay}" />
+                                    <Button Grid.Column="2" Classes="welcomeAction subtle" Width="32" Padding="0" VerticalAlignment="Center"
+                                            AutomationProperties.Name="清除已选密钥文件" ToolTip.Tip="清除已选密钥文件"
+                                            IsVisible="{Binding HasUnlockKeyFile}" Command="{Binding ClearKeyFileCommand}">
+                                        <PathIcon Data="{StaticResource IconClose}" Width="14" Height="14" />
+                                    </Button>
+                                    <Button Grid.Column="3" Classes="welcomeAction" MinWidth="78" Content="浏览…" VerticalAlignment="Center"
+                                            AutomationProperties.Name="浏览密钥文件" Command="{Binding BrowseKeyFileCommand}" />
+                                    <Button Grid.Column="4" Classes="welcomeAction subtle" MinWidth="92" Content="生成 .keyx" VerticalAlignment="Center"
+                                            ToolTip.Tip="生成新的 XML v2.0 密钥文件 (.keyx)" Command="{Binding GenerateKeyFileCommand}" />
+                                </Grid>
+                            </Border>
+                        </Expander>
+
+                        <!-- Windows 专属：使用当前 Windows 用户账户（DPAPI，100% 互通原版 KeePass 2.x） -->
+                        <CheckBox Content="使用 Windows 用户账户（DPAPI）" FontSize="14"
+                                  IsVisible="{Binding IsWindows}"
+                                  IsChecked="{Binding UnlockUseWindowsUserAccount}" />
+
+                        <!-- macOS 专属：启用 Touch ID 快速解锁（主密码安全托管于 macOS 钥匙串） -->
+                        <CheckBox Content="启用 Touch ID 快速解锁" FontSize="14" ToolTip.Tip="解锁凭据由 macOS 钥匙串保管"
+                                  IsVisible="{Binding CanEnableTouchId}"
+                                  IsChecked="{Binding RememberForTouchId}" />
+
+                        <!-- 通栏解锁主按钮 + Touch ID 快速解锁 + 丝滑解密进度条 -->
+                        <StackPanel Spacing="8" Margin="0,4,0,0">
+                            <Button Classes="accent unlockAction" HorizontalAlignment="Stretch" Command="{Binding UnlockVaultCommand}" IsEnabled="{Binding !IsUnlocking}">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="解锁密码库" FontSize="14" FontWeight="SemiBold" IsVisible="{Binding !IsUnlocking}" />
+                                    <TextBlock Text="正在解密密码库..." FontSize="14" FontWeight="SemiBold" IsVisible="{Binding IsUnlocking}" />
+                                </StackPanel>
+                            </Button>
+                            <Button Classes="unlockAction" HorizontalAlignment="Stretch"
+                                    Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource InputBorderBrush}" BorderThickness="1"
+                                    IsVisible="{Binding CanUnlockWithTouchId}" IsEnabled="{Binding !IsUnlocking}"
+                                    Command="{Binding UnlockWithTouchIdCommand}">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <PathIcon Data="{StaticResource IconShield}" Width="14" Height="14" Foreground="{DynamicResource BrandEmeraldBrush}" />
+                                    <TextBlock Text="使用 Touch ID" FontSize="14" FontWeight="Medium" />
+                                </StackPanel>
+                            </Button>
+                            <ProgressBar IsIndeterminate="True" Height="2" HorizontalAlignment="Stretch"
+                                         Foreground="{DynamicResource AccentButtonBackgroundBrush}"
+                                         IsVisible="{Binding IsUnlocking}" />
+                        </StackPanel>
+
+                        <TextBlock Text="在此设备上解锁，文件保存在本地。" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                    </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </Grid>
+
+            <Grid x:Name="WorkspaceStage" IsVisible="False" ColumnDefinitions="Auto, 1, *" ClipToBounds="True">
+                <Border x:Name="WorkspaceSidebar" Grid.Column="0" Width="240">
+                    <Grid RowDefinitions="Auto, *, Auto, 1, Auto">
+                        <Border Height="48" IsVisible="{Binding UsesLeftWindowChrome}" Background="Transparent"
+                                chrome:WindowDecorationProperties.ElementRole="TitleBar" PointerPressed="TitleBar_PointerPressed">
+                            <Grid ColumnDefinitions="Auto,*">
+                                <Border Width="{Binding LeftCaptionPadding}" />
+                                <Border Grid.Column="1" Margin="4,0,16,0" VerticalAlignment="Center">
+                                    <Button x:Name="MacVaultPicker" Classes="subtle vaultPicker" HorizontalAlignment="Stretch" IsVisible="{Binding IsUnlocked}"
+                                            ToolTip.Tip="{Binding VaultDisplayName}" AutomationProperties.Name="切换密码库"
+                                            Flyout="{StaticResource VaultSwitcherMenu}">
+                                        <Grid ColumnDefinitions="14,*,12" ColumnSpacing="6">
+                                            <PathIcon Data="{StaticResource IconDatabase}" Width="14" Height="14" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                            <TextBlock Grid.Column="1" Classes="vaultTitle" Text="{Binding VaultDisplayName}" FontWeight="SemiBold" />
+                                            <PathIcon Grid.Column="2" Data="{StaticResource IconChevronDown}" Width="12" Height="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                        </Grid>
+                                    </Button>
+                                </Border>
+                            </Grid>
+                        </Border>
+                        <ScrollViewer Grid.Row="1" Padding="8,12">
+                            <StackPanel Spacing="0">
+                                <Button Classes="subtle chromeCommand compactExpandedOnly" HorizontalAlignment="Left"
+                                        Click="ToggleSidebar_Click" ToolTip.Tip="切换导航栏" AutomationProperties.Name="切换导航栏">
+                                    <PathIcon Data="{StaticResource IconPanel}" Width="16" Height="16" />
+                                </Button>
+                                <Button Classes="navItem" Classes.active="{Binding IsAllEntriesSelected}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Height="{DynamicResource DensityNavItemHeight}"
+                                        Command="{Binding SelectSectionCommand}" CommandParameter="AllEntries" ToolTip.Tip="{DynamicResource Str_AllEntries}" AutomationProperties.Name="{DynamicResource Str_AllEntries}">
+                                    <Grid ColumnDefinitions="6, 26, *, Auto">
+                                        <Border Grid.Column="0" Width="3" Height="18" CornerRadius="2" Background="{DynamicResource SystemControlHighlightAccentBrush}"
+                                                HorizontalAlignment="Left" IsVisible="{Binding IsAllEntriesSelected}" />
+                                        <PathIcon Grid.Column="1" Data="{StaticResource IconVault}" Width="16" Height="16" />
+                                        <TextBlock Grid.Column="2" Classes="navLabel expandedOnly" Text="{DynamicResource Str_AllEntries}" FontSize="{DynamicResource DensityFontSizeBody}" VerticalAlignment="Center" />
+                                        <TextBlock Classes="expandedOnly" Grid.Column="3" Text="{Binding AllCount}" FontSize="{DynamicResource DensityFontSizeCaption}" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                    </Grid>
+                                </Button>
+
+                                <Button Classes="navItem" Classes.active="{Binding IsFavoritesSelected}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Height="{DynamicResource DensityNavItemHeight}"
+                                        Command="{Binding SelectSectionCommand}" CommandParameter="Favorites" ToolTip.Tip="{DynamicResource Str_Favorites}" AutomationProperties.Name="{DynamicResource Str_Favorites}">
+                                    <Grid ColumnDefinitions="6, 26, *, Auto">
+                                        <Border Grid.Column="0" Width="3" Height="18" CornerRadius="2" Background="{DynamicResource SystemControlHighlightAccentBrush}"
+                                                HorizontalAlignment="Left" IsVisible="{Binding IsFavoritesSelected}" />
+                                        <PathIcon Grid.Column="1" Data="{StaticResource IconStar}" Width="16" Height="16" />
+                                        <TextBlock Grid.Column="2" Classes="navLabel expandedOnly" Text="{DynamicResource Str_Favorites}" FontSize="{DynamicResource DensityFontSizeBody}" VerticalAlignment="Center" />
+                                        <TextBlock Classes="expandedOnly" Grid.Column="3" Text="{Binding FavoritesCount}" FontSize="{DynamicResource DensityFontSizeCaption}" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                    </Grid>
+                                </Button>
+
+                                <Button Classes="navItem" Classes.active="{Binding IsTotpSelected}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Height="{DynamicResource DensityNavItemHeight}"
+                                        Command="{Binding SelectSectionCommand}" CommandParameter="TotpOnly" ToolTip.Tip="{DynamicResource Str_Totp2Fa}" AutomationProperties.Name="{DynamicResource Str_Totp2Fa}">
+                                    <Grid ColumnDefinitions="6, 26, *, Auto">
+                                        <Border Grid.Column="0" Width="3" Height="18" CornerRadius="2" Background="{DynamicResource SystemControlHighlightAccentBrush}"
+                                                HorizontalAlignment="Left" IsVisible="{Binding IsTotpSelected}" />
+                                        <PathIcon Grid.Column="1" Data="{StaticResource IconClock}" Width="16" Height="16" />
+                                        <TextBlock Grid.Column="2" Classes="navLabel expandedOnly" Text="{DynamicResource Str_Totp2Fa}" FontSize="{DynamicResource DensityFontSizeBody}" VerticalAlignment="Center" />
+                                        <TextBlock Classes="expandedOnly" Grid.Column="3" Text="{Binding TotpCount}" FontSize="{DynamicResource DensityFontSizeCaption}" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                    </Grid>
+                                </Button>
+
+                                <Button Classes="navItem" Classes.active="{Binding IsAuditSelected}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Height="{DynamicResource DensityNavItemHeight}"
+                                        Command="{Binding SelectSectionCommand}" CommandParameter="SecurityAudit" ToolTip.Tip="{DynamicResource Str_SecurityAudit}" AutomationProperties.Name="{DynamicResource Str_SecurityAudit}">
+                                    <Grid ColumnDefinitions="6, 26, *, Auto">
+                                        <Border Grid.Column="0" Width="3" Height="18" CornerRadius="2" Background="{DynamicResource SystemControlHighlightAccentBrush}"
+                                                HorizontalAlignment="Left" IsVisible="{Binding IsAuditSelected}" />
+                                        <PathIcon Grid.Column="1" Data="{StaticResource IconShield}" Width="16" Height="16" />
+                                        <TextBlock Grid.Column="2" Classes="navLabel expandedOnly" Text="{DynamicResource Str_SecurityAudit}" FontSize="{DynamicResource DensityFontSizeBody}" VerticalAlignment="Center" />
+                                    </Grid>
+                                </Button>
+
+                                <Button Classes="subtle chromeCommand railOnly" Click="ToggleSidebar_Click"
+                                        HorizontalAlignment="Left" ToolTip.Tip="展开密码库分组" AutomationProperties.Name="展开密码库分组">
+                                    <PathIcon Data="{StaticResource IconFolder}" Width="16" Height="16" />
+                                </Button>
+                                <StackPanel Classes="expandedOnly">
+                                <!-- 密码分组（右侧 + 按钮新建根分组，每项支持右键新建子分组 / 重命名 / 删除） -->
+                                <Grid ColumnDefinitions="*, Auto" Margin="8,14,4,4">
+                                    <TextBlock Grid.Column="0" Text="{DynamicResource Str_Groups}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center" />
+                                    <Button Grid.Column="1" Classes="subtle" Width="22" Height="22" MinHeight="22" Padding="0"
+                                            ToolTip.Tip="新建分组" Command="{Binding AddRootGroupCommand}">
+                                        <PathIcon Data="{StaticResource IconAdd}" Width="11" Height="11" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                    </Button>
+                                </Grid>
+                                <TreeView ItemsSource="{Binding RootGroups}" SelectedItem="{Binding SelectedGroup}" Background="Transparent" BorderThickness="0">
+                                    <TreeView.Styles>
+                                        <Style Selector="TreeViewItem" x:DataType="vm:GroupItemViewModel">
+                                            <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                                        </Style>
+                                    </TreeView.Styles>
+                                    <TreeView.ItemTemplate>
+                                        <TreeDataTemplate ItemsSource="{Binding Children}">
+                                            <Grid ColumnDefinitions="18, *, Auto" Height="{DynamicResource DensityNavItemHeight}" Background="Transparent"
+                                                  DragDrop.AllowDrop="True"
+                                                  DragDrop.DragOver="GroupItem_DragOver"
+                                                  DragDrop.Drop="GroupItem_Drop">
+                                                <Grid.ContextMenu>
+                                                    <helpers:GlassContextMenu Classes="workspaceMenu compactMenu">
+                                                        <MenuItem Header="新建子分组..."
+                                                                  Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).AddSubGroupCommand}"
+                                                                  CommandParameter="{Binding}">
+                                                            <MenuItem.Icon>
+                                                                <PathIcon Data="{StaticResource IconAdd}" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
+                                                        <MenuItem Header="重命名 / 编辑备注..."
+                                                                  Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).RenameGroupCommand}"
+                                                                  CommandParameter="{Binding}">
+                                                            <MenuItem.Icon>
+                                                                <PathIcon Data="{StaticResource IconEdit}" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
+                                                        <Separator />
+                                                        <MenuItem Header="上移分组"
+                                                                  Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).MoveGroupUpCommand}"
+                                                                  CommandParameter="{Binding}">
+                                                            <MenuItem.Icon><PathIcon Data="{StaticResource IconChevronDown}" RenderTransform="rotate(180deg)" /></MenuItem.Icon>
+                                                        </MenuItem>
+                                                        <MenuItem Header="下移分组"
+                                                                  Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).MoveGroupDownCommand}"
+                                                                  CommandParameter="{Binding}">
+                                                            <MenuItem.Icon><PathIcon Data="{StaticResource IconChevronDown}" /></MenuItem.Icon>
+                                                        </MenuItem>
+                                                        <MenuItem Header="按名称排序子分组"
+                                                                  Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).SortSubGroupsCommand}"
+                                                                  CommandParameter="{Binding}">
+                                                            <MenuItem.Icon><PathIcon Data="{StaticResource IconSort}" /></MenuItem.Icon>
+                                                        </MenuItem>
+                                                        <Separator />
+                                                        <MenuItem Header="删除分组"
+                                                                  Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).DeleteGroupCommand}"
+                                                                  CommandParameter="{Binding}">
+                                                            <MenuItem.Icon>
+                                                                <PathIcon Data="{StaticResource IconTrash}" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
+                                                    </helpers:GlassContextMenu>
+                                                </Grid.ContextMenu>
+                                                <PathIcon Grid.Column="0" Data="{StaticResource IconFolder}" Width="13" Height="13" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                                <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="{DynamicResource DensityFontSizeBody}" VerticalAlignment="Center" Margin="4,0" />
+                                                <TextBlock Grid.Column="2" Text="{Binding EntryCount}" FontSize="{DynamicResource DensityFontSizeCaption}" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                                            </Grid>
+                                        </TreeDataTemplate>
+                                    </TreeView.ItemTemplate>
+                                </TreeView>
+
+                                <Border Height="1" Margin="8,4" Background="{DynamicResource DividerBrush}" />
+                                <Expander x:Name="SidebarTagOptions" Classes="disclosure sidebarTags" HorizontalAlignment="Stretch"
+                                          AutomationProperties.Name="标签">
+                                    <Expander.Header>
+                                        <Grid ColumnDefinitions="6,26,*,16">
+                                            <PathIcon Grid.Column="1" Data="{StaticResource IconTag}" Width="16" Height="16" />
+                                            <TextBlock Grid.Column="2" Text="标签" FontSize="{DynamicResource DensityFontSizeBody}"
+                                                       VerticalAlignment="Center" />
+                                            <PathIcon Grid.Column="3" Classes="disclosureChevron" Data="{StaticResource IconChevronDown}"
+                                                      Width="12" Height="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                        </Grid>
+                                    </Expander.Header>
+                                    <ItemsControl ItemsSource="{Binding AllTags}" Margin="12,0,12,0">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel Orientation="Horizontal" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Button Classes="subtle" Padding="8,3" MinHeight="24" Margin="2"
+                                                        Background="{DynamicResource BadgePillBackgroundBrush}"
+                                                        Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).SelectTagCommand}"
+                                                        CommandParameter="{Binding}">
+                                                    <TextBlock Text="{Binding StringFormat='#{0}'}" FontSize="11.5" Foreground="{DynamicResource BadgePillForegroundBrush}" />
+                                                </Button>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </Expander>
+                                </StackPanel>
+                            </StackPanel>
+                        </ScrollViewer>
+
+                        <!-- 固定钉在底部分割线上方的「回收站 (N)」（合并为单 TextBlock 保证基线 100% 对齐） -->
+                        <Button Grid.Row="2" ToolTip.Tip="回收站" AutomationProperties.Name="回收站" Classes="navItem" Classes.active="{Binding IsRecycleBinSelected}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                                Height="34" Margin="12,2,12,6"
+                                Command="{Binding SelectSectionCommand}" CommandParameter="RecycleBin">
+                            <Grid ColumnDefinitions="6, 26, Auto">
+                                <Border Grid.Column="0" Width="3" Height="18" CornerRadius="2" Background="{DynamicResource SystemControlHighlightAccentBrush}"
+                                        HorizontalAlignment="Left" IsVisible="{Binding IsRecycleBinSelected}" />
+                                <PathIcon Grid.Column="1" Data="{StaticResource IconTrash}" Width="13" Height="13" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="2" Classes="navLabel expandedOnly" Text="{Binding RecycleBinCount, StringFormat='回收站 ({0})'}"
+                                           FontSize="13" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center" />
+                            </Grid>
+                        </Button>
+
+                        <Border Grid.Row="3" Background="{DynamicResource DividerBrush}" />
+
+                        <Grid Grid.Row="4" ColumnDefinitions="*,Auto" Margin="8,8,8,12">
+                            <Button x:Name="WorkspaceSettingsButton" Classes="subtle sidebarSettings" Flyout="{StaticResource SidebarSettingsMenu}"
+                                    ToolTip.Tip="{DynamicResource Str_SettingsTitle}" AutomationProperties.Name="{DynamicResource Str_SettingsTitle}">
+                                <StackPanel Orientation="Horizontal" Spacing="12">
+                                    <PathIcon Classes="settingsGear" Data="{StaticResource IconSettings}" Width="16" Height="16" />
+                                    <TextBlock Classes="expandedOnly" Text="{DynamicResource Str_SettingsTitle}" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <!-- 垂直分割线 1（macOS 下直通窗口顶部！） -->
+                <Border Grid.Column="1" Background="{DynamicResource DividerBrush}" />
+
+                <!-- 右侧主内容区：安全审计仪表盘 或 中栏列表 + 右栏详情 -->
+                <Grid Grid.Column="2" RowDefinitions="Auto,*,28">
+                    <Border IsVisible="{Binding !UsesLeftWindowChrome}" Height="52" Background="{DynamicResource ListPaneBackgroundBrush}"
+                            BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,0,0,1">
+                        <Grid ColumnDefinitions="*,Auto" Margin="12,0">
+                            <StackPanel IsVisible="{Binding !IsAuditViewActive}" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <Button Classes="accent" Command="{Binding AddEntryCommand}" Padding="12,0" AutomationProperties.Name="新建">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <PathIcon Data="{StaticResource IconAdd}" Width="16" Height="16" />
+                                        <TextBlock Text="新建" />
+                                    </StackPanel>
+                                </Button>
+                                <Button Classes="subtle" Command="{Binding SaveVaultCommand}" ToolTip.Tip="保存密码库 (Ctrl+S)" AutomationProperties.Name="保存密码库">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <PathIcon Data="{StaticResource IconSave}" Width="16" Height="16" />
+                                        <TextBlock Classes="wideOnly" Text="保存" />
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                            <Button IsVisible="{Binding IsAuditViewActive}" Command="{Binding RefreshAuditCommand}" HorizontalAlignment="Left" Content="重新检查" />
+                            <Button Grid.Column="1" Classes="subtle chromeCommand" ToolTip.Tip="更多密码库命令" AutomationProperties.Name="更多密码库命令">
+                                <Button.Flyout>
+                                    <helpers:GlassMenuFlyout FlyoutPresenterClasses="workspaceMenu compactMenu" Placement="BottomEdgeAlignedRight">
+                                        <MenuItem Header="打开密码库" InputGesture="Ctrl+O" Command="{Binding OpenAnotherVaultCommand}">
+                                            <MenuItem.Icon><PathIcon Data="{StaticResource IconFolder}" /></MenuItem.Icon>
+                                        </MenuItem>
+                                        <MenuItem Header="高级搜索" Command="{Binding OpenAdvancedSearchAsyncCommandCommand}">
+                                            <MenuItem.Icon><PathIcon Data="{StaticResource IconSearch}" /></MenuItem.Icon>
+                                        </MenuItem>
+                                        <MenuItem Header="数据库设置" Command="{Binding OpenDatabaseSettingsAsyncCommandCommand}">
+                                            <MenuItem.Icon><PathIcon Data="{StaticResource IconSettings}" /></MenuItem.Icon>
+                                        </MenuItem>
+                                        <Separator />
+                                        <MenuItem Header="密码库维护工具" Command="{Binding OpenDatabaseMaintenanceAsyncCommandCommand}">
+                                            <MenuItem.Icon><PathIcon Data="{StaticResource IconRefresh}" /></MenuItem.Icon>
+                                        </MenuItem>
+                                    </helpers:GlassMenuFlyout>
+                                </Button.Flyout>
+                                <PathIcon Data="{StaticResource IconMore}" Width="16" Height="16" />
+                            </Button>
+                        </Grid>
+                    </Border>
+                    <Grid Grid.Row="1" IsVisible="{Binding IsAuditViewActive}" RowDefinitions="Auto,*" Background="{DynamicResource ListPaneBackgroundBrush}">
+                        <Border Height="48" Padding="12,0" IsVisible="{Binding UsesLeftWindowChrome}"
+                                Background="Transparent" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,0,0,1"
+                                chrome:WindowDecorationProperties.ElementRole="TitleBar" PointerPressed="TitleBar_PointerPressed">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <Button HorizontalAlignment="Left" Command="{Binding RefreshAuditCommand}" Content="重新检查" />
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                    <Button Classes="subtle chromeCommand" Command="{Binding SaveVaultCommand}" ToolTip.Tip="{Binding ShortcutModifier, StringFormat='保存密码库 ({0}S)'}" AutomationProperties.Name="保存密码库">
+                                        <PathIcon Data="{StaticResource IconSave}" Width="16" Height="16" />
+                                    </Button>
+                                    <Button Classes="subtle chromeCommand" Command="{Binding OpenPasswordGeneratorCommandCommand}"
+                                            ToolTip.Tip="{Binding ShortcutModifier, StringFormat='密码生成器 ({0}G)'}" AutomationProperties.Name="密码生成器">
+                                        <PathIcon Data="{StaticResource IconGenerator}" Width="16" Height="16" />
+                                    </Button>
+                                    <Button Classes="subtle chromeCommand" Command="{Binding LockVaultCommand}"
+                                            ToolTip.Tip="{Binding ShortcutModifier, StringFormat='锁定密码库 ({0}L)'}" AutomationProperties.Name="锁定密码库">
+                                        <PathIcon Data="{StaticResource IconLock}" Width="16" Height="16" />
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                        <ScrollViewer Grid.Row="1" Padding="28">
+                            <StackPanel Spacing="18">
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="安全审计" FontSize="28" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding AuditCheckedDisplay}" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                </StackPanel>
+                                <Border Background="{DynamicResource AttentionBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}"
+                                        BorderThickness="1" CornerRadius="4" Padding="12,10">
+                                    <Grid ColumnDefinitions="20,*" ColumnSpacing="10">
+                                        <PathIcon Data="{StaticResource IconWarning}" Width="18" Height="18" Foreground="{DynamicResource WarningBrush}" />
+                                        <StackPanel Grid.Column="1" Spacing="4">
+                                            <TextBlock Text="{Binding AuditAffectedCount, StringFormat='发现 {0} 个需要处理的条目'}"
+                                                       FontWeight="SemiBold" AutomationProperties.LiveSetting="Polite" />
+                                            <TextBlock Text="同一条目可能出现在多个风险类别中。" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                                <TextBlock Text="按风险查看" FontSize="20" FontWeight="SemiBold" />
+                                <TabControl Classes="compactTabs">
+                                    <TabItem Header="{Binding AuditWeakEntries.Count, StringFormat='弱密码 ({0})'}">
+                                        <Border Classes="fluentCard" Margin="0,12,0,0">
+                                            <ItemsControl ItemsSource="{Binding AuditWeakEntries}" ItemTemplate="{StaticResource AuditFindingTemplate}" />
+                                        </Border>
+                                    </TabItem>
+                                    <TabItem Header="{Binding AuditReusedEntries.Count, StringFormat='重复密码 ({0})'}">
+                                        <Border Classes="fluentCard" Margin="0,12,0,0">
+                                            <ItemsControl ItemsSource="{Binding AuditReusedEntries}" ItemTemplate="{StaticResource AuditFindingTemplate}" />
+                                        </Border>
+                                    </TabItem>
+                                    <TabItem Header="{Binding AuditExpiringEntries.Count, StringFormat='已过期或即将过期 ({0})'}">
+                                        <Border Classes="fluentCard" Margin="0,12,0,0">
+                                            <ItemsControl ItemsSource="{Binding AuditExpiringEntries}" ItemTemplate="{StaticResource AuditFindingTemplate}" />
+                                        </Border>
+                                    </TabItem>
+                                    <TabItem Header="{Binding TotpCount, StringFormat='动态验证码 ({0} 个已配置)'}">
+                                        <StackPanel Spacing="8" Margin="0,12,0,0">
+                                            <TextBlock Text="未配置动态验证码的登录条目" FontWeight="SemiBold" />
+                                            <Border Classes="fluentCard">
+                                                <ItemsControl ItemsSource="{Binding AuditNo2FaEntries}" ItemTemplate="{StaticResource AuditFindingTemplate}" />
+                                            </Border>
+                                        </StackPanel>
+                                    </TabItem>
+                                </TabControl>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Grid>
+
+                    <!-- 中栏条目列表 + 右栏详情面板 -->
+                    <Grid x:Name="EntryWorkspace" Grid.Row="1" IsVisible="{Binding !IsAuditViewActive}" ColumnDefinitions="344,1,*">
+                        <!-- PANE 2: 中栏条目列表（macOS 顶部直接内置搜索框 + 新建条目按钮，对应画板 02） -->
+                        <Border Grid.Column="0" x:Name="EntryPane" Background="{DynamicResource ListPaneBackgroundBrush}">
+                            <Grid RowDefinitions="Auto, Auto, Auto, *">
+                                <Border Grid.Row="0" IsVisible="{Binding UsesLeftWindowChrome}" Height="48" Padding="12,0"
+                                        Background="Transparent" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,0,0,1"
+                                        chrome:WindowDecorationProperties.ElementRole="TitleBar" PointerPressed="TitleBar_PointerPressed">
+                                    <Grid ColumnDefinitions="*,10,Auto" VerticalAlignment="Center">
+                                        <Grid>
+                                            <TextBox x:Name="MacGlobalSearchBox" Text="{Binding SearchQuery}" PlaceholderText="搜索当前密码库"
+                                                     AutomationProperties.Name="搜索当前密码库" Padding="34,0,58,0" Height="32" KeyDown="Search_KeyDown" GotFocus="Search_FocusChanged" LostFocus="Search_FocusChanged" TextChanged="Search_TextChanged" />
+                                            <PathIcon Data="{StaticResource IconSearch}" Width="16" Height="16" Foreground="{DynamicResource SecondaryTextBrush}"
+                                                      HorizontalAlignment="Left" Margin="10,0,0,0" IsHitTestVisible="False" />
+                                            <Border Background="{DynamicResource SidebarItemHoverBackgroundBrush}" CornerRadius="3" Padding="6,2"
+                                                    IsVisible="{Binding !HasSearchQuery}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,6,0" IsHitTestVisible="False">
+                                                <TextBlock Text="{Binding SearchShortcutHint}" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                            </Border>
+                                            <Button Classes="subtle chromeCommand" HorizontalAlignment="Right" IsVisible="{Binding HasSearchQuery}"
+                                                    Click="ClearSearch_Click" ToolTip.Tip="清除搜索" AutomationProperties.Name="清除搜索"><PathIcon Data="{StaticResource IconClose}" Width="16" Height="16" /></Button>
+                                            <Popup x:Name="MacSearchPopup" PlacementTarget="{Binding #MacGlobalSearchBox}" Placement="BottomEdgeAlignedLeft"
+                                                   VerticalOffset="4" ShouldUseOverlayLayer="True">
+                                                <Border Width="{Binding #MacGlobalSearchBox.Bounds.Width}" Background="{DynamicResource DetailBackgroundBrush}"
+                                                        BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="4">
+                                                    <StackPanel Spacing="4">
+                                                        <TextBlock Text="当前密码库中的匹配" Margin="8,4" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                                        <ListBox x:Name="MacSearchSuggestions" MaxHeight="228" Background="Transparent"
+                                                                 ItemTemplate="{StaticResource SearchSuggestionTemplate}" Tapped="SearchSuggestion_Tapped"
+                                                                 KeyDown="Search_KeyDown" LostFocus="Search_FocusChanged" AutomationProperties.Name="搜索建议" />
+                                                    </StackPanel>
+                                                </Border>
+                                            </Popup>
+                                        </Grid>
+                                        <Button Grid.Column="2" Classes="accent chromeCommand" Command="{Binding AddEntryCommand}"
+                                                ToolTip.Tip="{Binding ShortcutModifier, StringFormat='新建 ({0}N)'}" AutomationProperties.Name="新建">
+                                            <PathIcon Data="{StaticResource IconAdd}" Width="16" Height="16" />
+                                        </Button>
+                                    </Grid>
+                                </Border>
+
+                                <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="20,12,12,8">
+                                    <StackPanel Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding CurrentFilterTitle}" FontSize="20" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Text="{Binding FilteredEntries.Count, StringFormat='{}{0} 个条目'}" FontSize="12"
+                                                   Foreground="{DynamicResource SecondaryTextBrush}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Top">
+                                        <Button IsVisible="{Binding IsRecycleBinSelected}" IsEnabled="{Binding HasRecycleBinItems}"
+                                                Foreground="{DynamicResource DangerBrush}" Command="{Binding EmptyRecycleBinCommand}" Content="清空回收站" />
+                                        <Button Classes="subtle chromeCommand" Command="{Binding ToggleSortOrderCommand}"
+                                                ToolTip.Tip="{Binding SortButtonLabel}" AutomationProperties.Name="切换条目排序">
+                                            <PathIcon Data="{StaticResource IconSort}" Width="16" Height="16" />
+                                        </Button>
+                                        <Button Classes="subtle chromeCommand" Command="{Binding OpenAdvancedSearchAsyncCommandCommand}"
+                                                ToolTip.Tip="高级搜索" AutomationProperties.Name="高级搜索">
+                                            <PathIcon Data="{StaticResource IconFilter}" Width="16" Height="16" />
+                                        </Button>
+                                    </StackPanel>
+                                </Grid>
+
+                                <!-- 多选批量操作条（选中 2 条及以上时自动显示） -->
+                                <Border Grid.Row="2" Classes="fluentCard" Margin="12,0,12,6" Padding="10,6"
+                                        IsVisible="{Binding HasMultipleSelectedEntries}">
+                                    <Grid ColumnDefinitions="*, Auto">
+                                        <TextBlock Text="{Binding SelectedEntriesCount, StringFormat='已选 {0} 项'}" FontSize="12" FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource BrandEmeraldBrush}" VerticalAlignment="Center" />
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                                            <Button Height="24" MinHeight="24" Padding="8,0" FontSize="11.5" Content="{DynamicResource Str_BatchMove}" Command="{Binding BatchMoveEntriesCommand}" />
+                                            <Button Height="24" MinHeight="24" Padding="8,0" FontSize="11.5" Content="{DynamicResource Str_BatchFav}" Command="{Binding BatchFavoriteEntriesCommand}" />
+                                            <Button Height="24" MinHeight="24" Padding="8,0" FontSize="11.5" Foreground="{DynamicResource DangerBrush}" Content="{DynamicResource Str_BatchDelete}" Command="{Binding BatchDeleteEntriesCommand}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+
+                                <!-- 条目列表（支持单选、Cmd/Ctrl 多选批量操作、右键快捷菜单与拖拽到分组树） -->
+                                <ListBox Grid.Row="3" x:Name="EntryListBox" Classes="entryList workspaceList"
+                                         Tapped="EntryList_Tapped" KeyDown="EntryList_KeyDown"
+                                         SelectionMode="Multiple"
+                                         SelectionChanged="EntryListBox_SelectionChanged"
+                                         ItemsSource="{Binding FilteredEntries}" SelectedItem="{Binding SelectedEntry}"
+                                         Background="Transparent" BorderThickness="0" Padding="10,2">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Classes="entryCard" Height="{DynamicResource DensityRowHeight}"
+                                                    PointerPressed="EntryCard_PointerPressed"
+                                                    PointerMoved="EntryCard_PointerMoved">
+                                                <Border.ContextMenu>
+                                                    <helpers:GlassContextMenu Classes="workspaceMenu compactMenu">
+                                                        <MenuItem Header="复制用户名"
+                                                                  Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).CopyEntryUserNameCommand}"
+                                                                  CommandParameter="{Binding}">
+                                                            <MenuItem.Icon>
+                                                                <PathIcon Data="{StaticResource IconCopy}" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
+                                                        <MenuItem Header="复制密码"
+                                                                  Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).CopyEntryPasswordCommand}"
+                                                                  CommandParameter="{Binding}">
+                                                            <MenuItem.Icon>
+                                                                <PathIcon Data="{StaticResource IconKey}" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
+                                                        <MenuItem Header="复制动态验证码 (TOTP)" IsVisible="{Binding HasTotp}"
+                                                                  Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).CopyEntryTotpCommand}"
+                                                                  CommandParameter="{Binding}">
+                                                            <MenuItem.Icon>
+                                                                <PathIcon Data="{StaticResource IconClock}" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
+                                                        <MenuItem Header="打开网址" IsVisible="{Binding Url, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                                                  Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).OpenEntryUrlCommand}"
+                                                                  CommandParameter="{Binding}">
+                                                            <MenuItem.Icon>
+                                                                <PathIcon Data="{StaticResource IconLink}" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
+                                                        <MenuItem Header="复制网址" IsVisible="{Binding Url, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                                                  Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).CopyEntryUrlCommand}"
+                                                                  CommandParameter="{Binding}">
+                                                            <MenuItem.Icon>
+                                                                <PathIcon Data="{StaticResource IconGlobe}" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
+                                                        <MenuItem Header="执行自动输入 (Auto-Type)"
+                                                                  Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).PerformAutoTypeCommand}"
+                                                                  CommandParameter="{Binding}">
+                                                            <MenuItem.Icon>
+                                                                <PathIcon Data="{StaticResource IconKeyboard}" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
+                                                        <Separator />
+                                                        <MenuItem Header="编辑条目..."
+                                                                  Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).EditEntryCommand}"
+                                                                  CommandParameter="{Binding}">
+                                                            <MenuItem.Icon>
+                                                                <PathIcon Data="{StaticResource IconEdit}" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
+                                                        <MenuItem Header="查看历史"
+                                                                  Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ViewEntryHistoryCommand}"
+                                                                  CommandParameter="{Binding}">
+                                                            <MenuItem.Icon><PathIcon Data="{StaticResource IconHistory}" /></MenuItem.Icon>
+                                                        </MenuItem>
+                                                        <MenuItem Header="克隆条目"
+                                                                  Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).DuplicateEntryCommand}"
+                                                                  CommandParameter="{Binding}">
+                                                            <MenuItem.Icon><PathIcon Data="{StaticResource IconCopy}" /></MenuItem.Icon>
+                                                        </MenuItem>
+                                                        <MenuItem Header="移动到分组..."
+                                                                  IsVisible="{Binding !$parent[Window].((vm:MainWindowViewModel)DataContext).IsRecycleBinSelected}"
+                                                                  Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).MoveEntryToGroupCommand}"
+                                                                  CommandParameter="{Binding}">
+                                                            <MenuItem.Icon>
+                                                                <PathIcon Data="{StaticResource IconFolder}" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
+                                                        <MenuItem Header="收藏 / 取消收藏"
+                                                                  Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ToggleFavoriteEntryCommand}"
+                                                                  CommandParameter="{Binding}">
+                                                            <MenuItem.Icon>
+                                                                <PathIcon Data="{StaticResource IconStar}" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
+                                                        <MenuItem Header="快捷设置过期时间"
+                                                                  IsVisible="{Binding !$parent[Window].((vm:MainWindowViewModel)DataContext).IsRecycleBinSelected}">
+                                                            <MenuItem.Icon><PathIcon Data="{StaticResource IconClock}" /></MenuItem.Icon>
+                                                            <MenuItem Header="立即设为过期"
+                                                                      Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).QuickExpireNowCommand}"
+                                                                      CommandParameter="{Binding}" />
+                                                            <MenuItem Header="设为永不过期"
+                                                                      Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).QuickExpireNeverCommand}"
+                                                                      CommandParameter="{Binding}" />
+                                                            <Separator />
+                                                            <MenuItem Header="30 天后过期"
+                                                                      Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).QuickExpireIn30DaysCommand}"
+                                                                      CommandParameter="{Binding}" />
+                                                            <MenuItem Header="90 天后过期"
+                                                                      Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).QuickExpireIn90DaysCommand}"
+                                                                      CommandParameter="{Binding}" />
+                                                        </MenuItem>
+                                                        <Separator />
+                                                        <MenuItem Header="从回收站还原"
+                                                                  IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).IsRecycleBinSelected}"
+                                                                  Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).RestoreEntryCommand}"
+                                                                  CommandParameter="{Binding}">
+                                                            <MenuItem.Icon>
+                                                                <PathIcon Data="{StaticResource IconRefresh}" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
+                                                        <MenuItem Header="移到回收站"
+                                                                  IsVisible="{Binding !$parent[Window].((vm:MainWindowViewModel)DataContext).IsRecycleBinSelected}"
+                                                                  CommandParameter="{Binding}" Click="MoveEntryToRecycleBin_Click">
+                                                            <MenuItem.Icon>
+                                                                <PathIcon Data="{StaticResource IconTrash}" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
+                                                        <MenuItem Header="永久删除"
+                                                                  IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).IsRecycleBinSelected}"
+                                                                  Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).PermanentlyDeleteEntryCommand}"
+                                                                  CommandParameter="{Binding}">
+                                                            <MenuItem.Icon>
+                                                                <PathIcon Data="{StaticResource IconTrash}" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
+                                                    </helpers:GlassContextMenu>
+                                                </Border.ContextMenu>
+                                                <Grid ColumnDefinitions="12, Auto, *, Auto" Margin="0,0,12,0">
+                                                    <!-- 选中态左侧 3×24px 品牌指示条 -->
+                                                    <Border Grid.Column="0" Classes="entryIndicator" Width="3" Height="24" CornerRadius="2"
+                                                            Background="{DynamicResource SystemControlHighlightAccentBrush}"
+                                                            HorizontalAlignment="Left" VerticalAlignment="Center" />
+
+                                                    <Border Grid.Column="1" Classes="entryAvatar" Width="{DynamicResource DensityAvatarSize}" Height="{DynamicResource DensityAvatarSize}"
+                                                            CornerRadius="6" Background="{DynamicResource BadgePillBackgroundBrush}" VerticalAlignment="Center" Margin="4,0,10,0" ClipToBounds="True">
+                                                        <Panel>
+                                                            <PathIcon Data="{Binding StandardIcon}" Width="20" Height="20" IsVisible="{Binding HasStandardIcon}"
+                                                                      Foreground="{DynamicResource BadgePillForegroundBrush}" />
+                                                            <TextBlock Classes="entryAvatarText" Text="{Binding Initials}" FontWeight="SemiBold" FontSize="12"
+                                                                       Foreground="{DynamicResource BadgePillForegroundBrush}"
+                                                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                       IsVisible="{Binding ShowInitials}" />
+                                                            <Image Source="{Binding CustomIconBitmap}" Stretch="UniformToFill"
+                                                                   IsVisible="{Binding HasCustomIcon}" />
+                                                        </Panel>
+                                                    </Border>
+
+                                                    <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="2">
+                                                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="{DynamicResource DensityFontSizeBody}" TextTrimming="CharacterEllipsis" />
+                                                        <TextBlock Text="{Binding UserName}" FontSize="{DynamicResource DensityFontSizeCaption}" Foreground="{DynamicResource SecondaryTextBrush}" TextTrimming="CharacterEllipsis" />
+                                                    </StackPanel>
+
+                                                    <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                        <PathIcon Data="{StaticResource IconStar}" Width="16" Height="16" IsVisible="{Binding IsFavorite}"
+                                                                  Foreground="{DynamicResource SecondaryTextBrush}" />
+                                                        <PathIcon Data="{StaticResource IconClock}" Width="16" Height="16" IsVisible="{Binding HasTotp}"
+                                                                  Foreground="{DynamicResource SecondaryTextBrush}" />
+                                                        <TextBlock Text="{Binding ExpiryBadge}" FontSize="12" Foreground="{DynamicResource WarningBrush}"
+                                                                   IsVisible="{Binding HasExpiryBadge}" />
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </Grid>
+                        </Border>
+
+                        <Border x:Name="EntryDivider" Grid.Column="1" Background="{DynamicResource DividerBrush}" />
+
+                        <Grid x:Name="EntryDetail" Grid.Column="2" RowDefinitions="Auto,*" Background="{DynamicResource DetailBackgroundBrush}">
+                            <Border Grid.Row="0" Height="48" Padding="20,0" IsVisible="{Binding UsesLeftWindowChrome}" Background="Transparent"
+                                    BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,0,0,1"
+                                    chrome:WindowDecorationProperties.ElementRole="TitleBar" PointerPressed="TitleBar_PointerPressed">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="{Binding SelectedEntry.GroupPath}" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}"
+                                               TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+                                        <Button Classes="subtle chromeCommand" AutomationProperties.Name="保存密码库" ToolTip.Tip="{Binding ShortcutModifier, StringFormat='保存密码库 ({0}S)'}" Command="{Binding SaveVaultCommand}" ><PathIcon Data="{StaticResource IconSave}" Width="16" Height="16" /></Button>
+                                        <Button Classes="subtle chromeCommand" AutomationProperties.Name="密码生成器" ToolTip.Tip="{Binding ShortcutModifier, StringFormat='密码生成器 ({0}G)'}" Command="{Binding OpenPasswordGeneratorCommandCommand}" ><PathIcon Data="{StaticResource IconGenerator}" Width="16" Height="16" /></Button>
+                                        <Button Classes="subtle chromeCommand" AutomationProperties.Name="锁定密码库" ToolTip.Tip="{Binding ShortcutModifier, StringFormat='锁定密码库 ({0}L)'}" Command="{Binding LockVaultCommand}" ><PathIcon Data="{StaticResource IconLock}" Width="16" Height="16" /></Button>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                            <Panel x:Name="DetailSelectionRegion" Grid.Row="1">
+                            <!-- 空状态 -->
+                            <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="6"
+                                        IsVisible="{Binding SelectedEntry, Converter={x:Static ObjectConverters.IsNull}}">
+                                <PathIcon Data="{StaticResource IconShield}" Width="28" Height="28" Foreground="{DynamicResource SecondaryTextBrush}" Opacity="0.5" />
+                                <TextBlock Text="选择一条记录查看详情，或点击「新建」添加。" FontSize="13" Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap" MaxWidth="320" />
+                            </StackPanel>
+
+                            <!-- 详情主体 -->
+                            <ScrollViewer Grid.Row="1" Padding="20,12,20,16" HorizontalScrollBarVisibility="Disabled" IsVisible="{Binding SelectedEntry, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                <StackPanel Spacing="9" MaxWidth="720">
+                                    <TextBlock IsVisible="{Binding !UsesLeftWindowChrome}" Text="{Binding SelectedEntry.GroupPath}" FontSize="12"
+                                               Foreground="{DynamicResource SecondaryTextBrush}" TextTrimming="CharacterEllipsis" />
+                                    <!-- 条目头图与标题 -->
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                        <Grid ColumnDefinitions="36,*" ColumnSpacing="9">
+                                        <Border Width="36" Height="36" CornerRadius="6" Background="{DynamicResource BadgePillBackgroundBrush}" ClipToBounds="True">
+                                            <Panel>
+                                                <PathIcon Data="{Binding SelectedEntry.StandardIcon}" Width="20" Height="20"
+                                                          Foreground="{DynamicResource BadgePillForegroundBrush}" IsVisible="{Binding SelectedEntry.HasStandardIcon}" />
+                                                <TextBlock Text="{Binding SelectedEntry.Initials}" FontSize="16" FontWeight="Bold"
+                                                           Foreground="{DynamicResource BadgePillForegroundBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                           IsVisible="{Binding SelectedEntry.ShowInitials}" />
+                                                <Image Source="{Binding SelectedEntry.CustomIconBitmap}" Stretch="UniformToFill"
+                                                       IsVisible="{Binding SelectedEntry.HasCustomIcon}" />
+                                            </Panel>
+                                        </Border>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                                            <TextBlock Text="{Binding SelectedEntry.Title}" FontSize="23" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                            <TextBlock Text="{Binding SelectedEntry.EntryKind}" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                        </StackPanel>
+                                        </Grid>
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+                                            <Button Command="{Binding EditSelectedEntryCommand}" Height="28" MinHeight="28" Padding="8,0" FontSize="12" ToolTip.Tip="编辑" AutomationProperties.Name="编辑">
+                                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                                    <PathIcon Data="{StaticResource IconEdit}" Width="14" Height="14" />
+                                                    <TextBlock Text="编辑" />
+                                                </StackPanel>
+                                            </Button>
+                                            <Button Classes="subtle detailCommand" AutomationProperties.Name="收藏 / 取消收藏" ToolTip.Tip="收藏 / 取消收藏" Command="{Binding ToggleFavoriteSelectedCommand}" ><PathIcon Data="{StaticResource IconStar}" Width="14" Height="14" /></Button>
+                                            <Button Classes="subtle detailCommand" ToolTip.Tip="更多条目操作" AutomationProperties.Name="更多条目操作">
+                                                <Button.Flyout>
+                                                    <helpers:GlassMenuFlyout FlyoutPresenterClasses="workspaceMenu compactMenu" Placement="BottomEdgeAlignedRight">
+                                                        <MenuItem Header="复制用户名" Command="{Binding CopyUserNameCommand}">
+                                                            <MenuItem.Icon><PathIcon Data="{StaticResource IconCopy}" /></MenuItem.Icon>
+                                                        </MenuItem>
+                                                        <MenuItem Header="查看历史" Command="{Binding ViewEntryHistoryCommand}">
+                                                            <MenuItem.Icon><PathIcon Data="{StaticResource IconHistory}" /></MenuItem.Icon>
+                                                        </MenuItem>
+                                                        <MenuItem Header="从回收站还原" Command="{Binding RestoreSelectedEntryCommand}" IsVisible="{Binding IsRecycleBinSelected}">
+                                                            <MenuItem.Icon><PathIcon Data="{StaticResource IconRefresh}" /></MenuItem.Icon>
+                                                        </MenuItem>
+                                                        <MenuItem Header="移到回收站" Click="MoveEntryToRecycleBin_Click" IsVisible="{Binding !IsRecycleBinSelected}">
+                                                            <MenuItem.Icon><PathIcon Data="{StaticResource IconTrash}" /></MenuItem.Icon>
+                                                        </MenuItem>
+                                                    </helpers:GlassMenuFlyout>
+                                                </Button.Flyout>
+                                                <PathIcon Data="{StaticResource IconMore}" Width="14" Height="14" />
+                                            </Button>
+                                        </StackPanel>
+                                    </Grid>
+                                    <Border Height="1" Background="{DynamicResource DividerBrush}" />
+                                    <TextBlock Text="登录信息" FontSize="16" FontWeight="SemiBold" />
+
+                                    <Border BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="6">
+                                        <StackPanel>
+                                            <Grid ColumnDefinitions="16,*,Auto" ColumnSpacing="8" Margin="9,4,6,4" MinHeight="34">
+                                                <PathIcon Data="{StaticResource IconPerson}" Width="15" Height="15" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                    <TextBlock Text="{DynamicResource Str_UserName}" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                                    <SelectableTextBlock Text="{Binding SelectedEntry.UserName}" FontSize="13" TextWrapping="Wrap" />
+                                                </StackPanel>
+                                                <Button Grid.Column="2" Classes="subtle detailCommand" VerticalAlignment="Center"
+                                                        ToolTip.Tip="复制用户名" AutomationProperties.Name="复制用户名" Command="{Binding CopyUserNameCommand}">
+                                                    <Panel>
+                                                        <PathIcon Data="{StaticResource IconCopy}" Width="14" Height="14" IsVisible="{Binding !IsUserNameCopied}" />
+                                                        <PathIcon Data="{StaticResource IconCheck}" Width="14" Height="14" Foreground="{DynamicResource SuccessBrush}" IsVisible="{Binding IsUserNameCopied}" />
+                                                    </Panel>
+                                                </Button>
+                                            </Grid>
+                                            <Border Height="1" Background="{DynamicResource DividerBrush}" />
+                                            <Grid ColumnDefinitions="16,*,Auto" ColumnSpacing="8" Margin="9,4,6,4" MinHeight="34">
+                                                <PathIcon Data="{StaticResource IconKey}" Width="15" Height="15" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                    <TextBlock Text="{DynamicResource Str_Password}" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                                    <TextBlock Text="{Binding SelectedEntry.DisplayedPassword}" FontFamily="Consolas,Menlo,monospace" FontSize="13" TextWrapping="Wrap" />
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="3">
+                                                    <Button x:Name="PasswordRevealButton" Classes="subtle detailCommand" ToolTip.Tip="按住查看密码"
+                                                            AutomationProperties.Name="按住查看密码">
+                                                        <PathIcon Data="{StaticResource IconEye}" Width="14" Height="14" />
+                                                    </Button>
+                                                    <Button Classes="subtle detailCommand" Command="{Binding CopyPasswordCommand}" ToolTip.Tip="复制密码" AutomationProperties.Name="复制密码">
+                                                        <Panel>
+                                                            <PathIcon Data="{StaticResource IconCopy}" Width="14" Height="14" IsVisible="{Binding !IsPasswordCopied}" />
+                                                            <PathIcon Data="{StaticResource IconCheck}" Width="14" Height="14" Foreground="{DynamicResource SuccessBrush}" IsVisible="{Binding IsPasswordCopied}" />
+                                                        </Panel>
+                                                    </Button>
+                                                </StackPanel>
+                                            </Grid>
+                                            <StackPanel IsVisible="{Binding SelectedEntry.Url, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                                <Border Height="1" Background="{DynamicResource DividerBrush}" />
+                                                <Grid ColumnDefinitions="16,*,Auto" ColumnSpacing="8" Margin="9,4,6,4" MinHeight="34">
+                                                    <PathIcon Data="{StaticResource IconGlobe}" Width="15" Height="15" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                        <TextBlock Text="{DynamicResource Str_Url}" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                                        <SelectableTextBlock Text="{Binding SelectedEntry.Url}" FontSize="13" Foreground="{DynamicResource AccentTextBrush}" TextWrapping="Wrap" />
+                                                    </StackPanel>
+                                                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="3">
+                                                        <Button Classes="subtle detailCommand" Click="OpenUrl_Click" ToolTip.Tip="打开网站" AutomationProperties.Name="打开网站">
+                                                            <PathIcon Data="{StaticResource IconLink}" Width="14" Height="14" />
+                                                        </Button>
+                                                        <Button Classes="subtle detailCommand" Command="{Binding CopyEntryUrlCommand}" CommandParameter="{Binding SelectedEntry}"
+                                                                ToolTip.Tip="复制网址" AutomationProperties.Name="复制网址">
+                                                            <PathIcon Data="{StaticResource IconCopy}" Width="14" Height="14" />
+                                                        </Button>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <StackPanel Spacing="6" IsVisible="{Binding SelectedEntry.HasTotp}">
+                                        <TextBlock Text="{DynamicResource Str_TotpLabel}" FontSize="16" FontWeight="SemiBold" />
+                                        <Border BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="9,5,6,7">
+                                            <Grid ColumnDefinitions="16,*,Auto" ColumnSpacing="8" RowDefinitions="Auto,Auto">
+                                                <PathIcon Data="{StaticResource IconClock}" Width="15" Height="15" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                                <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                                    <TextBlock Text="{Binding SelectedEntry.TotpFormatted}" FontFamily="Consolas,Menlo,monospace" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                                    <TextBlock Grid.Column="1" Text="{Binding SelectedEntry.TotpRemaining, StringFormat='剩余 {0} 秒'}"
+                                                               FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Button Grid.Column="2" Classes="subtle detailCommand" Command="{Binding CopyTotpCommand}"
+                                                        ToolTip.Tip="复制动态验证码" AutomationProperties.Name="复制动态验证码">
+                                                    <Panel>
+                                                        <PathIcon Data="{StaticResource IconCopy}" Width="14" Height="14" IsVisible="{Binding !IsTotpCopied}" />
+                                                        <PathIcon Data="{StaticResource IconCheck}" Width="14" Height="14" Foreground="{DynamicResource SuccessBrush}" IsVisible="{Binding IsTotpCopied}" />
+                                                    </Panel>
+                                                </Button>
+                                                <Border x:Name="TotpProgressTrack" Grid.Row="1" Grid.Column="1" Height="2" Margin="0,2,0,0"
+                                                        CornerRadius="1" ClipToBounds="True" Background="{DynamicResource DividerBrush}">
+                                                    <Border x:Name="TotpProgressFill" CornerRadius="1" RenderTransformOrigin="0%,50%"
+                                                            Background="{DynamicResource AccentButtonBackgroundBrush}" />
+                                                </Border>
+                                            </Grid>
+                                        </Border>
+                                    </StackPanel>
+
+                                    <StackPanel Spacing="5" IsVisible="{Binding SelectedEntry.HasAnnotations}">
+                                            <TextBlock Text="备注" FontSize="16" FontWeight="SemiBold" />
+                                            <SelectableTextBlock Text="{Binding SelectedEntry.Notes}" FontSize="13" LineHeight="18" TextWrapping="Wrap"
+                                                                 IsVisible="{Binding SelectedEntry.Notes, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                            <ItemsControl ItemsSource="{Binding SelectedEntry.DisplayTags}">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate><WrapPanel ItemSpacing="4" LineSpacing="4" /></ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border CornerRadius="4" Padding="6,2" Background="{DynamicResource SidebarItemHoverBackgroundBrush}">
+                                                            <TextBlock Text="{Binding}" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                            <ItemsControl ItemsSource="{Binding SelectedEntry.CustomFields}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Grid ColumnDefinitions="2*, 3*, Auto" ColumnSpacing="8" Margin="0,1">
+                                                            <TextBlock Grid.Column="0" Text="{Binding Key}" FontSize="12.5" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center" />
+                                                            <SelectableTextBlock Grid.Column="1" Text="{Binding DisplayValue}" FontSize="13" VerticalAlignment="Center" />
+                                                            <Button Grid.Column="2" Classes="subtle" Width="28" Height="28" MinHeight="28" Padding="0"
+                                                                    ToolTip.Tip="复制自定义字段"
+                                                                    Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).CopyCustomFieldCommand}"
+                                                                    CommandParameter="{Binding}">
+                                                                <PathIcon Data="{StaticResource IconCopy}" Width="13" Height="13" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                                            </Button>
+                                                        </Grid>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                            <ItemsControl ItemsSource="{Binding SelectedEntry.Attachments}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Button Padding="8,3" Margin="0,3,0,0" HorizontalAlignment="Left"
+                                                                Background="{DynamicResource CardSubtleBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="6"
+                                                                ToolTip.Tip="点击导出解密后的附件到本地"
+                                                                Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ExportAttachmentCommand}"
+                                                                CommandParameter="{Binding}">
+                                                            <Grid ColumnDefinitions="12,*,12" ColumnSpacing="6">
+                                                                <PathIcon Data="{StaticResource IconAttach}" Width="13" Height="13" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                                                <TextBlock Grid.Column="1" Text="{Binding DisplayLabel}" FontSize="12" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                                                <PathIcon Grid.Column="2" Data="{StaticResource IconExport}" Width="12" Height="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                                            </Grid>
+                                                        </Button>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+
+                                    <Border Height="1" Background="{DynamicResource DividerBrush}" />
+                                    <TextBlock Text="{Binding SelectedEntry.UpdatedDisplay}" FontSize="12" HorizontalAlignment="Right" ToolTip.Tip="{Binding SelectedEntry.FooterMeta}" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                </StackPanel>
+                            </ScrollViewer>
+                            </Panel>
+                            <StackPanel x:Name="SearchDetailsPlaceholder" Grid.Row="1" HorizontalAlignment="Center"
+                                        VerticalAlignment="Center" Spacing="12" IsVisible="False" MaxWidth="360" Margin="24">
+                                <PathIcon Data="{StaticResource IconSearch}" Width="24" Height="24" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                <TextBlock x:Name="SearchResultMessage" TextAlignment="Center" TextWrapping="Wrap"
+                                           FontSize="16" FontWeight="SemiBold" />
+                                <Button x:Name="ClearEmptySearchButton" Click="ClearSearch_Click" Content="清除搜索" HorizontalAlignment="Center" />
+                            </StackPanel>
+                        </Grid>
+                    </Grid>
+                    <Border Grid.Row="2" Background="{DynamicResource ListPaneBackgroundBrush}"
+                            BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,1,0,0" Padding="16,0">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <PathIcon Data="{StaticResource IconUnlock}" Width="14" Height="14" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                <TextBlock Text="{Binding VaultDisplayName}" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                <TextBlock Text="· 已解锁" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                            </StackPanel>
+                            <TextBlock Grid.Column="1" Text="{Binding VaultSaveStatus}" VerticalAlignment="Center" FontSize="12"
+                                       Foreground="{DynamicResource SecondaryTextBrush}" />
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Grid>
+
+            <controls:ToastPresence x:Name="ToastCard" Padding="12" MinHeight="44" MaxWidth="380"
+                    HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="16,0,16,40"
+                    IsShown="{Binding IsToastVisible}" IsHitTestVisible="False">
+                <Grid ColumnDefinitions="18,*" ColumnSpacing="8">
+                    <PathIcon Classes="toastIcon" Classes.success="{Binding IsToastSuccess}" Classes.error="{Binding IsToastError}" />
+                    <TextBlock Grid.Column="1" Text="{Binding ToastMessage}" FontSize="14"
+                               Foreground="{DynamicResource ToastForegroundBrush}" VerticalAlignment="Center" LineHeight="20"
+                               TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
+                </Grid>
+            </controls:ToastPresence>
+        </Grid>
+        <Grid x:Name="UnlockCurtain" Grid.RowSpan="2" IsVisible="False" Background="Transparent" ClipToBounds="True" Focusable="True"
+              AutomationProperties.AccessibilityView="Raw">
+            <Border x:Name="UnlockVeil" Background="{DynamicResource ListPaneBackgroundBrush}" Opacity="0" />
+            <Grid x:Name="UnlockEmblem" Width="144" Height="144" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Ellipse x:Name="UnlockHalo" Width="118" Height="118" Fill="{DynamicResource BadgePillBackgroundBrush}" Opacity="0" />
+                <Ellipse x:Name="UnlockRing" Width="96" Height="96" Stroke="{DynamicResource AccentButtonBackgroundBrush}" StrokeThickness="1" Opacity="0" />
+                <Border x:Name="UnlockEmblemTile" Width="44" Height="44" CornerRadius="8"
+                        Background="{DynamicResource BadgePillBackgroundBrush}">
+                    <Panel>
+                        <PathIcon x:Name="UnlockClosedGlyph" Data="{StaticResource IconLock}" Width="20" Height="20"
+                                  Foreground="{DynamicResource AccentTextBrush}" />
+                        <PathIcon x:Name="UnlockOpenGlyph" Data="{StaticResource IconUnlock}" Width="20" Height="20" Opacity="0"
+                                  Foreground="{DynamicResource AccentTextBrush}" />
+                    </Panel>
+                </Border>
+            </Grid>
+        </Grid>
+        <Border x:Name="DialogSmoke" Grid.RowSpan="2" Background="#4D000000" IsVisible="False" IsHitTestVisible="False" />
+    </Grid>
+</Window>

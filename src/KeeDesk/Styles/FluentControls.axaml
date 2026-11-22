@@ -1,0 +1,684 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:KeeDesk.Controls"
+        xmlns:helpers="using:KeeDesk.Helpers">
+    <Styles.Resources>
+        <SplineEasing x:Key="FluentEasyEase" X1="0.33" Y1="0" X2="0.67" Y2="1" />
+        <SplineEasing x:Key="FluentCssEase" X1="0.25" Y1="0.1" X2="0.25" Y2="1" />
+
+        <!-- Own the item theme so Avalonia's default selected fill cannot paint only the label. -->
+        <ControlTheme x:Key="{x:Type ComboBoxItem}" TargetType="ComboBoxItem">
+            <Setter Property="MinHeight" Value="30" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Padding" Value="8,3" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border x:Name="OptionSurface" Background="{TemplateBinding Background}"
+                            CornerRadius="{TemplateBinding CornerRadius}" Padding="{TemplateBinding Padding}">
+                        <Grid ColumnDefinitions="14,*" ColumnSpacing="8">
+                            <PathIcon x:Name="OptionCheck" Width="12" Height="12" Data="{DynamicResource IconCheck}"
+                                      IsVisible="{TemplateBinding IsSelected}" Foreground="{DynamicResource AccentTextBrush}" />
+                            <ContentPresenter x:Name="PART_ContentPresenter" Grid.Column="1"
+                                              Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                                              Foreground="{TemplateBinding Foreground}" TextWrapping="NoWrap"
+                                              TextTrimming="CharacterEllipsis" VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+                        </Grid>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+            <Style Selector="^:selected /template/ Border#OptionSurface">
+                <Setter Property="Background" Value="{DynamicResource EntryRowSelectedBackgroundBrush}" />
+            </Style>
+            <Style Selector="^:pointerover /template/ Border#OptionSurface">
+                <Setter Property="Background" Value="{DynamicResource StandardButtonHoverBackgroundBrush}" />
+            </Style>
+            <Style Selector="^:pressed /template/ Border#OptionSurface">
+                <Setter Property="Background" Value="{DynamicResource StandardButtonPressedBackgroundBrush}" />
+            </Style>
+            <Style Selector="^:disabled">
+                <Setter Property="Foreground" Value="{DynamicResource ControlDisabledForegroundBrush}" />
+            </Style>
+            <Style Selector="^:disabled /template/ Border#OptionSurface">
+                <Setter Property="Background" Value="Transparent" />
+            </Style>
+            <Style Selector="^:disabled /template/ PathIcon#OptionCheck">
+                <Setter Property="Foreground" Value="{DynamicResource ControlDisabledForegroundBrush}" />
+            </Style>
+        </ControlTheme>
+    </Styles.Resources>
+
+    <!-- Fluent UI Button and ToggleButton interpolate brushes, with no scale change. -->
+    <Style Selector="Button:pressed, ToggleButton.chipToggle:pressed">
+        <Setter Property="RenderTransform" Value="none" />
+    </Style>
+    <Style Selector="Button, ToggleButton.chipToggle, ToggleButton.disclosureHeader, CheckBox, ToggleSwitch,
+                     Slider, TabItem, ComboBoxItem, ListBoxItem, TreeViewItem">
+        <Setter Property="FocusAdorner">
+            <FocusAdornerTemplate>
+                <Border BorderBrush="{DynamicResource ControlFocusBrush}" BorderThickness="2" CornerRadius="4" IsHitTestVisible="False">
+                    <Border BorderBrush="{DynamicResource FlyoutSurfaceBrush}" BorderThickness="1" CornerRadius="2" />
+                </Border>
+            </FocusAdornerTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="Button /template/ ContentPresenter#PART_ContentPresenter,
+                     ToggleButton.chipToggle /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="{x:Static helpers:SystemMotionPreferences.FastControlDuration}" Easing="{StaticResource FluentEasyEase}" />
+                <BrushTransition Property="BorderBrush" Duration="{x:Static helpers:SystemMotionPreferences.FastControlDuration}" Easing="{StaticResource FluentEasyEase}" />
+                <BrushTransition Property="Foreground" Duration="{x:Static helpers:SystemMotionPreferences.FastControlDuration}" Easing="{StaticResource FluentEasyEase}" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Button:disabled /template/ ContentPresenter#PART_ContentPresenter,
+                     ToggleButton.chipToggle:disabled /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource ControlDisabledBackgroundBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ControlDisabledBorderBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource ControlDisabledForegroundBrush}" />
+    </Style>
+    <Style Selector="Button.subtle:disabled /template/ ContentPresenter#PART_ContentPresenter,
+                     Button.navItem:disabled /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="Button:disabled PathIcon, ToggleButton.chipToggle:disabled PathIcon, MenuItem:disabled PathIcon">
+        <Setter Property="Foreground" Value="{DynamicResource ControlDisabledForegroundBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.chipToggle:disabled TextBlock, Button:disabled TextBlock.navLabel">
+        <Setter Property="Foreground" Value="{DynamicResource ControlDisabledForegroundBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.chipToggle:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource StandardButtonHoverBackgroundBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource StandardButtonHoverBorderBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.chipToggle:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource StandardButtonPressedBackgroundBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource StandardButtonPressedBorderBrush}" />
+    </Style>
+    <!-- The medium Checkbox indicator is 16px with a 2px corner. -->
+    <Style Selector="CheckBox">
+        <Setter Property="CornerRadius" Value="2" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="MinHeight" Value="32" />
+        <Setter Property="Padding" Value="4,0,8,0" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Grid ColumnDefinitions="24,*" Background="Transparent">
+                    <Panel Width="16" Height="16" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,8,0,0"
+                           IsHitTestVisible="False">
+                        <Border x:Name="NormalRectangle" BorderThickness="1" CornerRadius="{TemplateBinding CornerRadius}" />
+                        <Path x:Name="CheckGlyph" Opacity="0" Stretch="Uniform" FlowDirection="LeftToRight"
+                              HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Panel>
+                    <ContentPresenter x:Name="PART_ContentPresenter" Grid.Column="1" Margin="{TemplateBinding Padding}"
+                                      Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                                      VerticalAlignment="Center" TextWrapping="Wrap" />
+                </Grid>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="CheckBox:not(:checked):not(:indeterminate) /template/ Border#NormalRectangle">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ControlAccessibleStrokeBrush}" />
+    </Style>
+    <Style Selector="CheckBox:not(:checked):not(:indeterminate):pointerover /template/ Border#NormalRectangle">
+        <Setter Property="BorderBrush" Value="{DynamicResource ControlAccessibleStrokeHoverBrush}" />
+    </Style>
+    <Style Selector="CheckBox:not(:checked):not(:indeterminate):pressed /template/ Border#NormalRectangle">
+        <Setter Property="BorderBrush" Value="{DynamicResource ControlAccessibleStrokePressedBrush}" />
+    </Style>
+    <Style Selector="CheckBox:checked /template/ Border#NormalRectangle">
+        <Setter Property="Background" Value="{DynamicResource AccentButtonBackgroundBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentButtonBackgroundBrush}" />
+    </Style>
+    <Style Selector="CheckBox:checked:pointerover /template/ Border#NormalRectangle">
+        <Setter Property="Background" Value="{DynamicResource AccentButtonHoverBackgroundBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentButtonHoverBackgroundBrush}" />
+    </Style>
+    <Style Selector="CheckBox:checked:pressed /template/ Border#NormalRectangle">
+        <Setter Property="Background" Value="{DynamicResource AccentButtonPressedBackgroundBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentButtonPressedBackgroundBrush}" />
+    </Style>
+    <Style Selector="CheckBox:checked /template/ Path#CheckGlyph">
+        <Setter Property="Fill" Value="{DynamicResource AccentActionForegroundBrush}" />
+    </Style>
+    <Style Selector="CheckBox:checked:pointerover /template/ Path#CheckGlyph">
+        <Setter Property="Fill" Value="{DynamicResource AccentActionHoverForegroundBrush}" />
+    </Style>
+    <Style Selector="CheckBox:checked:pressed /template/ Path#CheckGlyph">
+        <Setter Property="Fill" Value="{DynamicResource AccentActionPressedForegroundBrush}" />
+    </Style>
+    <Style Selector="CheckBox:indeterminate /template/ Border#NormalRectangle">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentTextBrush}" />
+    </Style>
+    <Style Selector="CheckBox:indeterminate /template/ Path#CheckGlyph">
+        <Setter Property="Fill" Value="{DynamicResource AccentTextBrush}" />
+    </Style>
+    <Style Selector="CheckBox:disabled /template/ Border#NormalRectangle">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ControlDisabledBorderBrush}" />
+    </Style>
+    <Style Selector="CheckBox:disabled /template/ Path#CheckGlyph">
+        <Setter Property="Fill" Value="{DynamicResource ControlDisabledForegroundBrush}" />
+    </Style>
+    <Style Selector="CheckBox:disabled /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Foreground" Value="{DynamicResource ControlDisabledForegroundBrush}" />
+    </Style>
+
+    <!-- Preserve the switch's template parts for pointer dragging and keyboard input. -->
+    <Style Selector="ToggleSwitch">
+        <Setter Property="KnobTransitions">
+            <Transitions>
+                <DoubleTransition Property="Canvas.Left" Duration="{x:Static helpers:SystemMotionPreferences.SwitchDuration}" Easing="{StaticResource FluentEasyEase}" />
+            </Transitions>
+        </Setter>
+        <Setter Property="Template">
+            <ControlTemplate>
+                <StackPanel>
+                    <ContentPresenter x:Name="PART_ContentPresenter" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" />
+                    <Grid ColumnDefinitions="Auto,*" Background="Transparent" MinHeight="32">
+                        <Grid Width="48" Height="32" TemplatedControl.IsTemplateFocusTarget="True">
+                            <Border x:Name="SwitchTrack" Width="40" Height="20" CornerRadius="10" BorderThickness="1"
+                                    Background="Transparent" BorderBrush="{DynamicResource ControlAccessibleStrokeBrush}">
+                                <Border.Transitions>
+                                    <Transitions>
+                                        <BrushTransition Property="Background" Duration="{x:Static helpers:SystemMotionPreferences.SwitchDuration}" Easing="{StaticResource FluentEasyEase}" />
+                                        <BrushTransition Property="BorderBrush" Duration="{x:Static helpers:SystemMotionPreferences.SwitchDuration}" Easing="{StaticResource FluentEasyEase}" />
+                                    </Transitions>
+                                </Border.Transitions>
+                            </Border>
+                            <Canvas x:Name="PART_SwitchKnob" Width="20" Height="20" Margin="4,0,0,0"
+                                    HorizontalAlignment="Left" VerticalAlignment="Center">
+                                <Grid x:Name="PART_MovingKnobs" Width="20" Height="20" Background="Transparent">
+                                    <Ellipse x:Name="SwitchThumb" Width="14" Height="14" Fill="{DynamicResource ControlAccessibleStrokeBrush}">
+                                        <Ellipse.Transitions>
+                                            <Transitions>
+                                                <BrushTransition Property="Fill" Duration="{x:Static helpers:SystemMotionPreferences.SwitchDuration}" Easing="{StaticResource FluentEasyEase}" />
+                                            </Transitions>
+                                        </Ellipse.Transitions>
+                                    </Ellipse>
+                                </Grid>
+                            </Canvas>
+                        </Grid>
+                        <ContentPresenter x:Name="PART_OffContentPresenter" Grid.Column="1" VerticalAlignment="Center"
+                                          Content="{TemplateBinding OffContent}" ContentTemplate="{TemplateBinding OffContentTemplate}" />
+                        <ContentPresenter x:Name="PART_OnContentPresenter" Grid.Column="1" VerticalAlignment="Center"
+                                          Content="{TemplateBinding OnContent}" ContentTemplate="{TemplateBinding OnContentTemplate}" />
+                    </Grid>
+                </StackPanel>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="ToggleSwitch:pointerover /template/ Border#SwitchTrack">
+        <Setter Property="BorderBrush" Value="{DynamicResource ControlAccessibleStrokeHoverBrush}" />
+    </Style>
+    <Style Selector="ToggleSwitch:pressed /template/ Border#SwitchTrack">
+        <Setter Property="BorderBrush" Value="{DynamicResource ControlAccessibleStrokePressedBrush}" />
+    </Style>
+    <Style Selector="ToggleSwitch:pointerover /template/ Ellipse#SwitchThumb">
+        <Setter Property="Fill" Value="{DynamicResource ControlAccessibleStrokeHoverBrush}" />
+    </Style>
+    <Style Selector="ToggleSwitch:pressed /template/ Ellipse#SwitchThumb">
+        <Setter Property="Fill" Value="{DynamicResource ControlAccessibleStrokePressedBrush}" />
+    </Style>
+    <Style Selector="ToggleSwitch:checked /template/ Border#SwitchTrack">
+        <Setter Property="Background" Value="{DynamicResource AccentButtonBackgroundBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentButtonBackgroundBrush}" />
+    </Style>
+    <Style Selector="ToggleSwitch:checked:pointerover /template/ Border#SwitchTrack">
+        <Setter Property="Background" Value="{DynamicResource AccentButtonHoverBackgroundBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentButtonHoverBackgroundBrush}" />
+    </Style>
+    <Style Selector="ToggleSwitch:checked:pressed /template/ Border#SwitchTrack">
+        <Setter Property="Background" Value="{DynamicResource AccentButtonPressedBackgroundBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentButtonPressedBackgroundBrush}" />
+    </Style>
+    <Style Selector="ToggleSwitch:checked /template/ Ellipse#SwitchThumb">
+        <Setter Property="Fill" Value="{DynamicResource AccentActionForegroundBrush}" />
+    </Style>
+    <Style Selector="ToggleSwitch:checked:pointerover /template/ Ellipse#SwitchThumb">
+        <Setter Property="Fill" Value="{DynamicResource AccentActionHoverForegroundBrush}" />
+    </Style>
+    <Style Selector="ToggleSwitch:checked:pressed /template/ Ellipse#SwitchThumb">
+        <Setter Property="Fill" Value="{DynamicResource AccentActionPressedForegroundBrush}" />
+    </Style>
+    <Style Selector="ToggleSwitch:disabled /template/ Border#SwitchTrack">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ControlDisabledBorderBrush}" />
+    </Style>
+    <Style Selector="ToggleSwitch:checked:disabled /template/ Border#SwitchTrack">
+        <Setter Property="Background" Value="{DynamicResource ControlDisabledBackgroundBrush}" />
+    </Style>
+    <Style Selector="ToggleSwitch:disabled /template/ Ellipse#SwitchThumb">
+        <Setter Property="Fill" Value="{DynamicResource ControlDisabledForegroundBrush}" />
+    </Style>
+
+    <!-- WinUI NumberBox keeps the spin buttons inside the input's focus surface. -->
+    <Style Selector="NumericUpDown">
+        <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <DataValidationErrors>
+                    <Panel>
+                        <ButtonSpinner x:Name="PART_Spinner" Background="{TemplateBinding Background}"
+                                       BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+                                       CornerRadius="{TemplateBinding CornerRadius}" IsTabStop="False" Padding="0" MinWidth="0"
+                                       HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                                       AllowSpin="{TemplateBinding AllowSpin}" ShowButtonSpinner="{TemplateBinding ShowButtonSpinner}"
+                                       ButtonSpinnerLocation="{TemplateBinding ButtonSpinnerLocation}">
+                            <TextBox x:Name="PART_TextBox" Classes="compositeInput" Background="Transparent" BorderThickness="0"
+                                     MinWidth="0" Padding="{TemplateBinding Padding}" Foreground="{TemplateBinding Foreground}"
+                                     FontSize="{TemplateBinding FontSize}" Text="{TemplateBinding Text}"
+                                     PlaceholderText="{TemplateBinding PlaceholderText}" PlaceholderForeground="{TemplateBinding PlaceholderForeground}"
+                                     IsReadOnly="{TemplateBinding IsReadOnly}" TextAlignment="{TemplateBinding TextAlignment}"
+                                     VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                                     HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                     InnerLeftContent="{TemplateBinding InnerLeftContent}" InnerRightContent="{TemplateBinding InnerRightContent}" />
+                        </ButtonSpinner>
+                        <controls:TextInputFocusIndicator Height="2" VerticalAlignment="Bottom" Margin="1,0,1,0"
+                                                          CornerRadius="0,0,4,4" IsInputFocused="{TemplateBinding IsKeyboardFocusWithin}"
+                                                          IsHitTestVisible="False" Background="{DynamicResource AccentButtonBackgroundBrush}"
+                                                          RenderTransformOrigin="50%,50%" />
+                    </Panel>
+                </DataValidationErrors>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="NumericUpDown /template/ ButtonSpinner#PART_Spinner /template/ RepeatButton">
+        <Setter Property="MinWidth" Value="32" />
+    </Style>
+    <Style Selector="NumericUpDown:disabled /template/ ButtonSpinner#PART_Spinner">
+        <Setter Property="Background" Value="{DynamicResource ControlDisabledBackgroundBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ControlDisabledBorderBrush}" />
+    </Style>
+    <Style Selector="NumericUpDown:disabled /template/ TextBox#PART_TextBox">
+        <Setter Property="Foreground" Value="{DynamicResource ControlDisabledForegroundBrush}" />
+    </Style>
+    <Style Selector="TextBox.compositeInput /template/ controls|TextInputFocusIndicator">
+        <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="TextBox.compositeInput /template/ Border#PART_BorderElement,
+                     TextBox.compositeInput:pointerover /template/ Border#PART_BorderElement,
+                     TextBox.compositeInput:focus /template/ Border#PART_BorderElement">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+
+    <!-- WinUI Expander clips a vertical slide at the bottom of its header. -->
+    <Style Selector="Expander:down:not(.disclosure)">
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <StackPanel MinWidth="{TemplateBinding MinWidth}" MaxWidth="{TemplateBinding MaxWidth}">
+                    <ToggleButton x:Name="ExpanderHeader" MinHeight="{TemplateBinding MinHeight}"
+                                  CornerRadius="{TemplateBinding CornerRadius}" IsChecked="{TemplateBinding IsExpanded, Mode=TwoWay}"
+                                  Content="{TemplateBinding Header}" ContentTemplate="{TemplateBinding HeaderTemplate}" />
+                    <controls:ExpanderContentSlide IsExpanded="{TemplateBinding IsExpanded}">
+                        <Border x:Name="ExpanderContent">
+                            <ContentPresenter x:Name="PART_ContentPresenter" Content="{TemplateBinding Content}"
+                                              ContentTemplate="{TemplateBinding ContentTemplate}" Foreground="{TemplateBinding Foreground}"
+                                              HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+                        </Border>
+                    </controls:ExpanderContentSlide>
+                </StackPanel>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="Expander:down:not(.disclosure) /template/ Border#ExpanderContent">
+        <Setter Property="CornerRadius" Value="0,0,8,8" />
+        <Setter Property="BorderThickness" Value="1,0,1,1" />
+    </Style>
+    <Style Selector="Expander /template/ ToggleButton#ExpanderHeader:disabled /template/ Border#ToggleButtonBackground">
+        <Setter Property="Background" Value="{DynamicResource ControlDisabledBackgroundBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ControlDisabledBorderBrush}" />
+    </Style>
+    <Style Selector="Expander /template/ ToggleButton#ExpanderHeader:disabled /template/ Border#ExpandCollapseChevronBorder">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+
+    <!-- WinUI applies elevation to the popup surface. Use Fluent 2 shadow16 for the shared cross-platform surface. -->
+    <Style Selector="controls|PickerSurface">
+        <Setter Property="Background" Value="{DynamicResource FlyoutSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="BoxShadow" Value="{DynamicResource PickerShadow}" />
+    </Style>
+    <Style Selector="FlyoutPresenter.accentPalette">
+        <Setter Property="ClipToBounds" Value="False" />
+        <Setter Property="Padding" Value="10" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <controls:PickerSurface x:Name="PaletteSurface" Padding="{TemplateBinding Padding}">
+                    <ContentPresenter x:Name="PART_ContentPresenter" Content="{TemplateBinding Content}"
+                                      ContentTemplate="{TemplateBinding ContentTemplate}" />
+                </controls:PickerSurface>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+
+    <!-- Fluent Select/Combobox uses the same focus underline as Input. -->
+    <Style Selector="ComboBox[IsEditable=False]">
+        <Setter Property="MinHeight" Value="{DynamicResource DensityControlHeight}" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Padding" Value="10,0,0,0" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <DataValidationErrors>
+                    <Grid ColumnDefinitions="*,30">
+                        <Border x:Name="FieldSurface" Grid.ColumnSpan="2"
+                                Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}" />
+                        <TextBlock x:Name="FieldPlaceholder" Text="{TemplateBinding PlaceholderText}" Margin="{TemplateBinding Padding}"
+                                   Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
+                                   VerticalAlignment="Center" IsHitTestVisible="False"
+                                   IsVisible="{TemplateBinding SelectionBoxItem, Converter={x:Static ObjectConverters.IsNull}}" />
+                        <ContentPresenter x:Name="FieldValue" Content="{TemplateBinding SelectionBoxItem}"
+                                          ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" Margin="{TemplateBinding Padding}"
+                                          IsHitTestVisible="False" VerticalContentAlignment="Center"
+                                          HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+                        <PathIcon x:Name="FieldChevron" Grid.Column="1" Width="12" Height="12" IsHitTestVisible="False"
+                                  Data="{DynamicResource IconChevronDown}" Foreground="{DynamicResource SecondaryTextBrush}" />
+                        <controls:TextInputFocusIndicator Grid.ColumnSpan="2" x:Name="PART_FocusIndicator" Height="2"
+                                                          VerticalAlignment="Bottom" Margin="1,0,1,0" CornerRadius="0,0,4,4"
+                                                          IsInputFocused="{TemplateBinding IsKeyboardFocusWithin}" IsHitTestVisible="False"
+                                                          Background="{DynamicResource AccentButtonBackgroundBrush}" RenderTransformOrigin="50%,50%" />
+                        <Popup x:Name="PART_Popup" PlacementTarget="FieldSurface" Placement="BottomEdgeAlignedLeft" VerticalOffset="4"
+                               IsOpen="{TemplateBinding IsDropDownOpen, Mode=TwoWay}" IsLightDismissEnabled="True"
+                               InheritsTransform="True" ShouldUseOverlayLayer="True"
+                               MinWidth="{Binding Bounds.Width, RelativeSource={RelativeSource TemplatedParent}}"
+                               MaxHeight="{TemplateBinding MaxDropDownHeight}">
+                            <controls:PickerSurface x:Name="DropDownSurface" Padding="4">
+                                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"
+                                              IsScrollChainingEnabled="False">
+                                    <ItemsPresenter x:Name="PART_ItemsPresenter" ItemsPanel="{TemplateBinding ItemsPanel}" />
+                                </ScrollViewer>
+                            </controls:PickerSurface>
+                        </Popup>
+                    </Grid>
+                </DataValidationErrors>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="ComboBox:pointerover /template/ Border#FieldSurface">
+        <Setter Property="BorderBrush" Value="{DynamicResource StandardButtonHoverBorderBrush}" />
+    </Style>
+    <Style Selector="ComboBox:pressed /template/ Border#FieldSurface">
+        <Setter Property="BorderBrush" Value="{DynamicResource StandardButtonPressedBorderBrush}" />
+    </Style>
+    <Style Selector="ComboBox[IsDropDownOpen=True] /template/ controls|TextInputFocusIndicator#PART_FocusIndicator">
+        <Setter Property="IsInputFocused" Value="True" />
+    </Style>
+    <Style Selector="ComboBox:error /template/ Border#FieldSurface">
+        <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}" />
+    </Style>
+    <Style Selector="ComboBox:disabled /template/ Border#FieldSurface">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ControlDisabledBorderBrush}" />
+    </Style>
+    <Style Selector="ComboBox:disabled /template/ ContentPresenter#FieldValue">
+        <Setter Property="Foreground" Value="{DynamicResource ControlDisabledForegroundBrush}" />
+    </Style>
+    <Style Selector="ComboBox:disabled /template/ PathIcon#FieldChevron">
+        <Setter Property="Foreground" Value="{DynamicResource ControlDisabledForegroundBrush}" />
+    </Style>
+    <Style Selector="ComboBox:disabled /template/ TextBlock#FieldPlaceholder">
+        <Setter Property="Foreground" Value="{DynamicResource ControlDisabledForegroundBrush}" />
+    </Style>
+    <Style Selector="ToolTip">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Padding" Value="11,4,11,6" />
+        <Setter Property="MaxWidth" Value="240" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Background" Value="{DynamicResource FlyoutSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <DoubleTransition Property="Opacity" Duration="{x:Static helpers:SystemMotionPreferences.TooltipDuration}" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="ToolTip /template/ Border#PART_LayoutRoot">
+        <Setter Property="BoxShadow" Value="0 0 2 0 #1F000000, 0 4 8 0 #24000000" />
+    </Style>
+
+    <Style Selector="ProgressBar">
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="Background" Value="{DynamicResource ProgressTrackBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource AccentButtonBackgroundBrush}" />
+        <Setter Property="CornerRadius" Value="4" />
+    </Style>
+    <Style Selector="ProgressBar:horizontal">
+        <Setter Property="MinHeight" Value="2" />
+    </Style>
+    <Style Selector="ProgressBar:horizontal:not(:indeterminate) /template/ Border#PART_Indicator">
+        <Setter Property="Transitions">
+            <Transitions>
+                <DoubleTransition Property="Width" Duration="{x:Static helpers:SystemMotionPreferences.ProgressDuration}" Easing="{StaticResource FluentCssEase}" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="ProgressBar:horizontal:indeterminate">
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}" ClipToBounds="True">
+                    <Panel>
+                        <Border x:Name="PART_Indicator" IsVisible="False" />
+                        <controls:IndeterminateProgress Foreground="{TemplateBinding Foreground}" IsHitTestVisible="False" />
+                    </Panel>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+
+    <Style Selector="controls|IndeterminateProgress[IsReducedMotion=False]">
+        <Style.Animations>
+            <Animation Duration="0:0:3" IterationCount="Infinite">
+                <KeyFrame Cue="0%"><Setter Property="Phase" Value="-1" /></KeyFrame>
+                <KeyFrame Cue="100%"><Setter Property="Phase" Value="3" /></KeyFrame>
+            </Animation>
+        </Style.Animations>
+    </Style>
+    <Style Selector="controls|IndeterminateProgress[IsReducedMotion=True]">
+        <Style.Animations>
+            <Animation Duration="0:0:3" IterationCount="Infinite">
+                <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.2" /></KeyFrame>
+                <KeyFrame Cue="50%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+                <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0.2" /></KeyFrame>
+            </Animation>
+        </Style.Animations>
+    </Style>
+
+    <!-- Medium Fluent Slider has a 4px rail and a 20px thumb with a 4px inset. -->
+    <Style Selector="Slider">
+        <Style.Resources>
+            <x:Double x:Key="SliderTrackThemeHeight">4</x:Double>
+            <GridLength x:Key="SliderPreContentMargin">6</GridLength>
+            <GridLength x:Key="SliderPostContentMargin">6</GridLength>
+        </Style.Resources>
+    </Style>
+    <Style Selector="Slider /template/ Thumb#thumb">
+        <Setter Property="Background" Value="{DynamicResource AccentButtonBackgroundBrush}" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border BorderBrush="{DynamicResource ControlAccessibleStrokeBrush}" BorderThickness="0.5" CornerRadius="10">
+                    <Border CornerRadius="9.5" BorderBrush="{DynamicResource FlyoutSurfaceBrush}" BorderThickness="3.5"
+                            Background="{TemplateBinding Background}" BackgroundSizing="InnerBorderEdge" />
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="Slider /template/ RepeatButton#PART_DecreaseButton">
+        <Setter Property="Background" Value="{DynamicResource AccentButtonBackgroundBrush}" />
+    </Style>
+    <Style Selector="Slider /template/ RepeatButton#PART_IncreaseButton">
+        <Setter Property="Background" Value="{DynamicResource StandardButtonPressedBorderBrush}" />
+    </Style>
+    <Style Selector="Slider:pointerover /template/ Thumb#thumb, Slider:pointerover /template/ RepeatButton#PART_DecreaseButton">
+        <Setter Property="Background" Value="{DynamicResource AccentButtonHoverBackgroundBrush}" />
+    </Style>
+    <Style Selector="Slider:pressed /template/ Thumb#thumb, Slider:pressed /template/ RepeatButton#PART_DecreaseButton">
+        <Setter Property="Background" Value="{DynamicResource AccentButtonPressedBackgroundBrush}" />
+    </Style>
+    <Style Selector="Slider:disabled /template/ Thumb#thumb, Slider:disabled /template/ RepeatButton#PART_DecreaseButton,
+                     Slider:disabled /template/ RepeatButton#PART_IncreaseButton">
+        <Setter Property="Background" Value="{DynamicResource ControlDisabledBorderBrush}" />
+    </Style>
+
+    <Style Selector="TabControl.compactTabs TabItem">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="Normal" />
+        <Setter Property="MinHeight" Value="32" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Padding" Value="10,0" />
+        <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}" />
+    </Style>
+    <Style Selector="TabControl.compactTabs TabItem:selected">
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
+    </Style>
+    <Style Selector="TabControl.compactTabs TabItem /template/ Border#PART_SelectedPipe">
+        <Setter Property="Height" Value="3" />
+        <Setter Property="CornerRadius" Value="1.5" />
+        <Setter Property="Margin" Value="0" />
+        <Setter Property="Background" Value="{DynamicResource AccentButtonBackgroundBrush}" />
+    </Style>
+    <Style Selector="TabControl.compactTabs TabItem:pointerover /template/ Border#PART_LayoutRoot">
+        <Setter Property="Background" Value="{DynamicResource SidebarItemHoverBackgroundBrush}" />
+    </Style>
+    <Style Selector="TabControl.compactTabs TabItem:pressed /template/ Border#PART_LayoutRoot">
+        <Setter Property="Background" Value="{DynamicResource SidebarItemSelectedBackgroundBrush}" />
+    </Style>
+    <Style Selector="TabControl.compactTabs TabItem:disabled /template/ Border#PART_LayoutRoot">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="TextElement.Foreground" Value="{DynamicResource ControlDisabledForegroundBrush}" />
+    </Style>
+
+    <Style Selector="TreeViewItem /template/ Border#PART_LayoutRoot">
+        <Setter Property="CornerRadius" Value="4" />
+    </Style>
+    <Style Selector="TreeViewItem /template/ Border#PART_LayoutRoot:pointerover">
+        <Setter Property="Background" Value="{DynamicResource SidebarItemHoverBackgroundBrush}" />
+    </Style>
+    <Style Selector="TreeViewItem:selected /template/ Border#PART_LayoutRoot, TreeViewItem:pressed /template/ Border#PART_LayoutRoot:pointerover">
+        <Setter Property="Background" Value="{DynamicResource SidebarItemSelectedBackgroundBrush}" />
+    </Style>
+    <Style Selector="TreeViewItem:selected /template/ Border#PART_LayoutRoot:pointerover,
+                     TreeViewItem:selected:pressed /template/ Border#PART_LayoutRoot:pointerover">
+        <Setter Property="Background" Value="{DynamicResource StandardButtonPressedBackgroundBrush}" />
+    </Style>
+    <Style Selector="TreeViewItem:disabled /template/ Border#PART_LayoutRoot">
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="ListBox:not(.entryList) ListBoxItem">
+        <Setter Property="MinHeight" Value="{DynamicResource DensityControlHeight}" />
+        <Setter Property="Padding" Value="8,2" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="ListBox:not(.entryList) ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource EntryRowHoverBackgroundBrush}" />
+    </Style>
+    <Style Selector="ListBox:not(.entryList) ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter,
+                     ListBox:not(.entryList) ListBoxItem:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource EntryRowSelectedBackgroundBrush}" />
+    </Style>
+    <Style Selector="ListBox:not(.entryList) ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter,
+                     ListBox:not(.entryList) ListBoxItem:selected:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource StandardButtonPressedBackgroundBrush}" />
+    </Style>
+    <Style Selector="ListBox.entryList ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="ListBox.entryList ListBoxItem:pressed Border.entryCard">
+        <Setter Property="Background" Value="{DynamicResource EntryRowSelectedBackgroundBrush}" />
+    </Style>
+    <Style Selector="ListBox.entryList ListBoxItem:selected:pointerover Border.entryCard,
+                     ListBox.entryList ListBoxItem:selected:pressed Border.entryCard">
+        <Setter Property="Background" Value="{DynamicResource StandardButtonPressedBackgroundBrush}" />
+    </Style>
+    <Style Selector="ListBoxItem:disabled /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource ControlDisabledForegroundBrush}" />
+    </Style>
+
+    <Style Selector="ContextMenu MenuItem:selected /template/ Border#PART_LayoutRoot,
+                     MenuFlyoutPresenter MenuItem:selected /template/ Border#PART_LayoutRoot">
+        <Setter Property="Background" Value="{DynamicResource SidebarItemHoverBackgroundBrush}" />
+    </Style>
+    <Style Selector="ContextMenu MenuItem:pressed /template/ Border#PART_LayoutRoot:pointerover,
+                     MenuFlyoutPresenter MenuItem:pressed /template/ Border#PART_LayoutRoot:pointerover">
+        <Setter Property="Background" Value="{DynamicResource SidebarItemSelectedBackgroundBrush}" />
+    </Style>
+    <Style Selector="ContextMenu MenuItem:disabled /template/ Border#PART_LayoutRoot,
+                     MenuFlyoutPresenter MenuItem:disabled /template/ Border#PART_LayoutRoot">
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="MenuItem:disabled /template/ ContentPresenter#PART_HeaderPresenter">
+        <Setter Property="Foreground" Value="{DynamicResource ControlDisabledForegroundBrush}" />
+    </Style>
+
+    <!-- WinUI CalendarView distinguishes today (filled) from selection (outlined). -->
+    <Style Selector="Calendar.entryCalendar CalendarDayButton:selected:not(:today) /template/ Border#Border">
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentButtonBackgroundBrush}" />
+        <Setter Property="BorderThickness" Value="2" />
+    </Style>
+    <Style Selector="Calendar.entryCalendar CalendarDayButton:selected:not(:today):pointerover /template/ Border#Border">
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentButtonHoverBackgroundBrush}" />
+    </Style>
+    <Style Selector="Calendar.entryCalendar CalendarDayButton:selected:not(:today):pressed /template/ Border#Border">
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentButtonPressedBackgroundBrush}" />
+    </Style>
+    <Style Selector="Calendar.entryCalendar CalendarDayButton:selected:not(:today) /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}" />
+    </Style>
+    <Style Selector="Calendar.entryCalendar CalendarDayButton:today /template/ Border#Root">
+        <Setter Property="Background" Value="{DynamicResource AccentButtonBackgroundBrush}" />
+    </Style>
+    <Style Selector="Calendar.entryCalendar CalendarDayButton:today:pointerover /template/ Border#Root">
+        <Setter Property="Background" Value="{DynamicResource AccentButtonHoverBackgroundBrush}" />
+    </Style>
+    <Style Selector="Calendar.entryCalendar CalendarDayButton:today:pressed /template/ Border#Root">
+        <Setter Property="Background" Value="{DynamicResource AccentButtonPressedBackgroundBrush}" />
+    </Style>
+    <Style Selector="Calendar.entryCalendar CalendarDayButton:today /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Foreground" Value="{DynamicResource AccentActionForegroundBrush}" />
+    </Style>
+    <Style Selector="Calendar.entryCalendar CalendarDayButton:today:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Foreground" Value="{DynamicResource AccentActionHoverForegroundBrush}" />
+    </Style>
+    <Style Selector="Calendar.entryCalendar CalendarDayButton:today:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Foreground" Value="{DynamicResource AccentActionPressedForegroundBrush}" />
+    </Style>
+    <Style Selector="Calendar.entryCalendar CalendarDayButton:today:selected /template/ Border#Border">
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentActionForegroundBrush}" />
+        <Setter Property="Margin" Value="2" />
+    </Style>
+    <Style Selector="Calendar.entryCalendar CalendarDayButton:today:disabled /template/ Border#Root">
+        <Setter Property="Background" Value="{DynamicResource ControlDisabledBackgroundBrush}" />
+    </Style>
+    <Style Selector="Calendar.entryCalendar CalendarDayButton:selected:disabled /template/ Border#Border">
+        <Setter Property="BorderBrush" Value="{DynamicResource ControlDisabledBorderBrush}" />
+    </Style>
+    <Style Selector="Calendar.entryCalendar CalendarDayButton:disabled /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Foreground" Value="{DynamicResource ControlDisabledForegroundBrush}" />
+    </Style>
+</Styles>

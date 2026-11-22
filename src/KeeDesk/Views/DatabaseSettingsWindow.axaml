@@ -1,0 +1,187 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:chrome="clr-namespace:Avalonia.Controls.Chrome;assembly=Avalonia.Controls"
+        x:Class="KeeDesk.Views.DatabaseSettingsWindow"
+        Title="密码库设置与主密钥"
+        Width="640" Height="680"
+        MinWidth="560" MinHeight="540"
+        WindowStartupLocation="CenterOwner"
+        ExtendClientAreaToDecorationsHint="True"
+        WindowDecorations="Full"
+        ExtendClientAreaTitleBarHeightHint="44"
+        Background="{DynamicResource WorkspaceBackgroundBrush}"
+        Foreground="{DynamicResource PrimaryTextBrush}">
+
+    <Grid RowDefinitions="Auto, *, 1, Auto">
+        <!-- 顶部标题栏 -->
+        <Border Grid.Row="0" Padding="24,38,24,12" Background="Transparent"
+                chrome:WindowDecorationProperties.ElementRole="TitleBar"
+                PointerPressed="TitleBar_PointerPressed">
+            <StackPanel Spacing="3">
+                <TextBlock Text="密码库设置与主密钥" FontSize="20" FontWeight="SemiBold" />
+                <TextBlock x:Name="VaultFileSubTitle" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+        </Border>
+
+        <!-- 单页滚动 Fluent 2 卡片 -->
+        <ScrollViewer Grid.Row="1" Padding="24,4,24,20">
+            <StackPanel Spacing="14">
+                <!-- 卡片 1：基本信息 -->
+                <Border Classes="fluentCard" Padding="18,16">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="基本信息" FontSize="13.5" FontWeight="SemiBold" />
+                        <Grid ColumnDefinitions="*, 14, *">
+                            <StackPanel Grid.Column="0" Spacing="5">
+                                <TextBlock Text="密码库名称" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                <TextBox x:Name="DbNameBox" Height="32" PlaceholderText="例如：个人密码库" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" Spacing="5">
+                                <TextBlock Text="默认用户名（新建条目时自动填充）" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                <TextBox x:Name="DefaultUserBox" Height="32" PlaceholderText="可选，例如：you@example.com" />
+                            </StackPanel>
+                        </Grid>
+                        <StackPanel Spacing="5">
+                            <TextBlock Text="密码库描述" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                            <TextBox x:Name="DbDescBox" Height="32" PlaceholderText="简短描述此密码库用途..." />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- 卡片 2：加密算法与 KDF 安全参数 -->
+                <Border Classes="fluentCard" Padding="18,16">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="加密与密钥派生（KDF）安全参数" FontSize="13.5" FontWeight="SemiBold" />
+                        <Grid ColumnDefinitions="*, 12, *, 12, *">
+                            <StackPanel Grid.Column="0" Spacing="5">
+                                <TextBlock Text="加密算法" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                <ComboBox x:Name="CipherCombo" HorizontalAlignment="Stretch" Height="32">
+                                    <ComboBoxItem Content="AES-256 (Rijndael)" />
+                                    <ComboBoxItem Content="ChaCha20" />
+                                    <ComboBoxItem Content="Twofish-256" />
+                                </ComboBox>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" Spacing="5">
+                                <TextBlock Text="密钥派生函数 (KDF)" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                <ComboBox x:Name="KdfCombo" HorizontalAlignment="Stretch" Height="32" SelectionChanged="KdfCombo_SelectionChanged">
+                                    <ComboBoxItem Content="Argon2id (推荐)" />
+                                    <ComboBoxItem Content="Argon2d" />
+                                    <ComboBoxItem Content="AES-KDF (经典)" />
+                                </ComboBox>
+                            </StackPanel>
+                            <StackPanel Grid.Column="4" Spacing="5">
+                                <TextBlock Text="数据压缩" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                <ComboBox x:Name="CompressionCombo" HorizontalAlignment="Stretch" Height="32">
+                                    <ComboBoxItem Content="GZip 压缩" />
+                                    <ComboBoxItem Content="不压缩" />
+                                </ComboBox>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Argon2 参数行 -->
+                        <Grid x:Name="Argon2Panel" ColumnDefinitions="*, 12, *, 12, *">
+                            <StackPanel Grid.Column="0" Spacing="5">
+                                <TextBlock Text="迭代次数 (Iterations)" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                <NumericUpDown x:Name="ArgonIterationsNum" Minimum="1" Maximum="100" Value="3" FormatString="0" Height="32" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" Spacing="5">
+                                <TextBlock Text="内存占用 (MiB)" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                <NumericUpDown x:Name="ArgonMemoryNum" Minimum="8" Maximum="1024" Increment="8" Value="64" FormatString="0" Height="32" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="4" Spacing="5">
+                                <TextBlock Text="并行线程数 (Parallelism)" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                <NumericUpDown x:Name="ArgonParallelismNum" Minimum="1" Maximum="16" Value="2" FormatString="0" Height="32" />
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- AES-KDF 参数行 -->
+                        <StackPanel x:Name="AesKdfPanel" Spacing="5" IsVisible="False">
+                            <TextBlock Text="AES-KDF 变换轮数 (Rounds)" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                            <NumericUpDown x:Name="AesRoundsNum" Minimum="10000" Maximum="10000000" Increment="100000" Value="600000" FormatString="0" Height="32" Width="220" HorizontalAlignment="Left" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- 卡片 3：回收站与历史记录 -->
+                <Border Classes="fluentCard" Padding="18,16">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="回收站与历史记录" FontSize="13.5" FontWeight="SemiBold" />
+                        <Grid ColumnDefinitions="*, Auto">
+                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                <TextBlock Text="启用回收站" FontSize="13" />
+                                <TextBlock Text="删除条目或分组时先移入回收站，防止误删" FontSize="11.5" Foreground="{DynamicResource SecondaryTextBrush}" />
+                            </StackPanel>
+                            <ToggleSwitch Grid.Column="1" x:Name="RecycleBinToggle" OnContent="" OffContent="" VerticalAlignment="Center" />
+                        </Grid>
+                        <Grid ColumnDefinitions="*, Auto">
+                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                <TextBlock Text="每个条目最大保留历史版本数" FontSize="13" />
+                                <TextBlock Text="每次修改条目会自动保存历史快照，设为 0 表示不限制" FontSize="11.5" Foreground="{DynamicResource SecondaryTextBrush}" />
+                            </StackPanel>
+                            <NumericUpDown Grid.Column="1" x:Name="HistoryMaxItemsNum" Minimum="0" Maximum="100" Value="10" FormatString="0" Width="120" Height="32" VerticalAlignment="Center" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- 卡片 4：修改主密钥（可选） -->
+                <Border Classes="fluentCard" Padding="18,16">
+                    <StackPanel Spacing="12">
+                        <Grid ColumnDefinitions="*, Auto">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="修改主密钥（可选）" FontSize="13.5" FontWeight="SemiBold" />
+                                <TextBlock Text="开启后可更改主密码、绑定或生成新的 XML v2.0 密钥文件 (.keyx)" FontSize="11.5" Foreground="{DynamicResource SecondaryTextBrush}" />
+                            </StackPanel>
+                            <ToggleSwitch Grid.Column="1" x:Name="ChangeMasterKeyToggle" OnContent="" OffContent="" VerticalAlignment="Center" IsCheckedChanged="ChangeMasterKeyToggle_Changed" />
+                        </Grid>
+
+                        <StackPanel x:Name="MasterKeyPanel" Spacing="10" IsVisible="False">
+                            <Grid ColumnDefinitions="*, 14, *">
+                                <StackPanel Grid.Column="0" Spacing="5">
+                                    <TextBlock Text="新主密码" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                    <TextBox x:Name="NewPasswordBox" Height="32" PasswordChar="•" PlaceholderText="输入新主密码..." TextChanged="NewPassword_TextChanged" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" Spacing="5">
+                                    <TextBlock Text="确认新主密码" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                    <TextBox x:Name="ConfirmPasswordBox" Height="32" PasswordChar="•" PlaceholderText="再次输入新主密码..." />
+                                </StackPanel>
+                            </Grid>
+
+                            <Grid ColumnDefinitions="*, 12, Auto">
+                                <ProgressBar Grid.Column="0" x:Name="PwdStrengthBar" Minimum="0" Maximum="1" Height="4" Foreground="{DynamicResource BrandEmeraldBrush}" VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="2" x:Name="PwdStrengthText" Text="请输入新主密码" FontSize="11.5" Foreground="{DynamicResource SecondaryTextBrush}" />
+                            </Grid>
+
+                            <StackPanel Spacing="5">
+                                <TextBlock Text="绑定密钥文件（可选，与主密码组合加密）" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                <Grid ColumnDefinitions="*, 8, Auto, 6, Auto, 6, Auto">
+                                    <TextBox Grid.Column="0" x:Name="KeyFileBox" Height="32" IsReadOnly="True" PlaceholderText="不使用密钥文件" />
+                                    <Button Grid.Column="2" Height="32" Padding="10,0" Content="浏览..." Click="BrowseKeyFile_Click" />
+                                    <Button Grid.Column="4" Height="32" Padding="10,0" Content="生成 .keyx" Click="GenerateKeyFile_Click" />
+                                    <Button Grid.Column="6" Classes="subtle" Width="32" Height="32" MinHeight="32" Padding="0" ToolTip.Tip="清除密钥文件" Click="ClearKeyFile_Click">
+                                        <PathIcon Data="{StaticResource IconClose}" Width="11" Height="11" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                    </Button>
+                                </Grid>
+                            </StackPanel>
+
+                            <CheckBox x:Name="UseWindowsUserAccountCheck" Content="绑定当前 Windows 用户账户（DPAPI，兼容原版 KeePass 2.x）" FontSize="12.5" IsVisible="False" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <TextBlock x:Name="ErrorText" Foreground="{DynamicResource DangerBrush}" FontSize="12.5" IsVisible="False" />
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="2" Background="{DynamicResource DividerBrush}" />
+
+        <!-- 底部按钮 -->
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="24,12">
+            <Button Width="88" Height="36" Content="取消" Click="Cancel_Click" />
+            <Button Classes="accent" Height="36" Padding="18,0" Click="Save_Click">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <PathIcon Data="{StaticResource IconSave}" Width="13" Height="13" />
+                    <TextBlock Text="保存设置" VerticalAlignment="Center" />
+                </StackPanel>
+            </Button>
+        </StackPanel>
+    </Grid>
+</Window>

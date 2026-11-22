@@ -1,9 +1,0 @@
-[Desktop Entry]
-Name=KeePassModern
-Comment=Modern Cross-Platform Password Manager
-Exec=/opt/KeePassModern/KeePassModern
-Icon=/usr/share/icons/KeePassModern.png
-Terminal=false
-Type=Application
-Categories=Utility;Security;
-MimeType=application/x-keepass2;

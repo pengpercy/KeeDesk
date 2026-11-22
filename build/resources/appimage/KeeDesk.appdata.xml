@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+	<id>com.KeeDesk.app</id>
+	<metadata_license>MIT</metadata_license>
+	<project_license>MIT</project_license>
+	<name>KeeDesk</name>
+	<summary>Local KeePass password manager</summary>
+	<description>
+		<p>Open existing KeePass vaults, manage passwords and verification codes, and enter sign-in details with Auto-Type.</p>
+	</description>
+	<url type="homepage">https://github.com/pengpercy/KeeDesk</url>
+	<launchable type="desktop-id">com.KeeDesk.app.desktop</launchable>
+	<provides>
+		<id>com.KeePassModern.app</id>
+	</provides>
+</component>

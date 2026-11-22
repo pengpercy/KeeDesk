@@ -1,3 +1,3 @@
-Remove-Item -Path build\KeePassModern\*.pdb -Force -ErrorAction SilentlyContinue
+Remove-Item -Path build\KeeDesk\*.pdb -Force -ErrorAction SilentlyContinue
 
-Compress-Archive -Path build\KeePassModern -DestinationPath "build\KeePassModern_${env:VERSION}.${env:RUNTIME}.zip" -Force
+Compress-Archive -Path build\KeeDesk -DestinationPath "build\KeeDesk_${env:VERSION}.${env:RUNTIME}.zip" -Force

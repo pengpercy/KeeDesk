@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=KeeDesk
+Comment=Modern Cross-Platform Password Manager
+Exec=/opt/KeeDesk/KeeDesk
+Icon=/usr/share/icons/KeeDesk.png
+Terminal=false
+Type=Application
+Categories=Utility;Security;
+MimeType=application/x-keepass2;

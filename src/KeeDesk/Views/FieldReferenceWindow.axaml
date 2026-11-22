@@ -1,0 +1,70 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:chrome="clr-namespace:Avalonia.Controls.Chrome;assembly=Avalonia.Controls"
+        x:Class="KeeDesk.Views.FieldReferenceWindow"
+        Title="插入跨条目字段引用"
+        Width="520" Height="520"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        ExtendClientAreaToDecorationsHint="True"
+        WindowDecorations="Full"
+        ExtendClientAreaTitleBarHeightHint="40"
+        Background="{DynamicResource WorkspaceBackgroundBrush}"
+        Foreground="{DynamicResource PrimaryTextBrush}">
+
+    <Grid RowDefinitions="Auto, *, 1, Auto">
+        <Border Grid.Row="0" Padding="24,36,24,10" Background="Transparent"
+                chrome:WindowDecorationProperties.ElementRole="TitleBar"
+                PointerPressed="TitleBar_PointerPressed">
+            <StackPanel Spacing="3">
+                <TextBlock Text="插入跨条目字段引用（{REF:...}）" FontSize="18" FontWeight="SemiBold" />
+                <TextBlock Text="自动复用另一个条目的密码或用户名，原条目更新时引用处同步生效" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+            </StackPanel>
+        </Border>
+
+        <Grid Grid.Row="1" RowDefinitions="Auto, *, Auto, Auto" Margin="24,4,24,14" RowSpacing="10">
+            <TextBox Grid.Row="0" x:Name="FilterBox" Height="32" PlaceholderText="筛选目标条目..." TextChanged="FilterBox_TextChanged" />
+
+            <ListBox Grid.Row="1" x:Name="EntryListBox"
+                     Background="{DynamicResource CardBackgroundBrush}"
+                     BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8"
+                     SelectionChanged="Selection_Changed" />
+
+            <Grid Grid.Row="2" ColumnDefinitions="*, 12, *">
+                <StackPanel Grid.Column="0" Spacing="4">
+                    <TextBlock Text="引用字段（Wanted）" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                    <ComboBox x:Name="WantedFieldCombo" HorizontalAlignment="Stretch" Height="32" SelectionChanged="Selection_Changed">
+                        <ComboBoxItem Content="密码 (P)" Tag="P" />
+                        <ComboBoxItem Content="用户名 (U)" Tag="U" />
+                        <ComboBoxItem Content="标题 (T)" Tag="T" />
+                        <ComboBoxItem Content="网址 (A)" Tag="A" />
+                        <ComboBoxItem Content="备注 (N)" Tag="N" />
+                    </ComboBox>
+                </StackPanel>
+                <StackPanel Grid.Column="2" Spacing="4">
+                    <TextBlock Text="识别依据（Identify By）" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                    <ComboBox x:Name="IdentifyByCombo" HorizontalAlignment="Stretch" Height="32" SelectionChanged="Selection_Changed">
+                        <ComboBoxItem Content="UUID（最稳定推荐）" Tag="I" />
+                        <ComboBoxItem Content="标题 (T)" Tag="T" />
+                        <ComboBoxItem Content="用户名 (U)" Tag="U" />
+                    </ComboBox>
+                </StackPanel>
+            </Grid>
+
+            <Border Grid.Row="3" Classes="fluentCard" Padding="12,10">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="生成的引用表达式" FontSize="11.5" Foreground="{DynamicResource SecondaryTextBrush}" />
+                    <TextBlock x:Name="PreviewText" FontFamily="Consolas,Menlo,monospace" FontSize="12.5"
+                               Foreground="{DynamicResource BrandEmeraldBrush}" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <Border Grid.Row="2" Background="{DynamicResource DividerBrush}" />
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="24,12">
+            <Button Width="84" Height="34" Content="取消" Click="Cancel_Click" />
+            <Button Classes="accent" Height="34" Padding="16,0" Content="插入引用" Click="Insert_Click" />
+        </StackPanel>
+    </Grid>
+</Window>

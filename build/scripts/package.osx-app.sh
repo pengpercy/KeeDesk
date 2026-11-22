@@ -13,27 +13,27 @@ case "$RUNTIME" in
     *) echo "Unknown runtime $RUNTIME"; exit 1;;
 esac
 
-rm -rf KeePassModern.app
-mkdir -p KeePassModern.app/Contents/MacOS
-mkdir -p KeePassModern.app/Contents/Resources
-cp -R KeePassModern/ KeePassModern.app/Contents/MacOS/
-rm -rf KeePassModern
+rm -rf KeeDesk.app
+mkdir -p KeeDesk.app/Contents/MacOS
+mkdir -p KeeDesk.app/Contents/Resources
+cp -R KeeDesk/ KeeDesk.app/Contents/MacOS/
+rm -rf KeeDesk
 
 # 只读数据放入 Contents/Resources，并清理所有调试符号 (.dSYM / .pdb / .dbg)
-if [[ -d KeePassModern.app/Contents/MacOS/resources ]]; then
-    cp -R KeePassModern.app/Contents/MacOS/resources/ KeePassModern.app/Contents/Resources/
-    rm -rf KeePassModern.app/Contents/MacOS/resources
+if [[ -d KeeDesk.app/Contents/MacOS/resources ]]; then
+    cp -R KeeDesk.app/Contents/MacOS/resources/ KeeDesk.app/Contents/Resources/
+    rm -rf KeeDesk.app/Contents/MacOS/resources
 fi
-rm -rf KeePassModern.app/Contents/MacOS/*.dSYM KeePassModern.app/Contents/MacOS/*.dsym KeePassModern.app/Contents/MacOS/*.pdb KeePassModern.app/Contents/MacOS/*.dbg
+rm -rf KeeDesk.app/Contents/MacOS/*.dSYM KeeDesk.app/Contents/MacOS/*.dsym KeeDesk.app/Contents/MacOS/*.pdb KeeDesk.app/Contents/MacOS/*.dbg
 
 # SkiaSharp、HarfBuzz 与 Avalonia 原生 dylib 为双架构 Universal 二进制；使用 lipo -thin 仅保留当前架构以减小约 25% 体积
-for lib in KeePassModern.app/Contents/MacOS/*.dylib; do
+for lib in KeeDesk.app/Contents/MacOS/*.dylib; do
     if [[ -f "$lib" ]] && [[ "$(lipo -archs "$lib")" == *" "* ]]; then
         lipo -thin "$arch" "$lib" -output "$lib.thin" && mv "$lib.thin" "$lib"
     fi
 done
 
-ICON_SOURCE="../src/KeePassModern/Assets/Branding/app_icon_macos.png"
+ICON_SOURCE="../src/KeeDesk/Assets/Branding/app_icon_macos.png"
 ICONSET_DIR="App.iconset"
 rm -rf "$ICONSET_DIR"
 mkdir -p "$ICONSET_DIR"
@@ -47,10 +47,10 @@ sips -z 256 256   "$ICON_SOURCE" --out "$ICONSET_DIR/icon_256x256.png" >/dev/nul
 sips -z 512 512   "$ICON_SOURCE" --out "$ICONSET_DIR/icon_256x256@2x.png" >/dev/null
 sips -z 512 512   "$ICON_SOURCE" --out "$ICONSET_DIR/icon_512x512.png" >/dev/null
 sips -z 1024 1024 "$ICON_SOURCE" --out "$ICONSET_DIR/icon_512x512@2x.png" >/dev/null
-iconutil -c icns "$ICONSET_DIR" -o KeePassModern.app/Contents/Resources/App.icns
+iconutil -c icns "$ICONSET_DIR" -o KeeDesk.app/Contents/Resources/App.icns
 rm -rf "$ICONSET_DIR"
-sed "s/KeePassModern_VERSION/$VERSION/g" resources/app/App.plist > KeePassModern.app/Contents/Info.plist
-find resources/app -maxdepth 1 -type d -name "*.lproj" -exec cp -R {} KeePassModern.app/Contents/Resources/ \;
+sed "s/KeeDesk_VERSION/$VERSION/g" resources/app/App.plist > KeeDesk.app/Contents/Info.plist
+find resources/app -maxdepth 1 -type d -name "*.lproj" -exec cp -R {} KeeDesk.app/Contents/Resources/ \;
 
 # 由内向外签名（替代已废弃的 codesign --deep）：先签内部所有 Mach-O 动态库，再签整个 .app Bundle
 sign_args=(--force --sign "${CODESIGN_IDENTITY:--}")
@@ -58,32 +58,32 @@ if [[ -n "${CODESIGN_IDENTITY:-}" ]]; then
     sign_args+=(--options runtime --timestamp)
 fi
 while IFS= read -r file; do
-    if [[ "$file" != "KeePassModern.app/Contents/MacOS/KeePassModern" ]] && file -b "$file" | grep -q '^Mach-O'; then
+    if [[ "$file" != "KeeDesk.app/Contents/MacOS/KeeDesk" ]] && file -b "$file" | grep -q '^Mach-O'; then
         codesign "${sign_args[@]}" "$file"
     fi
-done < <(find KeePassModern.app/Contents -type f | awk '{ print gsub("/", "/"), $0 }' | sort -rn | cut -d' ' -f2-)
-codesign "${sign_args[@]}" KeePassModern.app
-codesign --verify --deep --strict KeePassModern.app
+done < <(find KeeDesk.app/Contents -type f | awk '{ print gsub("/", "/"), $0 }' | sort -rn | cut -d' ' -f2-)
+codesign "${sign_args[@]}" KeeDesk.app
+codesign --verify --deep --strict KeeDesk.app
 
 # 使用 ditto 打包 .zip（保留符号链接、扩展属性与权限，便于应用内热更新直接解压）
-ditto -c -k --sequesterRsrc --keepParent KeePassModern.app "KeePassModern_$VERSION.$RUNTIME.zip"
+ditto -c -k --sequesterRsrc --keepParent KeeDesk.app "KeeDesk_$VERSION.$RUNTIME.zip"
 
 # 创建 ULMO (LZMA) 高压缩率 DMG（比 UDZO 体积小约 1/3）
-DMG_NAME="KeePassModern_$VERSION.$RUNTIME.dmg"
+DMG_NAME="KeeDesk_$VERSION.$RUNTIME.dmg"
 echo "Creating DMG: $DMG_NAME"
 rm -f "$DMG_NAME"
 
-DMG_SOURCE="$(mktemp -d "${TMPDIR:-/tmp}/keepassmodern-dmg-source.XXXXXX")"
+DMG_SOURCE="$(mktemp -d "${TMPDIR:-/tmp}/keedesk-dmg-source.XXXXXX")"
 cleanup() {
     rm -rf "$DMG_SOURCE"
 }
 trap cleanup EXIT
 
-cp -R "KeePassModern.app" "$DMG_SOURCE/"
+cp -R "KeeDesk.app" "$DMG_SOURCE/"
 ln -s /Applications "$DMG_SOURCE/Applications"
 
 create_dmg() {
-    hdiutil create -volname "KeePassModern" \
+    hdiutil create -volname "KeeDesk" \
         -srcfolder "$DMG_SOURCE" \
         -ov -format ULMO \
         "$DMG_NAME"

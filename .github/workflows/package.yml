@@ -3,7 +3,7 @@ on:
   workflow_call:
     inputs:
       version:
-        description: KeePassModern package version
+        description: KeeDesk package version
         required: true
         type: string
     secrets:
@@ -34,8 +34,8 @@ jobs:
       - name: Download build
         uses: actions/download-artifact@v8
         with:
-          name: keepassmodern.${{ matrix.runtime }}
-          path: build/KeePassModern
+          name: keedesk.${{ matrix.runtime }}
+          path: build/KeeDesk
       - name: Package
         shell: pwsh
         env:
@@ -46,7 +46,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: package.${{ matrix.runtime }}
-          path: build/KeePassModern_*.zip
+          path: build/KeeDesk_*.zip
           compression-level: 0
           retention-days: 1
 
@@ -82,7 +82,7 @@ jobs:
       - name: Download build
         uses: actions/download-artifact@v8
         with:
-          name: keepassmodern.${{ matrix.runtime }}
+          name: keedesk.${{ matrix.runtime }}
           path: build
       - name: Package
         env:
@@ -90,8 +90,8 @@ jobs:
           RUNTIME: ${{ matrix.runtime }}
           CODESIGN_IDENTITY: ${{ env.MACOS_CODESIGN_IDENTITY }}
         run: |
-          mkdir -p build/KeePassModern
-          tar -xf "build/keepassmodern.${{ matrix.runtime }}.tar" -C build/KeePassModern
+          mkdir -p build/KeeDesk
+          tar -xf "build/keedesk.${{ matrix.runtime }}.tar" -C build/KeeDesk
           chmod +x ./build/scripts/package.osx-app.sh
           ./build/scripts/package.osx-app.sh
       - name: Notarize and staple DMG
@@ -103,7 +103,7 @@ jobs:
           VERSION: ${{ inputs.version }}
           RUNTIME: ${{ matrix.runtime }}
         run: |
-          DMG="build/KeePassModern_${VERSION}.${RUNTIME}.dmg"
+          DMG="build/KeeDesk_${VERSION}.${RUNTIME}.dmg"
           xcrun notarytool submit "$DMG" --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_APP_SPECIFIC_PASSWORD" --wait
           xcrun stapler staple "$DMG"
       - name: Upload package artifact
@@ -111,8 +111,8 @@ jobs:
         with:
           name: package.${{ matrix.runtime }}
           path: |
-            build/KeePassModern_*.zip
-            build/KeePassModern_*.dmg
+            build/KeeDesk_*.zip
+            build/KeeDesk_*.dmg
           compression-level: 0
           retention-days: 1
 
@@ -135,7 +135,7 @@ jobs:
       - name: Download build
         uses: actions/download-artifact@v8
         with:
-          name: keepassmodern.${{ matrix.runtime }}
+          name: keedesk.${{ matrix.runtime }}
           path: build
       - name: Package
         env:
@@ -143,8 +143,8 @@ jobs:
           RUNTIME: ${{ matrix.runtime }}
           APPIMAGE_EXTRACT_AND_RUN: 1
         run: |
-          mkdir -p build/KeePassModern
-          tar -xf "build/keepassmodern.${{ matrix.runtime }}.tar" -C build/KeePassModern
+          mkdir -p build/KeeDesk
+          tar -xf "build/keedesk.${{ matrix.runtime }}.tar" -C build/KeeDesk
           chmod +x ./build/scripts/package.linux.sh
           ./build/scripts/package.linux.sh
       - name: Upload package artifacts
@@ -152,8 +152,8 @@ jobs:
         with:
           name: package.${{ matrix.runtime }}
           path: |
-            build/KeePassModern-*.AppImage
-            build/KeePassModern_*.deb
-            build/KeePassModern-*.rpm
+            build/KeeDesk-*.AppImage
+            build/KeeDesk_*.deb
+            build/KeeDesk-*.rpm
           compression-level: 0
           retention-days: 1

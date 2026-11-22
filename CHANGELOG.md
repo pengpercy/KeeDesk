@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.0 - 2026-11-22
+
+- **KeeDesk** — New name for the local KeePass-compatible password manager. Existing vaults, preferences, and recent files carry over. macOS retains its Touch ID keychain integration.
+- **Window layout** — The welcome window opens at 1080 × 720, and the workspace restores its last size. An animated transition connects the two screens after unlocking. Linux follows the desktop's window button placement.
+- **Fluent 2 controls** — Refined settings, menus, vault switching, and the entry detail pane. Selectors share consistent borders and shadows, text fields animate their focus indicator, and verification code progress runs smoothly.
+- **Windows upgrade** — When upgrading from KeePassModern, close the old app, extract the KeeDesk ZIP, and launch `KeeDesk.exe`.
+
 ## 1.1.0 - 2026-11-22
 
 - **Fluent 2 V3 Workspace**: Added icon-only title-bar commands with tooltips, a full-height three-pane layout on macOS, a title-bar back button in narrow desktop layouts, and a new default accent (`#508252`).

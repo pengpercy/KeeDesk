@@ -1,0 +1,17 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="KeeDesk.Controls.BrandLogo">
+    <Viewbox Stretch="Uniform">
+        <Canvas Width="512" Height="512">
+            <Border Canvas.Left="24" Canvas.Top="24" Width="464" Height="464" CornerRadius="112"
+                    Background="{DynamicResource BrandEmeraldBrush}" />
+            <!-- 纯白安全盾牌 -->
+            <Path Data="M256,96 L388,148 V254 C388,338 330,398 256,424 C182,398 124,338 124,254 V148 Z"
+                  Fill="White" />
+
+            <!-- 钥匙孔 -->
+            <Ellipse Canvas.Left="220" Canvas.Top="196" Width="72" Height="72" Fill="{DynamicResource BrandEmeraldBrush}" />
+            <Path Data="M238,248 H274 L286,334 H226 Z" Fill="{DynamicResource BrandEmeraldBrush}" />
+        </Canvas>
+    </Viewbox>
+</UserControl>
