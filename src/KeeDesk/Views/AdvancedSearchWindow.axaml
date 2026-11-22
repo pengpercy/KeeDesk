@@ -2,7 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:chrome="clr-namespace:Avalonia.Controls.Chrome;assembly=Avalonia.Controls"
         x:Class="KeeDesk.Views.AdvancedSearchWindow"
-        Title="高级查找"
+        Title="{DynamicResource Str_AdvancedSearch}"
         Width="480" Height="460"
         WindowStartupLocation="CenterOwner"
         CanResize="False"
@@ -22,30 +22,30 @@
         <Border Grid.Row="0" Padding="24,40,24,10" Background="Transparent"
                 chrome:WindowDecorationProperties.ElementRole="TitleBar"
                 PointerPressed="TitleBar_PointerPressed">
-            <TextBlock Text="高级查找" FontSize="18" FontWeight="SemiBold" />
+            <TextBlock Text="{DynamicResource Str_AdvancedSearch}" FontSize="18" FontWeight="SemiBold" />
         </Border>
 
         <ScrollViewer Grid.Row="1" x:Name="SearchFormScroll" ClipToBounds="True"
                       HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
             <StackPanel Spacing="8" Margin="24,4,24,6">
                 <StackPanel Spacing="6">
-                    <TextBlock Text="查找内容" FontSize="12" FontWeight="Medium" Foreground="{DynamicResource SecondaryTextBrush}" />
-                    <TextBox x:Name="QueryBox" Height="34" PlaceholderText="输入关键词或正则表达式..." KeyDown="QueryBox_KeyDown" />
+                    <TextBlock Text="{DynamicResource Str_SearchTerm}" FontSize="12" FontWeight="Medium" Foreground="{DynamicResource SecondaryTextBrush}" />
+                    <TextBox x:Name="QueryBox" Height="34" PlaceholderText="{DynamicResource Str_EnterAKeywordOrRegularExpression}" KeyDown="QueryBox_KeyDown" />
                     <TextBlock x:Name="ErrorText" Foreground="{DynamicResource DangerBrush}" FontSize="12"
                                TextWrapping="Wrap" IsVisible="False" />
                 </StackPanel>
 
                 <Border Classes="fluentCard" Padding="14,8">
                     <StackPanel Spacing="4">
-                        <TextBlock Text="搜索字段" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource SecondaryTextBrush}" />
+                        <TextBlock Text="{DynamicResource Str_SearchFields}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource SecondaryTextBrush}" />
                         <UniformGrid Columns="3">
-                            <CheckBox x:Name="ChkTitle" Content="标题" IsChecked="True" />
-                            <CheckBox x:Name="ChkUser" Content="用户名" IsChecked="True" />
-                            <CheckBox x:Name="ChkPass" Content="密码" IsChecked="False" />
-                            <CheckBox x:Name="ChkUrl" Content="网址" IsChecked="True" />
-                            <CheckBox x:Name="ChkNotes" Content="备注" IsChecked="True" />
-                            <CheckBox x:Name="ChkTags" Content="标签" IsChecked="True" />
-                            <CheckBox x:Name="ChkCustom" Content="自定义字段" IsChecked="True" />
+                            <CheckBox x:Name="ChkTitle" Content="{DynamicResource Str_Title}" IsChecked="True" />
+                            <CheckBox x:Name="ChkUser" Content="{DynamicResource Str_UserName}" IsChecked="True" />
+                            <CheckBox x:Name="ChkPass" Content="{DynamicResource Str_Password}" IsChecked="False" />
+                            <CheckBox x:Name="ChkUrl" Content="{DynamicResource Str_URL}" IsChecked="True" />
+                            <CheckBox x:Name="ChkNotes" Content="{DynamicResource Str_Notes}" IsChecked="True" />
+                            <CheckBox x:Name="ChkTags" Content="{DynamicResource Str_Tags}" IsChecked="True" />
+                            <CheckBox x:Name="ChkCustom" Content="{DynamicResource Str_CustomFields}" IsChecked="True" />
                             <CheckBox x:Name="ChkUuid" Content="UUID" IsChecked="False" />
                         </UniformGrid>
                     </StackPanel>
@@ -53,12 +53,12 @@
 
                 <Border Classes="fluentCard" Padding="14,8">
                     <StackPanel Spacing="4">
-                        <TextBlock Text="匹配选项" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource SecondaryTextBrush}" />
+                        <TextBlock Text="{DynamicResource Str_MatchingOptions}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource SecondaryTextBrush}" />
                         <UniformGrid Columns="2">
-                            <CheckBox x:Name="ChkRegex" Content="使用正则表达式" />
-                            <CheckBox x:Name="ChkCase" Content="区分大小写" />
-                            <CheckBox x:Name="ChkExcludeExpired" Content="排除已过期条目" />
-                            <CheckBox x:Name="ChkIncludeBin" Content="包含回收站条目" />
+                            <CheckBox x:Name="ChkRegex" Content="{DynamicResource Str_UseRegularExpressions}" />
+                            <CheckBox x:Name="ChkCase" Content="{DynamicResource Str_MatchCase}" />
+                            <CheckBox x:Name="ChkExcludeExpired" Content="{DynamicResource Str_ExcludeExpiredEntries}" />
+                            <CheckBox x:Name="ChkIncludeBin" Content="{DynamicResource Str_IncludeRecycleBinEntries}" />
                         </UniformGrid>
                     </StackPanel>
                 </Border>
@@ -68,8 +68,8 @@
         <Border Grid.Row="2" Background="{DynamicResource DividerBrush}" />
 
         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="24,12">
-            <Button Width="84" Height="34" Content="取消" Click="Cancel_Click" />
-            <Button Classes="accent" Height="34" Padding="18,0" Content="开始查找" Click="Search_Click" />
+            <Button Width="84" Height="34" Content="{DynamicResource Str_Cancel}" Click="Cancel_Click" />
+            <Button Classes="accent" Height="34" Padding="18,0" Content="{DynamicResource Str_Find}" Click="Search_Click" />
         </StackPanel>
     </Grid>
 </Window>

@@ -3,7 +3,7 @@
         xmlns:controls="using:KeeDesk.Controls"
         xmlns:chrome="clr-namespace:Avalonia.Controls.Chrome;assembly=Avalonia.Controls"
         x:Class="KeeDesk.Views.UpdateWindow"
-        Title="发现新版本"
+        Title="{DynamicResource Str_UpdateAvailable}"
         Width="520" Height="460"
         WindowStartupLocation="CenterOwner"
         CanResize="False"
@@ -20,8 +20,8 @@
             <StackPanel Orientation="Horizontal" Spacing="14">
                 <controls:BrandLogo Width="44" Height="44" />
                 <StackPanel VerticalAlignment="Center" Spacing="2">
-                    <TextBlock x:Name="TitleText" Text="发现 KeeDesk 新版本" FontSize="17" FontWeight="SemiBold" />
-                    <TextBlock x:Name="VersionText" Text="当前版本 1.0.0 → 最新版本" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                    <TextBlock x:Name="TitleText" Text="{DynamicResource Str_KeeDeskUpdateAvailable}" FontSize="17" FontWeight="SemiBold" />
+                    <TextBlock x:Name="VersionText" Text="{DynamicResource Str_CurrentVersion100LatestVersion}" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
                 </StackPanel>
             </StackPanel>
         </Border>
@@ -29,12 +29,12 @@
         <Grid Grid.Row="1" RowDefinitions="*, Auto" Margin="24,0,24,14">
             <Border Grid.Row="0" Classes="fluentCard" Padding="14">
                 <ScrollViewer>
-                    <SelectableTextBlock x:Name="ReleaseNotesText" FontSize="12.5" LineHeight="20" Text="暂无更新说明。" />
+                    <SelectableTextBlock x:Name="ReleaseNotesText" FontSize="12.5" LineHeight="20" Text="{DynamicResource Str_NoReleaseNotesAvailable}" />
                 </ScrollViewer>
             </Border>
 
             <StackPanel Grid.Row="1" x:Name="ProgressPanel" IsVisible="False" Spacing="6" Margin="0,12,0,0">
-                <TextBlock x:Name="StatusText" Text="正在下载更新包..." FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                <TextBlock x:Name="StatusText" Text="{DynamicResource Str_DownloadingUpdate}" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
                 <ProgressBar x:Name="DownloadProgress" Minimum="0" Maximum="100" Height="4" HorizontalAlignment="Stretch"
                              Foreground="{DynamicResource AccentButtonBackgroundBrush}" />
             </StackPanel>
@@ -43,10 +43,10 @@
         <Border Grid.Row="2" Background="{DynamicResource DividerBrush}" />
 
         <Grid Grid.Row="3" ColumnDefinitions="Auto, *, Auto" Margin="24,12">
-            <Button Grid.Column="0" Classes="subtle" Content="前往 GitHub 发布页" Click="OpenReleasePage_Click" />
+            <Button Grid.Column="0" Classes="subtle" Content="{DynamicResource Str_OpenGitHubReleases}" Click="OpenReleasePage_Click" />
             <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
-                <Button Content="稍后提醒" Click="Close_Click" MinWidth="80" Height="32" />
-                <Button x:Name="DownloadBtn" Classes="accent" Content="立即更新" Click="DownloadAndApply_Click" MinWidth="104" Height="32" />
+                <Button Content="{DynamicResource Str_RemindMeLater}" Click="Close_Click" MinWidth="80" Height="32" />
+                <Button x:Name="DownloadBtn" Classes="accent" Content="{DynamicResource Str_UpdateNow}" Click="DownloadAndApply_Click" MinWidth="104" Height="32" />
             </StackPanel>
         </Grid>
     </Grid>

@@ -6,6 +6,7 @@ using KeeDesk.Core.Kdbx;
 using KeeDesk.Core.Services;
 using KeeDesk.Helpers;
 using KeeDesk.Services;
+using static KeeDesk.Services.LocalizationService;
 
 namespace KeeDesk.ViewModels;
 
@@ -77,9 +78,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public bool IsAuditSelected => ActiveSection == ActiveSection.SecurityAudit;
     public bool IsRecycleBinSelected => ActiveSection == ActiveSection.RecycleBin;
 
-    [ObservableProperty] private string _currentDensityLabel = "标准";
+    [ObservableProperty] private string _currentDensityLabel = L("Str_Standard");
     [ObservableProperty] private bool _sortByModifiedDesc;
-    public string SortButtonLabel => SortByModifiedDesc ? "最近修改" : "名称排序";
+    public string SortButtonLabel => SortByModifiedDesc ? L("Str_LastModified") : L("Str_ByName");
 
     [ObservableProperty] private double _leftCaptionPadding = 76;
     [ObservableProperty] private bool _isUnlocked;
@@ -105,7 +106,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         MacTouchIdService.HasSavedPassword(UnlockVaultPath);
     public bool CanEnableTouchId => IsTouchIdSupported && !CanUnlockWithTouchId;
 
-    [ObservableProperty] private string _newVaultName = "个人密码库";
+    [ObservableProperty] private string _newVaultName = L("Str_PersonalVault");
     [ObservableProperty] private RecentVaultItem? _selectedRecentVault;
     public ObservableCollection<RecentVaultItem> RecentVaults { get; } = new();
     public bool HasRecentVaults => RecentVaults.Count != 0;
@@ -113,20 +114,20 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public string UnlockVaultFileName => Path.GetFileName(UnlockVaultPath);
 
     public string UnlockVaultHeading => string.IsNullOrWhiteSpace(UnlockVaultPath)
-        ? "欢迎使用 KeeDesk"
-        : $"解锁{SelectedRecentVault?.DisplayName ?? Path.GetFileNameWithoutExtension(UnlockVaultPath)}";
+        ? L("Str_WelcomeToKeeDesk")
+        : L("Str_UnlockFormat", SelectedRecentVault?.DisplayName ?? Path.GetFileNameWithoutExtension(UnlockVaultPath));
 
     public string UnlockKeyFileDisplay => string.IsNullOrWhiteSpace(UnlockKeyFilePath)
-        ? "尚未选择密钥文件"
+        ? L("Str_NoKeyFileSelected")
         : Path.GetFileName(UnlockKeyFilePath);
 
     // Workspace properties
     [ObservableProperty] private string _vaultDisplayName = "KeeDesk";
     public bool HasSearchQuery => !string.IsNullOrWhiteSpace(SearchQuery);
-    public string VaultSaveStatus => IsModified ? "有未保存的更改" : "所有更改已保存";
+    public string VaultSaveStatus => IsModified ? L("Str_UnsavedChanges") : L("Str_AllChangesSaved");
     [ObservableProperty, NotifyPropertyChangedFor(nameof(HasSearchQuery))]
     private string _searchQuery = string.Empty;
-    [ObservableProperty] private string _currentFilterTitle = "全部条目";
+    [ObservableProperty] private string _currentFilterTitle = L("Str_AllEntries3");
     [ObservableProperty] private ActiveSection _activeSection = ActiveSection.AllEntries;
     [ObservableProperty] private int _allCount;
     [ObservableProperty] private int _favoritesCount;
@@ -148,7 +149,10 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private EntryItemViewModel? _selectedEntry;
     [ObservableProperty] private GroupItemViewModel? _selectedGroup;
     private string? _selectedTag;
-    private string _customFilterTitle = "查找结果";
+    private string _customFilterTitleKey = "Str_SearchResults";
+    private string? _advancedSearchQuery;
+    private DateTime _auditCheckedAt;
+    private string _defaultVaultName = L("Str_PersonalVault");
     private List<KdbxEntry>? _customFilterEntries;
 
     // Security Audit Dashboard
@@ -197,12 +201,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public MainWindowViewModel(AppSettingsService settingsService)
     {
         SettingsService = settingsService;
-        CurrentDensityLabel = DensityService.Current switch
-        {
-            UiDensity.Compact => "紧凑",
-            UiDensity.Comfortable => "宽松",
-            _ => "标准"
-        };
+        UpdateDensityLabel();
         RefreshRecentVaults();
 
         _tickTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
@@ -214,6 +213,34 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             IsToastVisible = false;
         };
     }
+
+    internal void RefreshLanguage()
+    {
+        if (NewVaultName == _defaultVaultName)
+            NewVaultName = L("Str_PersonalVault");
+        _defaultVaultName = L("Str_PersonalVault");
+        UpdateDensityLabel();
+        OnPropertyChanged(nameof(CurrentThemeLabel));
+        OnPropertyChanged(nameof(SortButtonLabel));
+        OnPropertyChanged(nameof(UnlockVaultHeading));
+        OnPropertyChanged(nameof(UnlockKeyFileDisplay));
+        OnPropertyChanged(nameof(VaultSaveStatus));
+        CurrentFilterTitle = GetFilterTitle();
+        if (_database is not null)
+            AuditCheckedDisplay = L("Str_CheckedEntriesFormat", AllCount, _auditCheckedAt);
+        foreach (var entry in FilteredEntries.Concat(AuditWeakEntries).Concat(AuditReusedEntries)
+                     .Concat(AuditExpiringEntries).Concat(AuditNo2FaEntries).Distinct())
+            entry.Refresh();
+        UnlockError = string.Empty;
+        IsToastVisible = false;
+    }
+
+    internal void UpdateDensityLabel() => CurrentDensityLabel = DensityService.Current switch
+    {
+        UiDensity.Compact => L("Str_Compact"),
+        UiDensity.Comfortable => L("Str_Spacious"),
+        _ => L("Str_Standard")
+    };
 
     public KdbxDatabase? CurrentDatabase => _database;
 
@@ -235,7 +262,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             if (idleMins > 0 && (DateTimeOffset.UtcNow - _lastActivityUtc).TotalMinutes >= idleMins)
             {
                 LockVault();
-                var msg = $"已连续 {idleMins} 分钟无操作，密码库已自动锁定";
+                var msg = L("Str_VaultsLockedAfterMinutesOfInactivityFormat", idleMins);
                 ShowToast(msg);
                 NativeNotificationService.Send("KeeDesk", msg);
                 return;
@@ -309,7 +336,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             UnlockKeyFilePath = string.Empty;
         }
         RefreshRecentVaults();
-        ShowToast($"已从最近列表移除「{item.DisplayName}」（本地文件不受影响）");
+        ShowToast(L("Str_RemovedFromRecentsTheLocalFileIsFormat", item.DisplayName));
     }
 
     [RelayCommand]
@@ -319,7 +346,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         UnlockVaultPath = string.Empty;
         UnlockKeyFilePath = string.Empty;
         RefreshRecentVaults();
-        ShowToast("已清空最近打开的密码库记录");
+        ShowToast(L("Str_ClearedRecentVaults"));
     }
 
     [RelayCommand]
@@ -363,11 +390,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             await File.WriteAllTextAsync(path, xml);
             if (!IsUnlocked)
                 UnlockKeyFilePath = path;
-            ShowToast($"已生成 XML v2.0 密钥文件：{Path.GetFileName(path)}");
+            ShowToast(L("Str_GeneratedXMLV20KeyFileFormat", Path.GetFileName(path)));
         }
         catch (Exception ex)
         {
-            ShowToast($"生成密钥文件失败：{ex.Message}", ToastSeverity.Error);
+            ShowToast(L("Str_CouldnTGenerateTheKeyFileFormat", ex.Message), ToastSeverity.Error);
         }
     }
 
@@ -386,7 +413,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 LockVault();
             UnlockVaultPath = kdbx;
             UnlockError = string.Empty;
-            ShowToast($"已载入密码库：{Path.GetFileName(kdbx)}，请输入主密码解锁");
+            ShowToast(L("Str_LoadedVaultEnterTheMasterPasswordToFormat", Path.GetFileName(kdbx)));
             return;
         }
 
@@ -398,7 +425,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             if (!string.IsNullOrEmpty(keyFile))
             {
                 UnlockKeyFilePath = keyFile;
-                ShowToast($"已选择密钥文件：{Path.GetFileName(keyFile)}");
+                ShowToast(L("Str_SelectedKeyFileFormat", Path.GetFileName(keyFile)));
             }
         }
     }
@@ -410,7 +437,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         UnlockError = string.Empty;
         if (string.IsNullOrWhiteSpace(UnlockVaultPath) || !File.Exists(UnlockVaultPath))
         {
-            UnlockError = "请选择有效的 .kdbx 密码库文件。";
+            UnlockError = L("Str_SelectAValidKdbxVaultFile");
             UnlockFailedShakeRequested?.Invoke();
             return;
         }
@@ -445,7 +472,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            UnlockError = $"解锁失败：主密码或密钥文件不正确（{ex.Message}）";
+            UnlockError = L("Str_CouldnTUnlockUsingTheMasterPasswordFormat", ex.Message);
             UnlockFailedShakeRequested?.Invoke();
         }
         finally
@@ -460,17 +487,17 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         if (IsUnlocking || !CanUnlockWithTouchId) return;
         UnlockError = string.Empty;
 
-        var ok = await MacTouchIdService.AuthenticateAsync($"解锁密码库「{Path.GetFileName(UnlockVaultPath)}」");
+        var ok = await MacTouchIdService.AuthenticateAsync(L("Str_UnlockVaultFormat", Path.GetFileName(UnlockVaultPath)));
         if (!ok)
         {
-            UnlockError = "Touch ID 验证未通过或已取消。";
+            UnlockError = L("Str_TouchIDAuthenticationFailedOrWasCanceled");
             return;
         }
 
         var savedPwd = MacTouchIdService.TryLoadPasswordFromKeychain(UnlockVaultPath);
         if (string.IsNullOrEmpty(savedPwd))
         {
-            UnlockError = "未能从 macOS 钥匙串读取主密码，请手动输入主密码。";
+            UnlockError = L("Str_CouldnTReadTheMasterPasswordFrom");
             OnPropertyChanged(nameof(CanUnlockWithTouchId));
         OnPropertyChanged(nameof(CanEnableTouchId));
             return;
@@ -486,7 +513,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         UnlockError = string.Empty;
         if (string.IsNullOrWhiteSpace(UnlockMasterPassword))
         {
-            UnlockError = "请先在上方输入新密码库的主密码。";
+            UnlockError = L("Str_EnterAMasterPasswordForTheNew");
             return;
         }
 
@@ -506,11 +533,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             SettingsService.AddRecentVault(savePath, string.IsNullOrWhiteSpace(UnlockKeyFilePath) ? null : UnlockKeyFilePath, db.Meta.DatabaseName);
             RefreshRecentVaults();
             UnlockMasterPassword = string.Empty;
-            ShowToast($"已创建并加密保存密码库：{Path.GetFileName(savePath)}");
+            ShowToast(L("Str_CreatedAndSavedEncryptedVaultFormat", Path.GetFileName(savePath)));
         }
         catch (Exception ex)
         {
-            UnlockError = $"创建密码库失败：{ex.Message}";
+            UnlockError = L("Str_CouldnTCreateTheVaultFormat", ex.Message);
         }
     }
 
@@ -619,7 +646,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 _activeSession = null;
                 SwitchVaultTab(OpenVaults[^1]);
             }
-            ShowToast($"已关闭并锁定密码库：{closedName}");
+            ShowToast(L("Str_ClosedAndLockedVaultFormat", closedName));
         }
         else
         {
@@ -632,7 +659,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             SelectedEntry = null;
             IsUnlocked = false;
             IsModified = false;
-            ShowToast($"已关闭并锁定密码库：{closedName}");
+            ShowToast(L("Str_ClosedAndLockedVaultFormat", closedName));
         }
     }
 
@@ -648,17 +675,17 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         if (existing is not null)
         {
             SwitchVaultTab(existing);
-            ShowToast($"已切换到已打开的密码库：{existing.DisplayName}");
+            ShowToast(L("Str_SwitchedToTheOpenVaultFormat", existing.DisplayName));
             return;
         }
 
-        var res = await OpenVaultUnlockPromptAsync(path, "打开其他密码库", "解锁并打开");
+        var res = await OpenVaultUnlockPromptAsync(path, L("Str_OpenAnotherVault2"), L("Str_UnlockAndOpen"));
         if (res is null) return;
 
         ActivateDatabase(res.Value.Database, res.Value.MasterKey);
         SettingsService.AddRecentVault(path, string.IsNullOrWhiteSpace(res.Value.KeyFilePath) ? null : res.Value.KeyFilePath, res.Value.Database.Meta.DatabaseName);
         RefreshRecentVaults();
-        ShowToast($"已在新标签页打开：{Path.GetFileName(path)}");
+        ShowToast(L("Str_OpenedInANewTabFormat", Path.GetFileName(path)));
     }
 
     [RelayCommand]
@@ -679,11 +706,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             if (_activeSession is not null) _activeSession.DisplayName = VaultDisplayName;
             SettingsService.AddRecentVault(path, null, _database.Meta.DatabaseName);
             RefreshRecentVaults();
-            ShowToast($"已另存为：{Path.GetFileName(path)}");
+            ShowToast(L("Str_SavedAsFormat", Path.GetFileName(path)));
         }
         catch (Exception ex)
         {
-            ShowToast($"另存为失败：{ex.Message}", ToastSeverity.Error);
+            ShowToast(L("Str_CouldnTSaveACopyFormat", ex.Message), ToastSeverity.Error);
         }
     }
 
@@ -710,7 +737,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         SelectedEntry = null;
         IsUnlocked = false;
         IsModified = false;
-        ShowToast("全部密码库已锁定，内存敏感数据已清零");
+        ShowToast(L("Str_AllVaultsLockedSensitiveDataClearedFrom"));
     }
 
     [RelayCommand]
@@ -719,7 +746,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         if (_database is null || _masterKey is null) return;
         if (string.IsNullOrWhiteSpace(_database.FilePath))
         {
-            ShowToast("当前为演示库，如需持久化请先新建正式 .kdbx 密码库");
+            ShowToast(L("Str_ToSaveChangesToTheDemoCreate"));
             return;
         }
 
@@ -727,11 +754,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         {
             KdbxFormat.Save(_database, _database.FilePath, _masterKey);
             IsModified = false;
-            ShowToast("密码库已安全保存（KDBX 4）", ToastSeverity.Success);
+            ShowToast(L("Str_VaultSavedSecurelyKDBX4"), ToastSeverity.Success);
         }
         catch (Exception ex)
         {
-            ShowToast($"保存失败：{ex.Message}", ToastSeverity.Error);
+            ShowToast(L("Str_CouldnTSaveChangesFormat", ex.Message), ToastSeverity.Error);
         }
     }
 
@@ -754,7 +781,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         AuditIssueCount = audit.TotalIssues;
         AuditAffectedCount = audit.WeakPasswords.Concat(audit.ReusedPasswords).Concat(audit.ExpiredOrExpiringSoon)
             .Select(entry => entry.Uuid).Distinct().Count();
-        AuditCheckedDisplay = $"已检查 {audit.TotalEntries} 个条目 · {DateTime.Now:yyyy/MM/dd HH:mm}";
+        _auditCheckedAt = DateTime.Now;
+        AuditCheckedDisplay = L("Str_CheckedEntriesFormat", audit.TotalEntries, _auditCheckedAt);
         UpdateObservable(AuditWeakEntries, audit.WeakPasswords);
         UpdateObservable(AuditReusedEntries, audit.ReusedPasswords);
         UpdateObservable(AuditExpiringEntries, audit.ExpiredOrExpiringSoon);
@@ -831,20 +859,15 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         DensityService.Apply(target);
         SettingsService.Settings.UiDensity = target.ToString();
         SettingsService.Save();
-        CurrentDensityLabel = target switch
-        {
-            UiDensity.Compact => "紧凑",
-            UiDensity.Comfortable => "宽松",
-            _ => "标准"
-        };
-        ShowToast($"已切换界面密度：{CurrentDensityLabel}");
+        UpdateDensityLabel();
+        ShowToast(L("Str_UIDensityFormat2", CurrentDensityLabel));
     }
 
     public string CurrentThemeLabel => SettingsService.Settings.ThemeMode switch
     {
-        "Light" => "浅色",
-        "Dark" => "深色",
-        _ => "跟随系统",
+        "Light" => L("Str_Light"),
+        "Dark" => L("Str_Dark"),
+        _ => L("Str_FollowSystem"),
     };
 
     [RelayCommand]
@@ -856,7 +879,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         ThemeAccentService.ApplyThemeVariant(target);
         ThemeAccentService.ApplyAccent(SettingsService.Settings.AccentMode, SettingsService.Settings.CustomAccentHex);
         OnPropertyChanged(nameof(CurrentThemeLabel));
-        ShowToast($"已切换外观模式：{CurrentThemeLabel}");
+        ShowToast(L("Str_AppThemeFormat2", CurrentThemeLabel));
     }
 
     [RelayCommand]
@@ -910,20 +933,10 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             _ => _database.EnumerateAllEntries(false)
         };
 
-        CurrentFilterTitle = ActiveSection switch
-        {
-            ActiveSection.Favorites => "收藏夹",
-            ActiveSection.TotpOnly => "动态验证码 (2FA)",
-            ActiveSection.RecycleBin => "回收站",
-            ActiveSection.Group when SelectedGroup is not null => SelectedGroup.Name,
-            ActiveSection.Tag => $"#{_selectedTag}",
-            ActiveSection.CustomFilter => _customFilterTitle,
-            _ => "所有条目"
-        };
+        CurrentFilterTitle = GetFilterTitle();
 
         if (HasSearchQuery)
         {
-            CurrentFilterTitle = "搜索结果";
             var q = SearchQuery.Trim();
             source = source.Where(e =>
                 e.Title.Contains(q, StringComparison.OrdinalIgnoreCase) ||
@@ -941,6 +954,22 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             FilteredEntries.Add(new EntryItemViewModel(e, _database));
 
         SelectedEntry = FilteredEntries.FirstOrDefault(x => x.Model.Uuid == prevSelectedUuid) ?? FilteredEntries.FirstOrDefault();
+    }
+
+    private string GetFilterTitle()
+    {
+        if (HasSearchQuery) return L("Str_SearchResults2");
+        return ActiveSection switch
+        {
+            ActiveSection.Favorites => L("Str_Favorites2"),
+            ActiveSection.TotpOnly => L("Str_VerificationCodes2FA"),
+            ActiveSection.RecycleBin => L("Str_RecycleBin"),
+            ActiveSection.Group when SelectedGroup is not null => SelectedGroup.Name,
+            ActiveSection.Tag => $"#{_selectedTag}",
+            ActiveSection.CustomFilter when _advancedSearchQuery is not null => L(_customFilterTitleKey, _advancedSearchQuery),
+            ActiveSection.CustomFilter => L(_customFilterTitleKey),
+            _ => L("Str_AllEntries")
+        };
     }
 
     private static IEnumerable<KdbxEntry> EnumerateGroupEntries(KdbxGroup g)
@@ -995,7 +1024,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         SaveVault();
         RebuildWorkspace();
         SelectedEntry = FilteredEntries.FirstOrDefault(e => e.Model.Uuid == clone.Uuid) ?? SelectedEntry;
-        ShowToast($"已克隆条目：{clone.Title}");
+        ShowToast(L("Str_DuplicatedEntryFormat", clone.Title));
     }
 
     [RelayCommand]
@@ -1025,7 +1054,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         _database.MoveEntryToRecycleBin(target.Model);
         SaveVault();
         RebuildWorkspace();
-        ShowToast(wasInBin ? "条目已永久删除" : "条目已移入回收站");
+        ShowToast(wasInBin ? L("Str_EntryPermanentlyDeleted") : L("Str_EntryMovedToTheRecycleBin"));
     }
 
     [RelayCommand]
@@ -1036,7 +1065,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         _database.DeleteEntryPermanently(target.Model);
         SaveVault();
         RebuildWorkspace();
-        ShowToast("条目已永久删除");
+        ShowToast(L("Str_EntryPermanentlyDeleted"));
     }
 
     [RelayCommand]
@@ -1051,7 +1080,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         {
             SaveVault();
             RebuildWorkspace();
-            ShowToast("条目已恢复到原分组");
+            ShowToast(L("Str_EntryRestoredToItsOriginalGroup"));
         }
     }
 
@@ -1062,7 +1091,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         _database.EmptyRecycleBin();
         SaveVault();
         RebuildWorkspace();
-        ShowToast("回收站已清空");
+        ShowToast(L("Str_RecycleBinEmptied"));
     }
 
     // ==================== 分组管理（新建 / 新建子分组 / 重命名 / 删除） ====================
@@ -1070,7 +1099,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private async Task AddRootGroupAsync()
     {
         if (_database is null || OpenGroupDialogAsync is null) return;
-        var res = await OpenGroupDialogAsync("新建根分组", string.Empty, string.Empty);
+        var res = await OpenGroupDialogAsync(L("Str_NewRootGroup2"), string.Empty, string.Empty);
         if (res is null) return;
 
         var g = new KdbxGroup { Name = res.Value.Name, Notes = res.Value.Notes, IconId = 48 };
@@ -1078,14 +1107,14 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         _database.IsModified = true;
         SaveVault();
         RebuildWorkspace();
-        ShowToast($"已新建分组：{g.Name}");
+        ShowToast(L("Str_CreatedGroupFormat", g.Name));
     }
 
     [RelayCommand]
     private async Task AddSubGroupAsync(GroupItemViewModel? parent)
     {
         if (_database is null || parent is null || OpenGroupDialogAsync is null) return;
-        var res = await OpenGroupDialogAsync($"在「{parent.Name}」下新建子分组", string.Empty, string.Empty);
+        var res = await OpenGroupDialogAsync(L("Str_NewSubgroupInFormat", parent.Name), string.Empty, string.Empty);
         if (res is null) return;
 
         var g = new KdbxGroup { Name = res.Value.Name, Notes = res.Value.Notes, IconId = 48 };
@@ -1094,14 +1123,14 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         _database.IsModified = true;
         SaveVault();
         RebuildWorkspace();
-        ShowToast($"已新建子分组：{g.Name}");
+        ShowToast(L("Str_CreatedSubgroupFormat", g.Name));
     }
 
     [RelayCommand]
     private async Task RenameGroupAsync(GroupItemViewModel? group)
     {
         if (_database is null || group is null || OpenGroupDialogAsync is null) return;
-        var res = await OpenGroupDialogAsync("重命名分组", group.Model.Name, group.Model.Notes);
+        var res = await OpenGroupDialogAsync(L("Str_RenameGroup"), group.Model.Name, group.Model.Notes);
         if (res is null) return;
 
         group.Model.Name = res.Value.Name;
@@ -1110,7 +1139,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         _database.IsModified = true;
         SaveVault();
         RebuildWorkspace();
-        ShowToast($"已更新分组：{group.Model.Name}");
+        ShowToast(L("Str_UpdatedGroupFormat", group.Model.Name));
     }
 
     [RelayCommand]
@@ -1126,7 +1155,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         _database.MoveGroupToRecycleBin(group.Model);
         SaveVault();
         RebuildWorkspace();
-        ShowToast(_database.Meta.RecycleBinEnabled ? $"分组「{name}」已移入回收站" : $"分组「{name}」已删除");
+        ShowToast(_database.Meta.RecycleBinEnabled ? L("Str_MovedGroupToTheRecycleBinFormat", name) : L("Str_DeletedGroupFormat", name));
     }
 
     [RelayCommand]
@@ -1160,7 +1189,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         _database.IsModified = true;
         SaveVault();
         RebuildWorkspace();
-        ShowToast($"已按名称排序「{group.Name}」的子分组");
+        ShowToast(L("Str_SortedSubgroupsOfByNameFormat", group.Name));
     }
 
     // ==================== 条目多选批量操作 ====================
@@ -1181,7 +1210,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         {
             SaveVault();
             RebuildWorkspace();
-            ShowToast($"已批量将 {moved} 条记录移动到分组「{dest.Name}」");
+            ShowToast(L("Str_MovedRecordsToGroupFormat", moved, dest.Name));
         }
     }
 
@@ -1198,7 +1227,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         _database.IsModified = true;
         SaveVault();
         RebuildWorkspace();
-        ShowToast(targetFav ? $"已批量收藏 {_selectedEntries.Count} 条记录" : $"已批量取消收藏 {_selectedEntries.Count} 条记录");
+        ShowToast(targetFav ? L("Str_AddedRecordsToFavoritesFormat", _selectedEntries.Count) : L("Str_RemovedRecordsFromFavoritesFormat", _selectedEntries.Count));
     }
 
     [RelayCommand]
@@ -1210,7 +1239,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             _database.MoveEntryToRecycleBin(item.Model);
         SaveVault();
         RebuildWorkspace();
-        ShowToast(ActiveSection == ActiveSection.RecycleBin ? $"已永久删除 {count} 条记录" : $"已将 {count} 条记录移入回收站");
+        ShowToast(ActiveSection == ActiveSection.RecycleBin ? L("Str_PermanentlyDeletedRecordsFormat", count) : L("Str_MovedRecordsToTheRecycleBinFormat", count));
     }
 
     [RelayCommand]
@@ -1222,7 +1251,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         var target = item ?? SelectedEntry;
         if (target is null) return;
         var resolved = FieldReferenceResolver.Resolve(target.UserName, target.Model, _database);
-        await CopySecretAsync(resolved, "用户名");
+        await CopySecretAsync(resolved, L("Str_UserName"));
         if (target == SelectedEntry) FlashCopiedFlag(v => IsUserNameCopied = v);
     }
 
@@ -1235,7 +1264,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         var target = item ?? SelectedEntry;
         if (target is null) return;
         var resolved = FieldReferenceResolver.Resolve(target.Password, target.Model, _database);
-        await CopySecretAsync(resolved, "密码");
+        await CopySecretAsync(resolved, L("Str_Password"));
         if (target == SelectedEntry) FlashCopiedFlag(v => IsPasswordCopied = v);
     }
 
@@ -1249,7 +1278,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         if (target is null) return;
         target.RefreshTotp();
         if (!target.HasTotp) return;
-        await CopySecretAsync(target.TotpRaw, "动态验证码");
+        await CopySecretAsync(target.TotpRaw, L("Str_VerificationCode"));
         if (target == SelectedEntry) FlashCopiedFlag(v => IsTotpCopied = v);
     }
 
@@ -1259,7 +1288,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         var target = item ?? SelectedEntry;
         if (target is null || string.IsNullOrWhiteSpace(target.Url)) return;
         var resolved = FieldReferenceResolver.Resolve(target.Url, target.Model, _database);
-        await CopySecretAsync(resolved, "网址");
+        await CopySecretAsync(resolved, L("Str_URL"));
     }
 
     [RelayCommand]
@@ -1303,7 +1332,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             // 若无精确标题匹配，列出全部启用了 Auto-Type 的条目供快速选择
             matches = _database.EnumerateAllEntries(false)
                 .Where(e => !e.IsExpired && e.AutoType.Enabled)
-                .Select(e => new AutoTypeMatchResult(e, AutoTypeSequenceParser.GetEffectiveSequence(e), "手动选择"))
+                .Select(e => new AutoTypeMatchResult(e, AutoTypeSequenceParser.GetEffectiveSequence(e), L("Str_ManualSelection")))
                 .ToList();
         }
 
@@ -1320,7 +1349,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     {
         if (field is null || SelectedEntry is null) return;
         var resolved = FieldReferenceResolver.Resolve(field.RawValue, SelectedEntry.Model, _database);
-        await CopySecretAsync(resolved, $"字段「{field.Key}」");
+        await CopySecretAsync(resolved, L("Str_FieldFormat", field.Key));
     }
 
     [RelayCommand]
@@ -1336,11 +1365,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         try
         {
             await File.WriteAllBytesAsync(path, binary.ReadData());
-            ShowToast($"已导出附件：{Path.GetFileName(path)}");
+            ShowToast(L("Str_ExportedAttachmentFormat", Path.GetFileName(path)));
         }
         catch (Exception ex)
         {
-            ShowToast($"导出附件失败：{ex.Message}", ToastSeverity.Error);
+            ShowToast(L("Str_CouldnTExportTheAttachmentFormat", ex.Message), ToastSeverity.Error);
         }
     }
 
@@ -1367,7 +1396,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         if (_activeSession is not null) _activeSession.DisplayName = VaultDisplayName;
         SaveVault();
         RebuildWorkspace();
-        ShowToast(newKey is not null ? "密码库设置与主密钥已更新并重新加密保存" : "密码库设置已更新并保存");
+        ShowToast(newKey is not null ? L("Str_VaultSettingsAndMasterKeyUpdatedVault") : L("Str_VaultSettingsUpdatedAndSaved"));
     }
 
     [RelayCommand]
@@ -1377,7 +1406,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         var path = await PickOpenFileAsync("kdbx");
         if (string.IsNullOrWhiteSpace(path)) return;
 
-        var res = await OpenVaultUnlockPromptAsync(path, "合并 / 同步其他密码库", "解密并合并");
+        var res = await OpenVaultUnlockPromptAsync(path, L("Str_MergeSyncAnotherVault2"), L("Str_DecryptAndMerge"));
         if (res is null) return;
 
         using var sourceDb = res.Value.Database;
@@ -1385,7 +1414,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         var summary = DatabaseMergeService.Merge(_database, sourceDb);
         SaveVault();
         RebuildWorkspace();
-        ShowToast($"合并完成：新增 {summary.EntriesAdded} 条目、更新 {summary.EntriesUpdated} 条目、新增 {summary.GroupsAdded} 分组");
+        ShowToast(L("Str_MergeCompleteEntriesAddedUpdatedGroupsAddedFormat", summary.EntriesAdded, summary.EntriesUpdated, summary.GroupsAdded));
     }
 
     [RelayCommand]
@@ -1400,7 +1429,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         {
             SaveVault();
             RebuildWorkspace();
-            ShowToast($"已将「{target.Title}」移动到分组「{dest.Name}」");
+            ShowToast(L("Str_MovedToGroupFormat", target.Title, dest.Name));
         }
     }
 
@@ -1416,7 +1445,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         {
             SaveVault();
             RebuildWorkspace();
-            ShowToast($"已将「{entry.Title}」移动到分组「{targetGroup.Name}」");
+            ShowToast(L("Str_MovedToGroupFormat", entry.Title, targetGroup.Name));
         }
     }
 
@@ -1428,7 +1457,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         {
             SaveVault();
             RebuildWorkspace();
-            ShowToast("密码库维护完成并已保存");
+            ShowToast(L("Str_VaultMaintenanceCompletedAndChangesSaved"));
         }
     }
 
@@ -1441,14 +1470,13 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         if (param is null) return;
 
         _customFilterEntries = EntrySearchService.Search(_database, param);
-        _customFilterTitle = string.IsNullOrWhiteSpace(param.Query)
-            ? "高级查找结果"
-            : $"查找「{param.Query}」";
+        _advancedSearchQuery = string.IsNullOrWhiteSpace(param.Query) ? null : param.Query;
+        _customFilterTitleKey = _advancedSearchQuery is null ? "Str_AdvancedSearchResults" : "Str_SearchForFormat";
         ActiveSection = ActiveSection.CustomFilter;
         SelectedGroup = null;
         IsAuditViewActive = false;
         RefreshFilteredEntries();
-        ShowToast($"高级查找完成，共匹配 {_customFilterEntries.Count} 条记录");
+        ShowToast(L("Str_AdvancedSearchMatchedEntriesFormat", _customFilterEntries.Count));
     }
 
     [RelayCommand]
@@ -1456,14 +1484,15 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     {
         if (_database is null || string.IsNullOrWhiteSpace(preset)) return;
 
-        (_customFilterTitle, _customFilterEntries) = preset switch
+        _advancedSearchQuery = null;
+        (_customFilterTitleKey, _customFilterEntries) = preset switch
         {
-            "Expired" => ("已过期条目", EntrySearchService.FindExpired(_database)),
-            "Expiring7" => ("7 天内即将过期", EntrySearchService.FindExpiringWithinDays(_database, 7)),
-            "Expiring30" => ("30 天内即将过期", EntrySearchService.FindExpiringWithinDays(_database, 30)),
-            "LastModified" => ("最近修改的条目", EntrySearchService.FindLastModified(_database, 30)),
-            "Large" => ("大体积 / 含附件条目", EntrySearchService.FindLargeEntries(_database, 30)),
-            _ => ("全部条目", _database.EnumerateAllEntries(false).ToList())
+            "Expired" => ("Str_ExpiredEntries", EntrySearchService.FindExpired(_database)),
+            "Expiring7" => ("Str_ExpiresWithin7Days", EntrySearchService.FindExpiringWithinDays(_database, 7)),
+            "Expiring30" => ("Str_ExpiresWithin30Days", EntrySearchService.FindExpiringWithinDays(_database, 30)),
+            "LastModified" => ("Str_RecentlyModifiedEntries", EntrySearchService.FindLastModified(_database, 30)),
+            "Large" => ("Str_LargeEntriesAndAttachments", EntrySearchService.FindLargeEntries(_database, 30)),
+            _ => ("Str_AllEntries3", _database.EnumerateAllEntries(false).ToList())
         };
 
         ActiveSection = ActiveSection.CustomFilter;
@@ -1473,16 +1502,16 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void QuickExpireNow(EntryItemViewModel? item) => ApplyQuickExpiry(item, true, DateTimeOffset.UtcNow.AddMinutes(-1), "已设为立即过期");
+    private void QuickExpireNow(EntryItemViewModel? item) => ApplyQuickExpiry(item, true, DateTimeOffset.UtcNow.AddMinutes(-1), L("Str_SetToExpireNow"));
 
     [RelayCommand]
-    private void QuickExpireNever(EntryItemViewModel? item) => ApplyQuickExpiry(item, false, DateTimeOffset.UtcNow.AddYears(1), "已设为永不过期");
+    private void QuickExpireNever(EntryItemViewModel? item) => ApplyQuickExpiry(item, false, DateTimeOffset.UtcNow.AddYears(1), L("Str_SetToNeverExpire"));
 
     [RelayCommand]
-    private void QuickExpireIn30Days(EntryItemViewModel? item) => ApplyQuickExpiry(item, true, DateTimeOffset.UtcNow.AddDays(30), "已设为 30 天后过期");
+    private void QuickExpireIn30Days(EntryItemViewModel? item) => ApplyQuickExpiry(item, true, DateTimeOffset.UtcNow.AddDays(30), L("Str_SetToExpireIn30Days"));
 
     [RelayCommand]
-    private void QuickExpireIn90Days(EntryItemViewModel? item) => ApplyQuickExpiry(item, true, DateTimeOffset.UtcNow.AddDays(90), "已设为 90 天后过期");
+    private void QuickExpireIn90Days(EntryItemViewModel? item) => ApplyQuickExpiry(item, true, DateTimeOffset.UtcNow.AddDays(90), L("Str_SetToExpireIn90Days"));
 
     private void ApplyQuickExpiry(EntryItemViewModel? item, bool expires, DateTimeOffset expiryTime, string toast)
     {
@@ -1504,7 +1533,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         var path = await PickSaveFileAsync($"{_database.Meta.DatabaseName}.xml", "xml");
         if (string.IsNullOrWhiteSpace(path)) return;
         await File.WriteAllTextAsync(path, ImportExportService.ExportToKeePassXml(_database));
-        ShowToast($"已导出标准 KeePass 2.x XML：{Path.GetFileName(path)}");
+        ShowToast(L("Str_ExportedKeePass2XXMLFormat", Path.GetFileName(path)));
     }
 
     [RelayCommand]
@@ -1519,11 +1548,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             var summary = ImportExportService.ImportFromKeePassXml(_database, xml);
             SaveVault();
             RebuildWorkspace();
-            ShowToast($"已导入 KeePass XML：新增 {summary.EntriesAdded} 条目、更新 {summary.EntriesUpdated} 条目");
+            ShowToast(L("Str_KeePassXMLImportedEntriesAddedUpdatedFormat", summary.EntriesAdded, summary.EntriesUpdated));
         }
         catch (Exception ex)
         {
-            ShowToast($"导入 XML 失败：{ex.Message}", ToastSeverity.Error);
+            ShowToast(L("Str_CouldnTImportXMLFormat", ex.Message), ToastSeverity.Error);
         }
     }
 
@@ -1543,7 +1572,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         if (OpenPasswordGeneratorAsync is null) return;
         var generated = await OpenPasswordGeneratorAsync();
         if (!string.IsNullOrEmpty(generated))
-            await CopySecretAsync(generated, "生成的新密码");
+            await CopySecretAsync(generated, L("Str_NewlyGeneratedPassword"));
     }
 
     [RelayCommand]
@@ -1589,13 +1618,13 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             }
             else if (!silent)
             {
-                ShowToast($"当前已是最新版本（v{current}）");
+                ShowToast(L("Str_YouReUpToDateVFormat", current));
             }
         }
         catch (Exception ex)
         {
             if (!silent)
-                ShowToast($"检查更新失败：{ex.Message}", ToastSeverity.Error);
+                ShowToast(L("Str_CouldnTCheckForUpdatesFormat", ex.Message), ToastSeverity.Error);
         }
     }
 
@@ -1609,7 +1638,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         var path = await PickSaveFileAsync($"{_database.Meta.DatabaseName}.csv", "csv");
         if (string.IsNullOrWhiteSpace(path)) return;
         await File.WriteAllTextAsync(path, ImportExportService.ExportToCsv(_database));
-        ShowToast($"已导出 CSV：{Path.GetFileName(path)}");
+        ShowToast(L("Str_ExportedCSVFormat", Path.GetFileName(path)));
     }
 
     [RelayCommand]
@@ -1621,17 +1650,17 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         var text = await File.ReadAllTextAsync(path);
         int count = ImportExportService.ImportFromCsv(_database, text);
         RebuildWorkspace();
-        ShowToast($"已从 CSV 成功导入 {count} 条记录");
+        ShowToast(L("Str_ImportedRecordsFromCSVFormat", count));
     }
 
     [RelayCommand]
     private async Task ExportEmergencySheetAsync()
     {
         if (_database is null || PickSaveFileAsync is null) return;
-        var path = await PickSaveFileAsync($"{_database.Meta.DatabaseName}-应急表.html", "html");
+        var path = await PickSaveFileAsync(L("Str_EmergencySheetHtmlFormat", _database.Meta.DatabaseName), "html");
         if (string.IsNullOrWhiteSpace(path)) return;
         await File.WriteAllTextAsync(path, ImportExportService.ExportEmergencySheetHtml(_database));
-        ShowToast($"已生成应急表：{Path.GetFileName(path)}");
+        ShowToast(L("Str_GeneratedEmergencySheetFormat", Path.GetFileName(path)));
     }
 
     private async Task CopySecretAsync(string value, string label)
@@ -1641,7 +1670,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         _lastCopiedSecret = value;
 
         int seconds = Math.Max(5, SettingsService.Settings.ClipboardClearSeconds);
-        ShowToast($"{label}已复制 · 安全剪贴板将在 {seconds} 秒后自动清空", ToastSeverity.Success);
+        ShowToast(L("Str_CopiedSecureClipboardClearsInSecondsFormat", label, seconds), ToastSeverity.Success);
 
         _clipboardClearCts?.Cancel();
         _clipboardClearCts = new CancellationTokenSource();
@@ -1660,7 +1689,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                         if (cur == _lastCopiedSecret)
                         {
                             await CopyToClipboardAsync(string.Empty);
-                            ShowToast("安全剪贴板已自动清空", ToastSeverity.Success);
+                            ShowToast(L("Str_SecureClipboardCleared"), ToastSeverity.Success);
                         }
                     }
                 });

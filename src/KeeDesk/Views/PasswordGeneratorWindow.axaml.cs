@@ -3,6 +3,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using KeeDesk.Core.Services;
+using static KeeDesk.Services.LocalizationService;
 
 namespace KeeDesk.Views;
 
@@ -17,8 +18,8 @@ public partial class PasswordGeneratorWindow : Window
         InitializeComponent();
         if (fillEntry)
         {
-            CancelButton.Content = "取消";
-            AcceptButton.Content = "使用此密码";
+            CancelButton.Content = L("Str_Cancel");
+            AcceptButton.Content = L("Str_UseThisPassword");
         }
         KeeDesk.Helpers.MacTitleBarInsets.AttachTrafficLightsCentering(this, 42);
         Opened += (_, _) => Regenerate();
@@ -34,9 +35,9 @@ public partial class PasswordGeneratorWindow : Window
     {
         if (ModeTabs is null) return;
         int len = (int)LengthSlider.Value;
-        LengthLabel.Text = $"{len} 位";
+        LengthLabel.Text = L("Str_CharactersFormat", len);
         int words = (int)WordSlider.Value;
-        WordCountLabel.Text = $"{words} 词";
+        WordCountLabel.Text = L("Str_WordsFormat", words);
 
         var opts = new PasswordGeneratorOptions
         {
@@ -62,7 +63,7 @@ public partial class PasswordGeneratorWindow : Window
             PreviewText.Text = batch[0];
             var res0 = PasswordGenerator.EvaluateStrength(batch[0]);
             StrengthBar.Value = Math.Clamp(res0.EntropyBits / 120.0, 0.05, 1.0);
-            StrengthText.Text = $"批量 10 条 · 每条约 {res0.EntropyBits:0} bits";
+            StrengthText.Text = L("Str_10PasswordsAroundBitsEachFormat", res0.EntropyBits);
             return;
         }
 
@@ -76,7 +77,7 @@ public partial class PasswordGeneratorWindow : Window
         PreviewText.Text = _currentPassword;
         var res = PasswordGenerator.EvaluateStrength(_currentPassword);
         StrengthBar.Value = Math.Clamp(res.EntropyBits / 120.0, 0.05, 1.0);
-        StrengthText.Text = $"{res.Label} · {res.EntropyBits:0} bits";
+        StrengthText.Text = FormatPasswordStrength(res);
     }
 
     private void Regenerate_Click(object? sender, RoutedEventArgs e) => Regenerate();

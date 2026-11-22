@@ -9,6 +9,7 @@ using Avalonia.Platform.Storage;
 using Avalonia.VisualTree;
 using KeeDesk.Core.Kdbx;
 using KeeDesk.Helpers;
+using static KeeDesk.Services.LocalizationService;
 
 namespace KeeDesk.Views;
 
@@ -43,13 +44,13 @@ public partial class IconPickerWindow : Window
         var input = (FetchUrlBox.Text ?? string.Empty).Trim();
         if (string.IsNullOrEmpty(input))
         {
-            FetchStatusText.Text = "请输入网站域名（如 github.com）或完整图片 URL。";
+            FetchStatusText.Text = L("Str_EnterAWebsiteDomainEGGithub");
             FetchStatusText.IsVisible = true;
             return;
         }
 
         FetchBtn.IsEnabled = false;
-        FetchStatusText.Text = "正在获取图标...";
+        FetchStatusText.Text = L("Str_FetchingIcon");
         FetchStatusText.IsVisible = true;
 
         try
@@ -77,12 +78,12 @@ public partial class IconPickerWindow : Window
 
             if (bytes is null)
             {
-                FetchStatusText.Text = "未能获取到有效图片，请检查网络或尝试其他图片地址。";
+                FetchStatusText.Text = L("Str_CouldnTFetchAValidImageCheck");
                 return;
             }
 
             _selectedCustomIconUuid = KeeDesk.Services.FaviconFetcherService.AddOrReuseCustomIcon(_database, name, bytes);
-            FetchStatusText.Text = $"已成功获取并选中「{name}」图标！";
+            FetchStatusText.Text = L("Str_FetchedAndSelectedTheIconFormat", name);
             RenderIcons();
         }
         finally
@@ -170,7 +171,7 @@ public partial class IconPickerWindow : Window
         var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
             AllowMultiple = false,
-            FileTypeFilter = [new FilePickerFileType("PNG 图标") { Patterns = ["*.png", "*.jpg", "*.ico"] }]
+            FileTypeFilter = [new FilePickerFileType(L("Str_PNGIcon")) { Patterns = ["*.png", "*.jpg", "*.ico"] }]
         });
         var path = files.FirstOrDefault()?.TryGetLocalPath();
         if (string.IsNullOrEmpty(path)) return;

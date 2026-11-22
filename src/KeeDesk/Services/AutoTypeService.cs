@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using KeeDesk.Core.Kdbx;
 using KeeDesk.Core.Services;
+using static KeeDesk.Services.LocalizationService;
 
 namespace KeeDesk.Services;
 
@@ -16,16 +17,16 @@ public static partial class AutoTypeService
     public static async Task<AutoTypeExecutionResult> ExecuteAsync(KdbxEntry entry, KdbxDatabase? db, Action? minimizeWindowBeforeType = null)
     {
         if (!entry.AutoType.Enabled)
-            return new AutoTypeExecutionResult(false, "当前条目已禁用自动输入（Auto-Type）");
+            return new AutoTypeExecutionResult(false, L("Str_AutoTypeIsDisabledForThisEntry"));
 
         var steps = AutoTypeSequenceParser.Parse(entry, db);
         if (steps.Count == 0)
-            return new AutoTypeExecutionResult(false, "自动输入序列为空");
+            return new AutoTypeExecutionResult(false, L("Str_TheAutoTypeSequenceIsEmpty"));
 
         if (OperatingSystem.IsMacOS() && !AXIsProcessTrusted())
         {
             RequestMacAccessibilityPermissionAndOpenSettings();
-            return new AutoTypeExecutionResult(false, "已打开 macOS 辅助功能设置，请勾选允许 KeeDesk 后重试自动输入");
+            return new AutoTypeExecutionResult(false, L("Str_AllowKeeDeskInMacOSAccessibilitySettingsThen"));
         }
 
         // 先最小化主窗口，将焦点交还给上一个前台应用（浏览器/终端等）
@@ -35,11 +36,11 @@ public static partial class AutoTypeService
         try
         {
             await Task.Run(() => RunSteps(steps));
-            return new AutoTypeExecutionResult(true, $"已完成「{entry.Title}」自动输入");
+            return new AutoTypeExecutionResult(true, L("Str_AutoTypeCompleteForFormat", entry.Title));
         }
         catch (Exception ex)
         {
-            return new AutoTypeExecutionResult(false, $"自动输入失败：{ex.Message}");
+            return new AutoTypeExecutionResult(false, L("Str_AutoTypeFailedFormat", ex.Message));
         }
     }
 
@@ -316,7 +317,7 @@ public static partial class AutoTypeService
             psi.ArgumentList.Add("--");
             psi.ArgumentList.Add(text);
         }
-        using var proc = Process.Start(psi) ?? throw new InvalidOperationException($"未找到 {tool}，请先安装 {tool} 以启用 Linux 自动输入");
+        using var proc = Process.Start(psi) ?? throw new InvalidOperationException(L("Str_InstallToUseAutoTypeOnLinuxFormat", tool));
         proc.WaitForExit(5000);
     }
 

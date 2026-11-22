@@ -11,10 +11,10 @@
     <!-- macOS 原生应用菜单（KeeDesk 项） -->
     <NativeMenu.Menu>
         <NativeMenu>
-            <NativeMenuItem Header="关于 KeeDesk" Command="{Binding OpenAboutAsyncCommandCommand}" />
-            <NativeMenuItem Header="检查更新..." Command="{Binding CheckForUpdatesCommand}" />
+            <NativeMenuItem Header="{DynamicResource Str_AboutKeeDesk}" Command="{Binding OpenAboutAsyncCommandCommand}" />
+            <NativeMenuItem Header="{DynamicResource Str_CheckForUpdates2}" Command="{Binding CheckForUpdatesCommand}" />
             <NativeMenuItemSeparator />
-            <NativeMenuItem Header="偏好设置..." Gesture="Cmd+," Command="{Binding OpenSettingsCommandCommand}" />
+            <NativeMenuItem Header="{DynamicResource Str_Settings}" Gesture="Cmd+," Command="{Binding OpenSettingsCommandCommand}" />
         </NativeMenu>
     </NativeMenu.Menu>
 
@@ -114,6 +114,8 @@
         <Style Selector=":is(TextBox):focus /template/ Border#PART_BorderElement">
             <Setter Property="Background" Value="{DynamicResource InputFocusedBackgroundBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}" />
+            <!-- The focus indicator draws the thicker bottom edge. Keep the outline at its normal width. -->
+            <Setter Property="BorderThickness" Value="{TemplateBinding BorderThickness}" />
         </Style>
         <Style Selector="NumericUpDown">
             <Setter Property="MinHeight" Value="28" />
@@ -581,6 +583,7 @@
                 <ResourceInclude Source="avares://KeeDesk/Styles/FluentIcons.axaml" />
                 <ResourceInclude Source="avares://KeeDesk/Styles/DensityNormal.axaml" />
                 <ResourceInclude Source="avares://KeeDesk/Styles/LinuxWindowDecorations.axaml" />
+                <ResourceInclude Source="avares://KeeDesk/Styles/WindowsWindowDecorations.axaml" />
             </ResourceDictionary.MergedDictionaries>
 
             <ResourceDictionary.ThemeDictionaries>

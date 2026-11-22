@@ -5,6 +5,7 @@ using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 using KeeDesk.Core.Services;
 using KeeDesk.Helpers;
+using static KeeDesk.Services.LocalizationService;
 
 namespace KeeDesk.Views;
 
@@ -29,7 +30,7 @@ public partial class AdvancedSearchWindow : Window
             try { _ = new Regex(q); }
             catch (Exception ex)
             {
-                ErrorText.Text = $"正则表达式语法无效：{ex.Message}";
+                ErrorText.Text = L("Str_InvalidRegularExpressionFormat", ex.Message);
                 ErrorText.IsVisible = true;
                 SearchFormScroll.Offset = default;
                 return;

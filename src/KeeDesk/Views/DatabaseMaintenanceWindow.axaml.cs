@@ -5,6 +5,7 @@ using Avalonia.VisualTree;
 using KeeDesk.Core.Kdbx;
 using KeeDesk.Core.Services;
 using KeeDesk.Helpers;
+using static KeeDesk.Services.LocalizationService;
 
 namespace KeeDesk.Views;
 
@@ -36,7 +37,7 @@ public partial class DatabaseMaintenanceWindow : Window
         StatAttachments.Text = s.TotalAttachmentBytes < 1024
             ? $"{s.TotalAttachmentBytes} B"
             : $"{s.TotalAttachmentBytes / 1024.0:0.0} KB";
-        UnusedIconsDesc.Text = $"当前有 {s.UnusedCustomIconsCount} 个未被任何条目或分组引用的自定义图标";
+        UnusedIconsDesc.Text = L("Str_UnusedCustomIconsFormat", s.UnusedCustomIconsCount);
     }
 
     private void ShowResult(string message)
@@ -51,35 +52,35 @@ public partial class DatabaseMaintenanceWindow : Window
         int days = (int)(HistoryDaysNum.Value ?? 365);
         int count = DatabaseMaintenanceService.PurgeHistoryOlderThan(_database, days);
         if (count > 0) _changed = true;
-        ShowResult(count > 0 ? $"已清理 {count} 条历史版本快照。" : "没有符合条件的过期历史快照。");
+        ShowResult(count > 0 ? L("Str_RemovedHistorySnapshotsFormat", count) : L("Str_NoHistorySnapshotsMatchTheCleanupCriteria"));
     }
 
     private void DeleteDuplicates_Click(object? sender, RoutedEventArgs e)
     {
         int count = DatabaseMaintenanceService.DeleteDuplicateEntries(_database);
         if (count > 0) _changed = true;
-        ShowResult(count > 0 ? $"已清理 {count} 条完全重复的条目。" : "未发现完全重复的条目。");
+        ShowResult(count > 0 ? L("Str_RemovedExactDuplicateEntriesFormat", count) : L("Str_NoExactDuplicateEntries"));
     }
 
     private void DeleteEmptyGroups_Click(object? sender, RoutedEventArgs e)
     {
         int count = DatabaseMaintenanceService.DeleteEmptyGroups(_database);
         if (count > 0) _changed = true;
-        ShowResult(count > 0 ? $"已移除 {count} 个空分组。" : "当前没有空分组。");
+        ShowResult(count > 0 ? L("Str_RemovedEmptyGroupsFormat", count) : L("Str_NoEmptyGroups"));
     }
 
     private void ClearDeletedObjects_Click(object? sender, RoutedEventArgs e)
     {
         int count = DatabaseMaintenanceService.ClearDeletedObjects(_database);
         if (count > 0) _changed = true;
-        ShowResult(count > 0 ? $"已清空 {count} 条已删除对象追踪记录。" : "已删除对象记录为空。");
+        ShowResult(count > 0 ? L("Str_ClearedDeletedObjectRecordsFormat", count) : L("Str_NoDeletedObjectRecords"));
     }
 
     private void DeleteUnusedIcons_Click(object? sender, RoutedEventArgs e)
     {
         int count = DatabaseMaintenanceService.DeleteUnusedCustomIcons(_database);
         if (count > 0) _changed = true;
-        ShowResult(count > 0 ? $"已清理 {count} 个未使用的自定义图标。" : "没有未使用的自定义图标。");
+        ShowResult(count > 0 ? L("Str_RemovedUnusedCustomIconsFormat", count) : L("Str_NoUnusedCustomIcons"));
     }
 
     private void Close_Click(object? sender, RoutedEventArgs e) => Close(_changed);

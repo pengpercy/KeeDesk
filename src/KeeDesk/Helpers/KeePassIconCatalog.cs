@@ -1,9 +1,13 @@
 using Avalonia;
 using Avalonia.Media;
+using static KeeDesk.Services.LocalizationService;
 
 namespace KeeDesk.Helpers;
 
-public sealed record StandardIconInfo(int IconId, string Name, string ResourceKey);
+public sealed record StandardIconInfo(int IconId, string NameKey, string ResourceKey)
+{
+    public string Name => L(NameKey);
+}
 
 /// <summary>
 /// 将 KeePass 标准 IconId 映射为 Fluent 2 矢量图标（零 Emoji），供图标选择器与条目/分组展示复用。
@@ -12,22 +16,22 @@ public static class KeePassIconCatalog
 {
     public static IReadOnlyList<StandardIconInfo> StandardIcons { get; } =
     [
-        new(0, "钥匙（默认）", "IconKey"),
-        new(1, "网页 / 地球", "IconGlobe"),
-        new(2, "安全盾牌", "IconShield"),
-        new(3, "服务器 / 终端", "IconDatabase"),
-        new(19, "电子邮箱 / 链接", "IconLink"),
-        new(23, "加密保险库", "IconVault"),
-        new(37, "金融 / 收藏星标", "IconStar"),
-        new(43, "回收站", "IconTrash"),
-        new(48, "文件夹", "IconFolder"),
-        new(52, "动态验证码 / 时钟", "IconClock"),
-        new(56, "锁定凭证", "IconLock"),
-        new(59, "标签", "IconTag"),
-        new(61, "附件文档", "IconAttach"),
-        new(62, "自动输入键盘", "IconKeyboard"),
-        new(64, "系统配置", "IconSettings"),
-        new(68, "历史记录", "IconHistory")
+        new(0, "Str_KeyDefault", "IconKey"),
+        new(1, "Str_WebGlobe", "IconGlobe"),
+        new(2, "Str_SecurityShield", "IconShield"),
+        new(3, "Str_ServerTerminal", "IconDatabase"),
+        new(19, "Str_EmailLink", "IconLink"),
+        new(23, "Str_EncryptedVault", "IconVault"),
+        new(37, "Str_FinanceFavoriteStar", "IconStar"),
+        new(43, "Str_RecycleBin", "IconTrash"),
+        new(48, "Str_Folder", "IconFolder"),
+        new(52, "Str_VerificationCodeClock", "IconClock"),
+        new(56, "Str_LockedCredentials", "IconLock"),
+        new(59, "Str_Tags", "IconTag"),
+        new(61, "Str_DocumentAttachment", "IconAttach"),
+        new(62, "Str_AutoTypeKeyboard", "IconKeyboard"),
+        new(64, "Str_SystemSettings", "IconSettings"),
+        new(68, "Str_History", "IconHistory")
     ];
 
     public static string GetResourceKey(int iconId)

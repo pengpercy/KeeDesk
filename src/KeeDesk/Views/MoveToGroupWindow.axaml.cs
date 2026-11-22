@@ -4,6 +4,7 @@ using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 using KeeDesk.Core.Kdbx;
 using KeeDesk.Helpers;
+using static KeeDesk.Services.LocalizationService;
 
 namespace KeeDesk.Views;
 
@@ -19,7 +20,7 @@ public partial class MoveToGroupWindow : Window
     public MoveToGroupWindow(KdbxDatabase db, KdbxEntry entry)
     {
         InitializeComponent();
-        EntryTitleLabel.Text = $"条目：{entry.Title}";
+        EntryTitleLabel.Text = L("Str_EntryFormat", entry.Title);
         MacTitleBarInsets.AttachTrafficLightsCentering(this, 40);
 
         BuildFlatGroups(db.RootGroup, db.Meta.RecycleBinUuid, 0);

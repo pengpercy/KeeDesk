@@ -3,6 +3,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 using KeeDesk.Helpers;
+using static KeeDesk.Services.LocalizationService;
 
 namespace KeeDesk.Views;
 
@@ -13,7 +14,7 @@ public sealed record GroupDialogResult(string Name, string Notes);
 
 public partial class GroupDialogWindow : Window
 {
-    public GroupDialogWindow() : this("新建分组", string.Empty, string.Empty) { }
+    public GroupDialogWindow() : this(L("Str_NewGroup"), string.Empty, string.Empty) { }
 
     public GroupDialogWindow(string heading, string initialName, string initialNotes)
     {
@@ -36,7 +37,7 @@ public partial class GroupDialogWindow : Window
         var name = (NameBox.Text ?? string.Empty).Trim();
         if (string.IsNullOrEmpty(name))
         {
-            ErrorText.Text = "请输入分组名称。";
+            ErrorText.Text = L("Str_EnterAGroupName");
             ErrorText.IsVisible = true;
             NameBox.Focus();
             return;

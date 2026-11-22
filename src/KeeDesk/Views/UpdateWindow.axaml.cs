@@ -6,6 +6,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using KeeDesk.Helpers;
 using KeeDesk.Services;
+using static KeeDesk.Services.LocalizationService;
 
 namespace KeeDesk.Views;
 
@@ -27,9 +28,9 @@ public partial class UpdateWindow : Window
         _release = release;
 
         var current = AppVersionProvider.GetCurrentVersion();
-        TitleText.Text = $"发现 KeeDesk {release.TagName}";
-        VersionText.Text = $"当前版本 v{current}  →  最新版本 {release.TagName}";
-        ReleaseNotesText.Text = string.IsNullOrWhiteSpace(release.Body) ? "包含性能优化与问题修复。" : release.Body.Trim();
+        TitleText.Text = L("Str_KeeDeskIsAvailableFormat", release.TagName);
+        VersionText.Text = L("Str_CurrentVersionVLatestVersionFormat", current, release.TagName);
+        ReleaseNotesText.Text = string.IsNullOrWhiteSpace(release.Body) ? L("Str_PerformanceImprovementsAndBugFixes") : release.Body.Trim();
     }
 
     private void TitleBar_PointerPressed(object? sender, PointerPressedEventArgs e)
@@ -52,7 +53,7 @@ public partial class UpdateWindow : Window
         _isDownloading = true;
         DownloadBtn.IsEnabled = false;
         ProgressPanel.IsVisible = true;
-        StatusText.Text = $"正在下载 {asset.Name}...";
+        StatusText.Text = L("Str_DownloadingFormat", asset.Name);
 
         try
         {
@@ -63,11 +64,11 @@ public partial class UpdateWindow : Window
             var progress = new Progress<double>(p =>
             {
                 DownloadProgress.Value = p * 100;
-                StatusText.Text = $"正在下载 {asset.Name} ({p * 100:0}%)...";
+                StatusText.Text = L("Str_DownloadingFormat2", asset.Name, p * 100);
             });
 
             await _updateService.DownloadUpdateAsync(asset.BrowserDownloadUrl, destPath, progress);
-            StatusText.Text = "下载完成，正在准备应用更新...";
+            StatusText.Text = L("Str_DownloadCompletePreparingTheUpdate");
 
             var applied = await UpdateApplier.TryApplyUpdateAsync(destPath);
             if (applied)
@@ -78,13 +79,13 @@ public partial class UpdateWindow : Window
             }
 
             // 开发调试模式（非 .app / 非打包目录）时，直接打开下载目录供手动安装
-            StatusText.Text = "已下载完成，正在打开所在目录...";
+            StatusText.Text = L("Str_DownloadCompleteOpeningItsFolder");
             Process.Start(new ProcessStartInfo(tempDir) { UseShellExecute = true });
             Close();
         }
         catch (Exception ex)
         {
-            StatusText.Text = $"下载更新失败：{ex.Message}";
+            StatusText.Text = L("Str_CouldnTDownloadTheUpdateFormat", ex.Message);
             DownloadBtn.IsEnabled = true;
             _isDownloading = false;
         }

@@ -9,6 +9,7 @@ using KeeDesk.Helpers;
 using KeeDesk.Services;
 using KeeDesk.ViewModels;
 using KeeDesk.Views;
+using static KeeDesk.Services.LocalizationService;
 
 namespace KeeDesk;
 
@@ -28,6 +29,9 @@ public partial class App : Application
         Resources["DesktopFontFamily"] = OperatingSystem.IsWindows()
             ? new Avalonia.Media.FontFamily("Segoe UI Variable Text, Segoe UI, Microsoft YaHei UI")
             : Avalonia.Media.FontFamily.Default;
+        if (OperatingSystem.IsWindows())
+            Styles.Add((Styles)this.FindResource("WindowsWindowDecorations")!);
+
         if (DesktopWindowChrome.LinuxButtonSide is { } side)
         {
             var key = side == CaptionButtonSide.Left ? "LinuxCaptionOnLeft" : "LinuxCaptionOnRight";
@@ -42,6 +46,8 @@ public partial class App : Application
     {
         var settingsService = new AppSettingsService();
         LocalizationService.Apply(settingsService.Settings.Language);
+        if (OperatingSystem.IsMacOS() && NativeMenu.GetMenu(this) is { } applicationMenu)
+            MacMenuLocalization.Attach(applicationMenu);
         ThemeAccentService.ApplyThemeVariant(settingsService.Settings.ThemeMode);
         ThemeAccentService.ApplyAccent(settingsService.Settings.AccentMode, settingsService.Settings.CustomAccentHex);
         DensityService.Apply(settingsService.Settings.UiDensity);
@@ -57,6 +63,11 @@ public partial class App : Application
             DataContext = vm;
             var mainWindow = new MainWindow(settingsService) { DataContext = vm };
             desktop.MainWindow = mainWindow;
+            LanguageChanged += () =>
+            {
+                vm.RefreshLanguage();
+                mainWindow.RefreshSearchResultMessage();
+            };
 
             SetupTrayIcon(desktop, mainWindow, vm);
         }
@@ -78,11 +89,11 @@ public partial class App : Application
             using var stream = AssetLoader.Open(new Uri(iconPath));
             var menu = new NativeMenu();
 
-            var showItem = new NativeMenuItem("显示 KeeDesk");
+            var showItem = new NativeMenuItem(L("Str_ShowKeeDesk"));
             showItem.Click += (_, _) => RestoreMainWindow(mainWindow);
             menu.Add(showItem);
 
-            var lockItem = new NativeMenuItem("锁定全部密码库");
+            var lockItem = new NativeMenuItem(L("Str_LockAllVaults"));
             lockItem.Click += (_, _) =>
             {
                 if (vm.IsUnlocked) vm.LockVaultCommand.Execute(null);
@@ -91,7 +102,7 @@ public partial class App : Application
 
             menu.Add(new NativeMenuItemSeparator());
 
-            var exitItem = new NativeMenuItem("退出 KeeDesk");
+            var exitItem = new NativeMenuItem(L("Str_QuitKeeDesk"));
             exitItem.Click += (_, _) =>
             {
                 if (vm.IsUnlocked) vm.LockVaultCommand.Execute(null);
@@ -103,9 +114,16 @@ public partial class App : Application
             _trayIcon = new TrayIcon
             {
                 Icon = new WindowIcon(stream),
-                ToolTipText = "KeeDesk 密码管理器",
+                ToolTipText = L("Str_KeeDeskPasswordManager"),
                 Menu = menu,
                 IsVisible = true
+            };
+            LanguageChanged += () =>
+            {
+                showItem.Header = L("Str_ShowKeeDesk");
+                lockItem.Header = L("Str_LockAllVaults");
+                exitItem.Header = L("Str_QuitKeeDesk");
+                _trayIcon.ToolTipText = L("Str_KeeDeskPasswordManager");
             };
             if (OperatingSystem.IsMacOS())
                 MacOSProperties.SetIsTemplateIcon(_trayIcon, true);

@@ -2,7 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:chrome="clr-namespace:Avalonia.Controls.Chrome;assembly=Avalonia.Controls"
         x:Class="KeeDesk.Views.AutoTypePickerWindow"
-        Title="选择自动输入条目"
+        Title="{DynamicResource Str_ChooseAutoTypeEntry}"
         Width="480" Height="400"
         WindowStartupLocation="CenterScreen"
         Topmost="True"
@@ -18,7 +18,7 @@
                 chrome:WindowDecorationProperties.ElementRole="TitleBar"
                 PointerPressed="TitleBar_PointerPressed">
             <StackPanel Spacing="3">
-                <TextBlock Text="全局自动输入（Auto-Type）" FontSize="17" FontWeight="SemiBold" />
+                <TextBlock Text="{DynamicResource Str_GlobalAutoType2}" FontSize="17" FontWeight="SemiBold" />
                 <TextBlock x:Name="TargetWindowLabel" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" TextTrimming="CharacterEllipsis" />
             </StackPanel>
         </Border>
@@ -31,8 +31,8 @@
         <Border Grid.Row="2" Background="{DynamicResource DividerBrush}" />
 
         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="20,12">
-            <Button Width="84" Height="34" Content="取消" Click="Cancel_Click" />
-            <Button Classes="accent" Height="34" Padding="16,0" Content="立即自动输入" Click="Confirm_Click" />
+            <Button Width="84" Height="34" Content="{DynamicResource Str_Cancel}" Click="Cancel_Click" />
+            <Button Classes="accent" Height="34" Padding="16,0" Content="{DynamicResource Str_AutoTypeNow}" Click="Confirm_Click" />
         </StackPanel>
     </Grid>
 </Window>

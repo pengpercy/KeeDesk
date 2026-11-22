@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.1 - 2026-11-23
+
+- **Language switching** — Completed English translations across the workspace and dialogs. Selected drop-down labels refresh immediately when the language changes, and the macOS application menu follows the in-app language.
+- **Windows title bar** — Kept the search field and toolbar buttons clickable, aligned the window controls, and restored the red close-button hover state.
+- **Fluent details** — Kept text field borders consistent during the focus animation, rounded sidebar group highlights, and refined the vault switcher's icons and alignment.
+
 ## 1.2.0 - 2026-11-22
 
 - **KeeDesk** — New name for the local KeePass-compatible password manager. Existing vaults, preferences, and recent files carry over. macOS retains its Touch ID keychain integration.

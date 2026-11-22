@@ -5,6 +5,7 @@ using Avalonia.Platform.Storage;
 using Avalonia.VisualTree;
 using KeeDesk.Core.Kdbx;
 using KeeDesk.Helpers;
+using static KeeDesk.Services.LocalizationService;
 
 namespace KeeDesk.Views;
 
@@ -22,15 +23,15 @@ public partial class VaultUnlockPromptWindow : Window
     private string _keyFilePath = string.Empty;
     private bool _isWorking;
 
-    public VaultUnlockPromptWindow() : this(string.Empty, "解锁密码库", "解锁") { }
+    public VaultUnlockPromptWindow() : this(string.Empty, L("Str_UnlockVault"), L("Str_Unlock")) { }
 
-    public VaultUnlockPromptWindow(string vaultPath, string heading = "合并 / 同步其他密码库", string confirmButtonText = "解密并合并")
+    public VaultUnlockPromptWindow(string vaultPath, string? heading = null, string? confirmButtonText = null)
     {
         InitializeComponent();
         _vaultPath = vaultPath;
-        Title = heading;
-        DialogHeading.Text = heading;
-        MergeBtn.Content = confirmButtonText;
+        Title = heading ?? L("Str_MergeSyncAnotherVault2");
+        DialogHeading.Text = Title;
+        MergeBtn.Content = confirmButtonText ?? L("Str_DecryptAndMerge");
         FilePathLabel.Text = Path.GetFileName(vaultPath);
         UseWindowsUserAccountCheck.IsVisible = OperatingSystem.IsWindows();
         MacTitleBarInsets.AttachTrafficLightsCentering(this, 40);
@@ -76,7 +77,7 @@ public partial class VaultUnlockPromptWindow : Window
         }
         catch (Exception ex)
         {
-            ErrorText.Text = $"解密失败：主密码或密钥文件不正确（{ex.Message}）";
+            ErrorText.Text = L("Str_CouldnTDecryptUsingTheMasterPasswordFormat", ex.Message);
             ErrorText.IsVisible = true;
             PasswordBox.Focus();
             PasswordBox.SelectAll();

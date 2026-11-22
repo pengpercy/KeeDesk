@@ -6,6 +6,7 @@ using Avalonia.VisualTree;
 using KeeDesk.Core.Kdbx;
 using KeeDesk.Core.Services;
 using KeeDesk.Helpers;
+using static KeeDesk.Services.LocalizationService;
 
 namespace KeeDesk.Views;
 
@@ -32,7 +33,7 @@ public partial class DatabaseSettingsWindow : Window
     private void LoadFromDatabase()
     {
         VaultFileSubTitle.Text = string.IsNullOrWhiteSpace(_database.FilePath)
-            ? "当前为内存演示库（保存为正式 .kdbx 文件后永久生效）"
+            ? L("Str_ThisDemoIsInMemorySaveIt")
             : _database.FilePath;
 
         DbNameBox.Text = _database.Meta.DatabaseName;
@@ -88,12 +89,12 @@ public partial class DatabaseSettingsWindow : Window
         if (string.IsNullOrEmpty(pwd))
         {
             PwdStrengthBar.Value = 0;
-            PwdStrengthText.Text = "请输入新主密码";
+            PwdStrengthText.Text = L("Str_EnterANewMasterPassword2");
             return;
         }
         var strength = PasswordGenerator.EvaluateStrength(pwd);
         PwdStrengthBar.Value = Math.Clamp(strength.EntropyBits / 120.0, 0.05, 1.0);
-        PwdStrengthText.Text = $"{strength.Label} · {strength.EntropyBits:0} bits";
+        PwdStrengthText.Text = FormatPasswordStrength(strength);
     }
 
     private async void BrowseKeyFile_Click(object? sender, RoutedEventArgs e)
@@ -117,7 +118,7 @@ public partial class DatabaseSettingsWindow : Window
         {
             SuggestedFileName = $"{_database.Meta.DatabaseName}.keyx",
             DefaultExtension = "keyx",
-            FileTypeChoices = [new FilePickerFileType("KeePass XML v2.0 密钥文件") { Patterns = ["*.keyx"] }]
+            FileTypeChoices = [new FilePickerFileType(L("Str_KeePassXMLV20KeyFile")) { Patterns = ["*.keyx"] }]
         });
         var path = file?.TryGetLocalPath();
         if (string.IsNullOrWhiteSpace(path)) return;
@@ -145,14 +146,14 @@ public partial class DatabaseSettingsWindow : Window
             var confirm = ConfirmPasswordBox.Text ?? string.Empty;
             if (pwd != confirm)
             {
-                ErrorText.Text = "两次输入的新主密码不一致，请重新核对。";
+                ErrorText.Text = L("Str_TheNewMasterPasswordsDoNotMatch");
                 ErrorText.IsVisible = true;
                 return;
             }
             bool useWua = OperatingSystem.IsWindows() && UseWindowsUserAccountCheck.IsChecked == true;
             if (string.IsNullOrEmpty(pwd) && string.IsNullOrWhiteSpace(_newKeyFilePath) && !useWua)
             {
-                ErrorText.Text = "主密码、密钥文件与 Windows 用户账户不能同时为空。";
+                ErrorText.Text = L("Str_EnterAMasterPasswordAKeyFile");
                 ErrorText.IsVisible = true;
                 return;
             }

@@ -2,7 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:chrome="clr-namespace:Avalonia.Controls.Chrome;assembly=Avalonia.Controls"
         x:Class="KeeDesk.Views.MoveToGroupWindow"
-        Title="移动到分组"
+        Title="{DynamicResource Str_MoveToGroup2}"
         Width="400" Height="440"
         WindowStartupLocation="CenterOwner"
         CanResize="False"
@@ -17,7 +17,7 @@
                 chrome:WindowDecorationProperties.ElementRole="TitleBar"
                 PointerPressed="TitleBar_PointerPressed">
             <StackPanel Spacing="3">
-                <TextBlock Text="移动条目到分组" FontSize="18" FontWeight="SemiBold" />
+                <TextBlock Text="{DynamicResource Str_MoveEntryToGroup}" FontSize="18" FontWeight="SemiBold" />
                 <TextBlock x:Name="EntryTitleLabel" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" TextTrimming="CharacterEllipsis" />
             </StackPanel>
         </Border>
@@ -30,8 +30,8 @@
         <Border Grid.Row="2" Background="{DynamicResource DividerBrush}" />
 
         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="24,12">
-            <Button Width="84" Height="34" Content="取消" Click="Cancel_Click" />
-            <Button Classes="accent" Height="34" Padding="16,0" Content="移动到此分组" Click="Confirm_Click" />
+            <Button Width="84" Height="34" Content="{DynamicResource Str_Cancel}" Click="Cancel_Click" />
+            <Button Classes="accent" Height="34" Padding="16,0" Content="{DynamicResource Str_MoveToThisGroup}" Click="Confirm_Click" />
         </StackPanel>
     </Grid>
 </Window>

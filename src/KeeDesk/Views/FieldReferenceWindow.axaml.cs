@@ -4,6 +4,7 @@ using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 using KeeDesk.Core.Kdbx;
 using KeeDesk.Helpers;
+using static KeeDesk.Services.LocalizationService;
 
 namespace KeeDesk.Views;
 
@@ -82,7 +83,7 @@ public partial class FieldReferenceWindow : Window
     {
         if (PreviewText is null) return;
         var expr = BuildReference();
-        PreviewText.Text = string.IsNullOrEmpty(expr) ? "请先在上方选择一个目标条目" : expr;
+        PreviewText.Text = string.IsNullOrEmpty(expr) ? L("Str_SelectATargetEntryAbove") : expr;
     }
 
     private void Insert_Click(object? sender, RoutedEventArgs e)

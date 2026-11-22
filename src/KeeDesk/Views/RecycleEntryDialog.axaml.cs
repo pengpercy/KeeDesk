@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using static KeeDesk.Services.LocalizationService;
 
 namespace KeeDesk.Views;
 
@@ -10,7 +11,7 @@ public partial class RecycleEntryDialog : Window
     public RecycleEntryDialog(string title)
     {
         InitializeComponent();
-        Prompt.Text = $"将 {title} 移到回收站？";
+        Prompt.Text = L("Str_MoveToTheRecycleBinFormat", title);
         Opened += (_, _) => CancelButton.Focus();
     }
 

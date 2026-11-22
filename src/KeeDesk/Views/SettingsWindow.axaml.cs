@@ -4,6 +4,7 @@ using Avalonia.Interactivity;
 using Avalonia.Media;
 using KeeDesk.Helpers;
 using KeeDesk.ViewModels;
+using static KeeDesk.Services.LocalizationService;
 
 namespace KeeDesk.Views;
 
@@ -102,7 +103,7 @@ public partial class SettingsWindow : Window
         _vm.SettingsService.Settings.Language = lang;
         _vm.SettingsService.Save();
         KeeDesk.Services.LocalizationService.Apply(lang);
-        _vm.ShowToast(lang == "en-US" ? "Switched UI language to English" : "已切换界面语言为简体中文");
+        _vm.ShowToast(L("Str_SwitchedUILanguageToEnglish"));
     }
 
     private void ThemeCombo_Changed(object? sender, SelectionChangedEventArgs e)
@@ -154,12 +155,7 @@ public partial class SettingsWindow : Window
         _vm.SettingsService.Settings.UiDensity = density;
         _vm.SettingsService.Save();
         DensityService.Apply(density);
-        _vm.CurrentDensityLabel = density switch
-        {
-            "Compact" => "紧凑",
-            "Comfortable" => "宽松",
-            _ => "标准"
-        };
+        _vm.UpdateDensityLabel();
     }
 
     private void RefreshAccentRings(string accentMode)

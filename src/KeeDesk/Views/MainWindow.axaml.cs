@@ -13,6 +13,7 @@ using Avalonia.VisualTree;
 using KeeDesk.Helpers;
 using KeeDesk.Services;
 using KeeDesk.ViewModels;
+using static KeeDesk.Services.LocalizationService;
 
 namespace KeeDesk.Views;
 
@@ -239,14 +240,14 @@ public partial class MainWindow : Window
         WorkspaceSidebar.Width = rail ? 64 : 240;
         UnlockSidebar.Width = width < StackedWidth ? 224 : width < ExpandedWidth ? 248 : 272;
         DesktopSearchSlot.Width = width < StackedWidth ? 244 : compact ? 310 : width < 1280 ? 320 : 360;
-        DesktopCommands.Margin = new Avalonia.Thickness(0, 0, width < StackedWidth ? 164 : 192, 0);
+        // Windows reserves 139 px for the three caption buttons plus 12 px of clearance.
+        double commandInset = OperatingSystem.IsWindows() ? 151 : width < StackedWidth ? 164 : 192;
+        DesktopCommands.Margin = new Thickness(0, 0, commandInset, 0);
         WorkspaceBackButton.IsVisible = _stacked && _detailOpen && _layoutViewModel?.IsUnlocked == true;
 
         DetailSelectionRegion.IsVisible = !_searchPendingSelection;
         SearchDetailsPlaceholder.IsVisible = _searchPendingSelection;
-        bool noMatches = _layoutViewModel?.FilteredEntries.Count == 0;
-        SearchResultMessage.Text = noMatches ? "未找到匹配的条目" : "选择一条搜索结果";
-        ClearEmptySearchButton.IsVisible = noMatches;
+        RefreshSearchResultMessage();
         EntryPane.IsVisible = !_stacked || !_detailOpen;
         EntryDetail.IsVisible = !_stacked || _detailOpen;
         EntryDivider.IsVisible = !_stacked;
@@ -255,6 +256,13 @@ public partial class MainWindow : Window
             : new GridLength(width < ExpandedWidth ? 280 : 344);
         EntryWorkspace.ColumnDefinitions[1].Width = new GridLength(_stacked ? 0 : 1);
         EntryWorkspace.ColumnDefinitions[2].Width = _stacked && !_detailOpen ? new GridLength(0) : GridLength.Star;
+    }
+
+    internal void RefreshSearchResultMessage()
+    {
+        bool noMatches = _layoutViewModel?.FilteredEntries.Count == 0;
+        SearchResultMessage.Text = noMatches ? L("Str_NoMatchingEntries") : L("Str_SelectASearchResult");
+        ClearEmptySearchButton.IsVisible = noMatches;
     }
 
     private void ToggleSidebar_Click(object? sender, RoutedEventArgs e)
@@ -522,7 +530,7 @@ public partial class MainWindow : Window
             if (saved && !string.IsNullOrEmpty(dlg.SavedPasswordForClipboard) && vm.CopyToClipboardAsync is not null)
             {
                 await vm.CopyToClipboardAsync(dlg.SavedPasswordForClipboard);
-                vm.ShowToast("已保存并自动复制密码到安全剪贴板", ToastSeverity.Success);
+                vm.ShowToast(L("Str_SavedAndCopiedPasswordToTheSecure"), ToastSeverity.Success);
             }
             return saved;
         };

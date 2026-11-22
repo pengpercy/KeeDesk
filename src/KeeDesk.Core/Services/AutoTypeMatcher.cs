@@ -3,7 +3,13 @@ using KeeDesk.Core.Kdbx;
 
 namespace KeeDesk.Core.Services;
 
-public sealed record AutoTypeMatchResult(KdbxEntry Entry, string Sequence, string MatchReason);
+public sealed record AutoTypeMatchResult(KdbxEntry Entry, string Sequence, string MatchReason)
+{
+    public AutoTypeMatchKind Kind { get; init; }
+    public string? MatchValue { get; init; }
+}
+
+public enum AutoTypeMatchKind { Manual, Rule, Title, Domain }
 
 /// <summary>
 /// 对标原版 KeePass 2.x 全局自动输入窗口标题匹配引擎：
@@ -31,7 +37,8 @@ public static class AutoTypeMatcher
                     var seq = string.IsNullOrWhiteSpace(assoc.KeystrokeSequence)
                         ? AutoTypeSequenceParser.GetEffectiveSequence(entry)
                         : assoc.KeystrokeSequence;
-                    results.Add(new AutoTypeMatchResult(entry, seq, $"规则匹配：{assoc.Window}"));
+                    results.Add(new AutoTypeMatchResult(entry, seq, $"规则匹配：{assoc.Window}")
+                    { Kind = AutoTypeMatchKind.Rule, MatchValue = assoc.Window });
                     matchedAssoc = true;
                     break;
                 }
@@ -42,7 +49,7 @@ public static class AutoTypeMatcher
             if (!string.IsNullOrWhiteSpace(entry.Title) &&
                 titleNorm.Contains(entry.Title, StringComparison.OrdinalIgnoreCase))
             {
-                results.Add(new AutoTypeMatchResult(entry, AutoTypeSequenceParser.GetEffectiveSequence(entry), "窗口标题匹配"));
+                results.Add(new AutoTypeMatchResult(entry, AutoTypeSequenceParser.GetEffectiveSequence(entry), "窗口标题匹配") { Kind = AutoTypeMatchKind.Title });
                 continue;
             }
 
@@ -55,7 +62,8 @@ public static class AutoTypeMatcher
                 var mainDomain = hostParts.Length >= 2 ? hostParts[^2] : uri.Host;
                 if (mainDomain.Length >= 3 && titleNorm.Contains(mainDomain, StringComparison.OrdinalIgnoreCase))
                 {
-                    results.Add(new AutoTypeMatchResult(entry, AutoTypeSequenceParser.GetEffectiveSequence(entry), $"域名匹配：{uri.Host}"));
+                    results.Add(new AutoTypeMatchResult(entry, AutoTypeSequenceParser.GetEffectiveSequence(entry), $"域名匹配：{uri.Host}")
+                    { Kind = AutoTypeMatchKind.Domain, MatchValue = uri.Host });
                 }
             }
         }

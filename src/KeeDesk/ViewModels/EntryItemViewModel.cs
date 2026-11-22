@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using KeeDesk.Core.Kdbx;
 using KeeDesk.Core.Services;
 using KeeDesk.Services;
+using static KeeDesk.Services.LocalizationService;
 
 namespace KeeDesk.ViewModels;
 
@@ -52,8 +53,8 @@ public sealed partial class EntryItemViewModel : ViewModelBase
     public bool HasStandardIcon => !HasCustomIcon && StandardIcon is not null;
     public bool ShowInitials => !HasCustomIcon && !HasStandardIcon;
     public Geometry? StandardIcon { get; private set; }
-    public string EntryKind => string.IsNullOrWhiteSpace(Url) ? "密码条目" : "网站登录";
-    public string UpdatedDisplay => $"更新于 {Model.LastModificationTime.LocalDateTime:yyyy/MM/dd}";
+    public string EntryKind => string.IsNullOrWhiteSpace(Url) ? L("Str_PasswordEntry") : L("Str_WebsiteLogin");
+    public string UpdatedDisplay => L("Str_UpdatedFormat", Model.LastModificationTime.LocalDateTime);
     public IEnumerable<string> DisplayTags => Model.Tags.Where(t =>
         !string.Equals(t, "Favorite", StringComparison.OrdinalIgnoreCase) && t != "收藏");
     public bool HasAnnotations => !string.IsNullOrWhiteSpace(Notes) || Model.Binaries.Count > 0 || DisplayTags.Any()
@@ -84,10 +85,10 @@ public sealed partial class EntryItemViewModel : ViewModelBase
 
     public void Refresh()
     {
-        Title = string.IsNullOrWhiteSpace(Model.Title) ? "未命名条目" : Model.Title;
+        Title = string.IsNullOrWhiteSpace(Model.Title) ? L("Str_UntitledEntry") : Model.Title;
         UserName = Model.UserName;
         Password = Model.Password;
-        MaskedPassword = string.IsNullOrEmpty(Password) ? "（空密码）" : new string('•', Math.Clamp(Password.Length, 8, 22));
+        MaskedPassword = string.IsNullOrEmpty(Password) ? L("Str_EmptyPassword") : new string('•', Math.Clamp(Password.Length, 8, 22));
         Url = Model.Url;
         Notes = Model.Notes;
         IsFavorite = Model.IsFavorite;
@@ -97,7 +98,7 @@ public sealed partial class EntryItemViewModel : ViewModelBase
         GroupPath = _database is not null && fullPath.StartsWith(rootPrefix, StringComparison.Ordinal)
             ? fullPath[rootPrefix.Length..]
             : fullPath;
-        TagsDisplay = Model.Tags.Count > 0 ? string.Join("   ", Model.Tags.Select(t => $"#{t}")) : "无标签";
+        TagsDisplay = Model.Tags.Count > 0 ? string.Join("   ", Model.Tags.Select(t => $"#{t}")) : L("Str_NoTags");
 
         var words = Title.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         Initials = words.Length >= 2
@@ -105,14 +106,14 @@ public sealed partial class EntryItemViewModel : ViewModelBase
             : Title.Length >= 2 ? Title[..2].ToUpperInvariant() : Title.ToUpperInvariant();
 
         var strength = PasswordGenerator.EvaluateStrength(Password);
-        StrengthLabel = $"{strength.Label} · {strength.EntropyBits:0} bits 熵值";
+        StrengthLabel = FormatPasswordStrength(strength, string.IsNullOrEmpty(Password));
         StrengthRatio = Math.Clamp(strength.EntropyBits / 120.0, 0.05, 1.0);
 
         if (Model.Expires)
         {
             var days = (int)Math.Ceiling((Model.ExpiryTime - DateTimeOffset.UtcNow).TotalDays);
             HasExpiryBadge = days <= 14;
-            ExpiryBadge = days <= 0 ? "已过期" : $"{days} 天后过期";
+            ExpiryBadge = days <= 0 ? L("Str_Expired") : L("Str_ExpiresInDaysFormat", days);
         }
         else
         {
@@ -128,7 +129,7 @@ public sealed partial class EntryItemViewModel : ViewModelBase
         OnPropertyChanged(nameof(HasStandardIcon));
         OnPropertyChanged(nameof(ShowInitials));
         OnPropertyChanged(nameof(StandardIcon));
-        FooterMeta = $"修改时间：{Model.LastModificationTime.LocalDateTime:yyyy-MM-dd HH:mm}   ·   创建时间：{Model.CreationTime.LocalDateTime:yyyy-MM-dd HH:mm}   ·   UUID: {Model.Uuid.ToString("N")[..8]}...";
+        FooterMeta = L("Str_ModifiedCreatedUUIDFormat", Model.LastModificationTime.LocalDateTime, Model.CreationTime.LocalDateTime, Model.Uuid.ToString("N")[..8]);
 
         RefreshTotp();
         OnPropertyChanged(nameof(DisplayedPassword));

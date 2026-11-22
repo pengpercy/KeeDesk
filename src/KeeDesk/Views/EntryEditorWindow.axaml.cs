@@ -8,6 +8,7 @@ using KeeDesk.Core.Crypto;
 using KeeDesk.Core.Kdbx;
 using KeeDesk.Core.Services;
 using KeeDesk.Helpers;
+using static KeeDesk.Services.LocalizationService;
 
 namespace KeeDesk.Views;
 
@@ -38,16 +39,16 @@ public partial class EntryEditorWindow : Window
         _targetGroup = targetGroup;
         _database = db;
 
-        TargetGroupLabel.Text = string.IsNullOrWhiteSpace(targetGroup.Name) ? "根目录" : targetGroup.Name;
+        TargetGroupLabel.Text = string.IsNullOrWhiteSpace(targetGroup.Name) ? L("Str_Root") : targetGroup.Name;
         ExpiryPicker.SelectedDate = DateTime.Now.AddYears(1);
         FavoriteToggle.IsCheckedChanged += (_, _) =>
-            FavoriteToggleText.Text = FavoriteToggle.IsChecked == true ? "已收藏" : "收藏";
+            FavoriteToggleText.Text = FavoriteToggle.IsChecked == true ? L("Str_Favorited") : L("Str_Favorite");
 
         if (entry is null)
         {
-            Title = "新建";
-            DialogHeading.Text = "新建";
-            SaveButtonText.Text = "创建条目";
+            Title = L("Str_New");
+            DialogHeading.Text = L("Str_New");
+            SaveButtonText.Text = L("Str_CreateEntry");
             TemplateCombo.IsVisible = true;
             TemplateCombo.SelectedIndex = 0;
             HistoryToggleBtn.IsVisible = false;
@@ -57,10 +58,10 @@ public partial class EntryEditorWindow : Window
         {
             _selectedIconId = entry.IconId;
             _selectedCustomIconUuid = entry.CustomIconUuid;
-            Title = $"编辑条目 — {entry.Title}";
+            Title = L("Str_EditEntryFormat", entry.Title);
             RefreshIconBadgePreview();
-            DialogHeading.Text = "编辑条目";
-            SaveButtonText.Text = "保存更改";
+            DialogHeading.Text = L("Str_EditEntry2");
+            SaveButtonText.Text = L("Str_SaveChanges");
             TemplateCombo.IsVisible = false;
             HistoryToggleBtn.IsVisible = true;
             SetHistoryPanelVisible(showHistory);
@@ -71,7 +72,7 @@ public partial class EntryEditorWindow : Window
             UrlBox.Text = entry.Url;
             NotesBox.Text = entry.Notes;
             FavoriteToggle.IsChecked = entry.IsFavorite;
-            FavoriteToggleText.Text = entry.IsFavorite ? "已收藏" : "收藏";
+            FavoriteToggleText.Text = entry.IsFavorite ? L("Str_Favorited") : L("Str_Favorite");
 
             TagsBox.Text = string.Join("; ", entry.Tags.Where(t => !string.Equals(t, "Favorite", StringComparison.OrdinalIgnoreCase)));
             TotpBox.Text = !string.IsNullOrEmpty(entry.GetString(KdbxConstants.FieldOtp))
@@ -103,7 +104,7 @@ public partial class EntryEditorWindow : Window
                 _pendingBinaries[kv.Key] = kv.Value.Clone();
             RefreshAttachmentList();
 
-            HistoryBtnText.Text = $"历史 ({entry.History.Count})";
+            HistoryBtnText.Text = L("Str_HistoryFormat", entry.History.Count);
             HistoryListBox.ItemsSource = entry.History
                 .Select((h, i) => $"#{i + 1} · {h.LastModificationTime.LocalDateTime:yyyy-MM-dd HH:mm} · {h.Title} ({h.UserName})")
                 .ToList();
@@ -135,20 +136,20 @@ public partial class EntryEditorWindow : Window
         switch (item.Tag?.ToString())
         {
             case "Bank":
-                TitleBox.Text = "银行卡 — ";
-                TagsBox.Text = "金融; 银行卡";
-                CustomFieldsBox.Text = "卡号=\n有效期=\nCVV=*";
+                TitleBox.Text = L("Str_BankCard");
+                TagsBox.Text = L("Str_FinanceBankCard");
+                CustomFieldsBox.Text = L("Str_CardNumberNExpirationDateNCVV");
                 CustomFieldsSection.IsVisible = true;
                 break;
             case "ApiKey":
-                TitleBox.Text = "API 密钥 — ";
-                TagsBox.Text = "开发; 生产";
+                TitleBox.Text = L("Str_APIKey");
+                TagsBox.Text = L("Str_DevelopmentProduction");
                 CustomFieldsBox.Text = "AccessKeyId=\nSecretAccessKey=*\nEndpoint=";
                 CustomFieldsSection.IsVisible = true;
                 break;
             case "Note":
-                TitleBox.Text = "安全笔记 — ";
-                TagsBox.Text = "笔记";
+                TitleBox.Text = L("Str_SecureNote");
+                TagsBox.Text = L("Str_Note");
                 QualityCheckBox.IsChecked = false;
                 break;
         }
@@ -180,9 +181,9 @@ public partial class EntryEditorWindow : Window
     {
         if (NotesSummary is null || NotesBox is null) return;
         var summary = new List<string>();
-        if (!string.IsNullOrWhiteSpace(NotesBox.Text)) summary.Add("有备注");
-        if (_pendingBinaries.Count > 0) summary.Add($"{_pendingBinaries.Count} 个附件");
-        NotesSummary.Text = summary.Count > 0 ? string.Join(" · ", summary) : "添加备注、额外字段或文件";
+        if (!string.IsNullOrWhiteSpace(NotesBox.Text)) summary.Add(L("Str_HasNotes"));
+        if (_pendingBinaries.Count > 0) summary.Add(L("Str_AttachmentsFormat", _pendingBinaries.Count));
+        NotesSummary.Text = summary.Count > 0 ? string.Join(" · ", summary) : L("Str_AddNotesFieldsOrAttachments");
     }
 
     private void UpdateExpanderSummaries(object? sender, RoutedEventArgs e) => RefreshExpanderSummaries();
@@ -201,12 +202,12 @@ public partial class EntryEditorWindow : Window
         if (string.IsNullOrEmpty(pwd))
         {
             StrengthBar.Value = 0;
-            StrengthText.Text = "密码强度：待输入";
+            StrengthText.Text = L("Str_PasswordStrengthWaitingForInput");
             return;
         }
         var res = PasswordGenerator.EvaluateStrength(pwd);
         StrengthBar.Value = Math.Clamp(res.EntropyBits / 120.0, 0.05, 1.0);
-        StrengthText.Text = $"{res.Label} · {res.EntropyBits:0} bits 熵值";
+        StrengthText.Text = FormatPasswordStrength(res);
     }
 
     private void UpdateTotpPreview()
@@ -231,14 +232,14 @@ public partial class EntryEditorWindow : Window
     {
         if (ExpanderTagsSummary is null) return;
         var expPart = ExpiresCheck.IsChecked == true && ExpiryPicker.SelectedDate.HasValue
-            ? $"{ExpiryPicker.SelectedDate.Value:yyyy-MM-dd} 到期"
-            : "永不过期";
+            ? L("Str_ExpiresFormat", ExpiryPicker.SelectedDate.Value)
+            : L("Str_NeverExpires");
         var tags = (TagsBox.Text ?? "").Split([';', ','], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        var tagPart = tags.Length > 0 ? string.Join("  ", tags.Select(t => $"#{t}")) : "暂未添加标签";
+        var tagPart = tags.Length > 0 ? string.Join("  ", tags.Select(t => $"#{t}")) : L("Str_NoTags2");
         ExpanderTagsSummary.Text = $"{expPart}  ·  {tagPart}";
 
-        var seq = string.IsNullOrWhiteSpace(AutoTypeSeqBox.Text) ? "继承分组默认按键序列" : AutoTypeSeqBox.Text.Trim();
-        var qc = QualityCheckBox.IsChecked != false ? "已启用密码质量审计" : "已禁用单条质量审计 (KDBX 4.1)";
+        var seq = string.IsNullOrWhiteSpace(AutoTypeSeqBox.Text) ? L("Str_InheritTheGroupSDefaultKeySequence") : AutoTypeSeqBox.Text.Trim();
+        var qc = QualityCheckBox.IsChecked != false ? L("Str_PasswordQualityChecksEnabled") : L("Str_PasswordQualityChecksDisabledForThisEntry");
         ExpanderAdvancedSummary.Text = $"{seq}  ·  {qc}";
     }
 
@@ -397,21 +398,21 @@ public partial class EntryEditorWindow : Window
         var domain = KeeDesk.Services.FaviconFetcherService.ExtractDomain(UrlBox.Text, UserNameBox.Text);
         if (string.IsNullOrEmpty(domain))
         {
-            StrengthText.Text = "请先填写「登录网址」或含 @ 的「邮箱」，再自动获取官网图标";
+            StrengthText.Text = L("Str_EnterAWebsiteURLOrAnEmail");
             return;
         }
 
-        StrengthText.Text = $"正在从 {domain} 获取官网图标...";
+        StrengthText.Text = L("Str_FetchingWebsiteIconFromFormat", domain);
         var bytes = await KeeDesk.Services.FaviconFetcherService.FetchByDomainAsync(domain);
         if (bytes is null)
         {
-            StrengthText.Text = $"未能从 {domain} 获取到图标，可尝试选择本地图片或手动输入图片 URL";
+            StrengthText.Text = L("Str_CouldnTFetchAnIconFromChooseFormat", domain);
             return;
         }
 
         _selectedCustomIconUuid = KeeDesk.Services.FaviconFetcherService.AddOrReuseCustomIcon(_database, domain, bytes);
         RefreshIconBadgePreview();
-        StrengthText.Text = $"已成功获取 {domain} 官网图标";
+        StrengthText.Text = L("Str_FetchedWebsiteIconForFormat", domain);
     }
 
     private void ResetLetterIcon_Click(object? sender, RoutedEventArgs e)

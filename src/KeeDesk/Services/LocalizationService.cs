@@ -1,5 +1,7 @@
 using System.Globalization;
 using Avalonia;
+using Avalonia.Data.Converters;
+using KeeDesk.Core.Services;
 
 namespace KeeDesk.Services;
 
@@ -7,9 +9,22 @@ namespace KeeDesk.Services;
 /// 纯托管、零反射、NativeAOT 友好的中英文实时多语言切换服务。
 /// 通过运行时更新 Application.Current.Resources 中的 Str_* 动态词条，无需重启即可生效。
 /// </summary>
-public static class LocalizationService
+public static partial class LocalizationService
 {
     public static string CurrentLanguage { get; private set; } = "zh-CN";
+    internal static event Action? LanguageChanged;
+    public static IMultiValueConverter FormatConverter { get; } = new LocalizedFormatConverter();
+
+    private sealed class LocalizedFormatConverter : IMultiValueConverter
+    {
+        public object? Convert(IList<object?> values, Type targetType, object? parameter, CultureInfo culture)
+        {
+            if (values.Count != 2 || values[0] is not string format || ReferenceEquals(values[1], AvaloniaProperty.UnsetValue))
+                return AvaloniaProperty.UnsetValue;
+
+            return string.Format(CultureInfo.CurrentCulture, format, values[1]);
+        }
+    }
 
     private static readonly Dictionary<string, string> ZhCn = new(StringComparer.Ordinal)
     {
@@ -125,6 +140,32 @@ public static class LocalizationService
         ["Str_BatchDelete"] = "Delete"
     };
 
+    static LocalizationService()
+    {
+        foreach (var (key, chinese, english) in UiStrings)
+        {
+            ZhCn.Add(key, chinese);
+            EnUs.Add(key, english);
+        }
+    }
+
+    public static string L(string key) => (CurrentLanguage == "en-US" ? EnUs : ZhCn)[key];
+
+    public static string L(string key, params object?[] args) => string.Format(CultureInfo.CurrentCulture, L(key), args);
+
+    public static string FormatPasswordStrength(PasswordStrengthResult result, bool isEmpty = false)
+    {
+        var key = isEmpty ? "Str_EmptyPassword2" : result.Level switch
+        {
+            PasswordStrengthLevel.VeryWeak => "Str_VeryWeak",
+            PasswordStrengthLevel.Weak => "Str_Weak",
+            PasswordStrengthLevel.Fair => "Str_Fair",
+            PasswordStrengthLevel.Strong => "Str_Strong",
+            _ => "Str_VeryStrong"
+        };
+        return L("Str_BitsOfEntropyFormat", L(key), result.EntropyBits);
+    }
+
     public static void Apply(string? languageCode)
     {
         bool isEn = string.Equals(languageCode, "en-US", StringComparison.OrdinalIgnoreCase);
@@ -137,10 +178,13 @@ public static class LocalizationService
         CultureInfo.CurrentUICulture = culture;
 
         var app = Application.Current;
-        if (app is null) return;
+        if (app is not null)
+        {
+            var map = isEn ? EnUs : ZhCn;
+            foreach (var kv in map)
+                app.Resources[kv.Key] = kv.Value;
+        }
 
-        var map = isEn ? EnUs : ZhCn;
-        foreach (var kv in map)
-            app.Resources[kv.Key] = kv.Value;
+        LanguageChanged?.Invoke();
     }
 }

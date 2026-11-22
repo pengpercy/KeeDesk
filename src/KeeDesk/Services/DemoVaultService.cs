@@ -2,6 +2,7 @@ using System.Text;
 using KeeDesk.Core.Crypto;
 using KeeDesk.Core.Kdbx;
 using KeeDesk.Core.Services;
+using static KeeDesk.Services.LocalizationService;
 
 namespace KeeDesk.Services;
 
@@ -9,20 +10,20 @@ public static class DemoVaultService
 {
     public static KdbxDatabase Create()
     {
-        var database = KdbxDatabase.CreateDefault("个人密码库");
+        var database = KdbxDatabase.CreateDefault(L("Str_PersonalVault"));
         var root = database.RootGroup;
         var recycleBin = database.GetOrCreateRecycleBin();
         foreach (var group in root.Groups.Where(group => group != recycleBin))
             group.Dispose();
         root.Groups.Clear();
 
-        var development = AddGroup(root, "开发与运维", 3);
+        var development = AddGroup(root, L("Str_DevelopmentAndOperations"), 3);
         development.IsExpanded = true;
-        var code = AddGroup(development, "代码托管", 3);
-        var cloud = AddGroup(development, "云服务", 3);
-        var work = AddGroup(root, "工作", 48);
-        var personal = AddGroup(root, "个人", 1);
-        var finance = AddGroup(root, "金融", 37);
+        var code = AddGroup(development, L("Str_CodeHosting"), 3);
+        var cloud = AddGroup(development, L("Str_CloudServices"), 3);
+        var work = AddGroup(root, L("Str_Work"), 48);
+        var personal = AddGroup(root, L("Str_Personal"), 1);
+        var finance = AddGroup(root, L("Str_Finance"), 37);
         root.AddGroup(recycleBin);
 
         var latest = new DateTimeOffset(2026, 11, 18, 12, 0, 0, TimeSpan.Zero);
@@ -49,28 +50,28 @@ public static class DemoVaultService
         }
 
         var github = Add(code, "GitHub", "dev@example.com", "https://github.com", "demodemodemo", iconId: 62);
-        github.Notes = "组织仓库账户。恢复码存放在附件中。";
-        github.Tags.AddRange(["开发", "团队"]);
+        github.Notes = L("Str_OrganizationRepositoryAccountRecoveryCodesAreAttached");
+        github.Tags.AddRange([L("Str_Development"), L("Str_Team")]);
         github.IsFavorite = true;
         SetDemoTotp(github, "GitHub", "JBSWY3DPEHPK3PXP");
-        github.Binaries["恢复码.txt"] = new ProtectedBinary(true,
-            Encoding.UTF8.GetBytes("演示恢复码\nDEMO-4821-5216\nDEMO-6073-1184"));
+        github.Binaries[L("Str_RecoveryCodesTxt")] = new ProtectedBinary(true,
+            Encoding.UTF8.GetBytes(L("Str_DemoRecoveryCodesNDEMO48215216NDEMO")));
 
         Add(work, "Figma", "design@example.com", "https://www.figma.com", iconId: 23);
         Add(work, "Microsoft 365", "work@example.com", "https://www.microsoft365.com", iconId: 19).IsFavorite = true;
         var cloudflare = Add(cloud, "Cloudflare", "infra@example.com", "https://dash.cloudflare.com", "cloud", iconId: 3);
         SetDemoTotp(cloudflare, "Cloudflare", "NB2W45DFOIZA");
         Add(personal, "Synology NAS", "admin", "https://nas.example.com", "nas1", iconId: 3);
-        Add(finance, "银行账户", "个人账户", "https://bank.example.com", iconId: 37);
+        Add(finance, L("Str_BankAccount"), L("Str_PersonalAccount"), "https://bank.example.com", iconId: 37);
         Add(personal, "Proton Mail", "personal@example.com", "https://mail.proton.me", iconId: 19);
         Add(personal, "Tailscale", "home@example.com", "https://login.tailscale.com", iconId: 1);
         Add(personal, "Bitwarden", "personal@example.com", "https://vault.bitwarden.com", iconId: 56);
-        Add(development, "开发文档", "docs@example.com", "https://docs.example.com", iconId: 61);
+        Add(development, L("Str_DeveloperDocs"), "docs@example.com", "https://docs.example.com", iconId: 61);
 
         var samples = new (KdbxGroup Group, int DirectCount, string Prefix)[]
         {
-            (code, 5, "代码仓库"), (cloud, 12, "云服务"), (development, 15, "运维工具"),
-            (work, 36, "工作账户"), (personal, 42, "个人账户"), (finance, 18, "金融账户"),
+            (code, 5, L("Str_Repository")), (cloud, 12, L("Str_CloudServices")), (development, 15, L("Str_OperationsTool")),
+            (work, 36, L("Str_WorkAccount")), (personal, 42, L("Str_PersonalAccount")), (finance, 18, L("Str_FinancialAccount")),
         };
         string reusedPassword = PasswordGenerator.GenerateFromCharset(passwordOptions);
         foreach (var (group, target, prefix) in samples)
@@ -97,10 +98,10 @@ public static class DemoVaultService
 
     public static KdbxDatabase CreateWorkVault(KdbxDatabase personalDemo)
     {
-        var vault = KdbxDatabase.CreateDefault("工作密码库");
+        var vault = KdbxDatabase.CreateDefault(L("Str_WorkVault"));
         var archive = vault.RootGroup.Groups[0];
-        archive.Name = "工作";
-        var source = personalDemo.RootGroup.Groups.Single(group => group.Name == "工作");
+        archive.Name = L("Str_Work");
+        var source = personalDemo.RootGroup.Groups.Single(group => group.Name == L("Str_Work"));
         foreach (var entry in source.Entries)
         {
             var copy = entry.CloneWithoutHistory();

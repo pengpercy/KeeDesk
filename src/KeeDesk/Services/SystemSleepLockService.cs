@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using static KeeDesk.Services.LocalizationService;
 
 namespace KeeDesk.Services;
 
@@ -36,7 +37,7 @@ public sealed class SystemSleepLockService : IDisposable
         // 1. 系统休眠检测：墙钟时间跳变明显大于轮询周期（> 15 秒），说明机器刚从合盖/休眠唤醒
         if (wallDelta > 15 && Math.Abs(wallDelta - tickDelta) > 8 || wallDelta > 20)
         {
-            LockRequested?.Invoke("检测到系统休眠或合盖唤醒，密码库已自动锁定");
+            LockRequested?.Invoke(L("Str_VaultsLockedAfterWakingFromSleep"));
             return;
         }
 
@@ -47,7 +48,7 @@ public sealed class SystemSleepLockService : IDisposable
             if (locked && !_wasScreenLocked)
             {
                 _wasScreenLocked = true;
-                LockRequested?.Invoke("检测到 macOS 锁屏，密码库已自动锁定");
+                LockRequested?.Invoke(L("Str_VaultsLockedWhenMacOSLockedTheScreen"));
             }
             else if (!locked)
             {

@@ -4,6 +4,7 @@ using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 using KeeDesk.Core.Services;
 using KeeDesk.Helpers;
+using static KeeDesk.Services.LocalizationService;
 
 namespace KeeDesk.Views;
 
@@ -21,18 +22,26 @@ public partial class AutoTypePickerWindow : Window
         InitializeComponent();
         _matches = matches;
         TargetWindowLabel.Text = string.IsNullOrWhiteSpace(targetWindowTitle)
-            ? "请选择要自动输入的密码条目"
-            : $"目标窗口：{targetWindowTitle}";
+            ? L("Str_ChooseAnEntryForAutoType")
+            : L("Str_TargetWindowFormat", targetWindowTitle);
 
         MacTitleBarInsets.AttachTrafficLightsCentering(this, 40);
 
         MatchListBox.ItemsSource = _matches
-            .Select(m => $"{m.Entry.Title}  —  {m.Entry.UserName}  [{m.MatchReason}]")
+            .Select(m => $"{m.Entry.Title}  —  {m.Entry.UserName}  [{DescribeMatch(m)}]")
             .ToList();
         if (_matches.Count > 0) MatchListBox.SelectedIndex = 0;
 
         Opened += (_, _) => MatchListBox.Focus();
     }
+
+    private static string DescribeMatch(AutoTypeMatchResult match) => match.Kind switch
+    {
+        AutoTypeMatchKind.Rule => L("Str_RuleMatchFormat", match.MatchValue),
+        AutoTypeMatchKind.Title => L("Str_WindowTitleMatch"),
+        AutoTypeMatchKind.Domain => L("Str_DomainMatchFormat", match.MatchValue),
+        _ => match.MatchReason
+    };
 
     private void Confirm_Click(object? sender, RoutedEventArgs e)
     {

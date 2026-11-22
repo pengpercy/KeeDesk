@@ -1,10 +1,14 @@
 using Avalonia;
 using Avalonia.Media;
 using Avalonia.Styling;
+using static KeeDesk.Services.LocalizationService;
 
 namespace KeeDesk.Helpers;
 
-public sealed record AccentPreset(string Id, string Name, string LightHex, string DarkHex);
+public sealed record AccentPreset(string Id, string NameKey, string LightHex, string DarkHex)
+{
+    public string Name => L(NameKey);
+}
 
 public static class ThemeAccentService
 {
@@ -12,13 +16,13 @@ public static class ThemeAccentService
 
     public static readonly IReadOnlyList<AccentPreset> Presets =
     [
-        new("System", "跟随系统", DefaultAccent, DefaultAccent),
-        new("Emerald", "橄榄绿", DefaultAccent, DefaultAccent),
-        new("ClassicBlue", "经典蓝", "#2563EB", "#3B82F6"),
-        new("Indigo", "极光靛", "#4F46E5", "#6366F1"),
-        new("Amber", "琥珀金", "#B45309", "#D97706"),
-        new("Rose", "玫瑰红", "#BE123C", "#E11D48"),
-        new("Slate", "石墨灰", "#475569", "#64748B")
+        new("System", "Str_FollowSystem", DefaultAccent, DefaultAccent),
+        new("Emerald", "Str_AccentOliveGreen", DefaultAccent, DefaultAccent),
+        new("ClassicBlue", "Str_ClassicBlue", "#2563EB", "#3B82F6"),
+        new("Indigo", "Str_AuroraIndigo", "#4F46E5", "#6366F1"),
+        new("Amber", "Str_AmberGold", "#B45309", "#D97706"),
+        new("Rose", "Str_RoseRed", "#BE123C", "#E11D48"),
+        new("Slate", "Str_GraphiteGray", "#475569", "#64748B")
     ];
 
     public static void ApplyThemeVariant(string themeMode)
