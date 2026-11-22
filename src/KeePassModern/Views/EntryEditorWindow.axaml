@@ -3,8 +3,8 @@
         xmlns:helpers="using:KeePassModern.Helpers"
         xmlns:chrome="clr-namespace:Avalonia.Controls.Chrome;assembly=Avalonia.Controls"
         x:Class="KeePassModern.Views.EntryEditorWindow"
-        Title="添加新密码条目"
-        Width="620" Height="670"
+        Title="新建"
+        Width="656" Height="754"
         MinWidth="560" MinHeight="580"
         WindowStartupLocation="CenterOwner"
         CanResize="True"
@@ -14,14 +14,13 @@
         Background="{DynamicResource WorkspaceBackgroundBrush}"
         Foreground="{DynamicResource PrimaryTextBrush}">
 
-    <!-- 方案 A（画板 08 / 09）：精致 Fluent 2 桌面比例（32px 控件 / 13px 正文 / 12px 标签 / 零选项卡） -->
     <Grid RowDefinitions="Auto, *, 1, Auto">
         <!-- 顶部 Header（支持拖动） -->
         <Border Grid.Row="0" Padding="20,38,20,10" Background="Transparent"
                 chrome:WindowDecorationProperties.ElementRole="TitleBar"
                 PointerPressed="TitleBar_PointerPressed">
             <Grid ColumnDefinitions="*, Auto">
-                <TextBlock Grid.Column="0" x:Name="DialogHeading" Text="添加新密码条目" FontSize="17" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                <TextBlock Grid.Column="0" x:Name="DialogHeading" Text="新建" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <ComboBox x:Name="TemplateCombo" Height="28" MinHeight="28" FontSize="12" SelectionChanged="TemplateCombo_Changed">
@@ -72,7 +71,7 @@
                         <StackPanel Spacing="11">
                             <!-- 标题与图标 + 收藏开关 -->
                             <StackPanel Spacing="4">
-                                <TextBlock Text="标题与图标 *" FontSize="11.5" FontWeight="Medium" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                <TextBlock Text="标题（必填）" FontSize="14" FontWeight="Medium" Foreground="{DynamicResource SecondaryTextBrush}" />
                                 <Grid ColumnDefinitions="32, 8, *, 8, Auto">
                                     <Button Grid.Column="0" x:Name="IconBadgeBtn" Width="32" Height="32" MinHeight="32" Padding="0" CornerRadius="6"
                                             Background="{DynamicResource BadgePillBackgroundBrush}" BorderThickness="0" ClipToBounds="True"
@@ -117,7 +116,7 @@
                             <!-- 双列：用户名（含插入字段引用） & 网址 -->
                             <Grid ColumnDefinitions="*, 12, *">
                                 <StackPanel Grid.Column="0" Spacing="4">
-                                    <TextBlock Text="用户名 / 邮箱" FontSize="11.5" FontWeight="Medium" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                    <TextBlock Text="用户名" FontSize="14" FontWeight="Medium" Foreground="{DynamicResource SecondaryTextBrush}" />
                                     <Grid ColumnDefinitions="*, 4, Auto">
                                         <TextBox Grid.Column="0" x:Name="UserNameBox" Height="32" PlaceholderText="输入登录账号或 {REF:...}..." />
                                         <Button Grid.Column="2" Classes="subtle" Width="30" Height="32" MinHeight="32" Padding="0"
@@ -127,7 +126,7 @@
                                     </Grid>
                                 </StackPanel>
                                 <StackPanel Grid.Column="2" Spacing="4">
-                                    <TextBlock Text="登录网址（URL）" FontSize="11.5" FontWeight="Medium" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                    <TextBlock Text="网站" FontSize="14" FontWeight="Medium" Foreground="{DynamicResource SecondaryTextBrush}" />
                                     <Grid>
                                         <TextBox x:Name="UrlBox" Height="32" Padding="30,5,10,5" PlaceholderText="https://example.com/login" />
                                         <PathIcon Data="{StaticResource IconGlobe}" Width="13" Height="13" Foreground="{DynamicResource SecondaryTextBrush}"
@@ -138,7 +137,7 @@
 
                             <!-- 密码 + 显隐 + 引用 + 生成密码 + 实时强度条 -->
                             <StackPanel Spacing="5">
-                                <TextBlock Text="密码 *" FontSize="11.5" FontWeight="Medium" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                <TextBlock Text="密码" FontSize="14" FontWeight="Medium" Foreground="{DynamicResource SecondaryTextBrush}" />
                                 <Grid ColumnDefinitions="*, 6, Auto, 4, Auto, 6, Auto">
                                     <TextBox Grid.Column="0" x:Name="PasswordBox" Height="32" PasswordChar="•" FontFamily="Consolas,Menlo,monospace"
                                              PlaceholderText="输入密码，或点击右侧生成强密码..." TextChanged="PasswordBox_TextChanged" />
@@ -163,9 +162,9 @@
 
                             <!-- TOTP 动态验证码 -->
                             <StackPanel Spacing="4">
-                                <TextBlock Text="动态验证码（2FA / TOTP，可选）" FontSize="11.5" FontWeight="Medium" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                <TextBlock Text="动态验证码密钥（可选）" FontSize="14" FontWeight="Medium" Foreground="{DynamicResource SecondaryTextBrush}" />
                                 <Grid ColumnDefinitions="*, 6, Auto">
-                                    <TextBox Grid.Column="0" x:Name="TotpBox" Height="32" FontFamily="Consolas,Menlo,monospace" FontSize="12.5"
+                                    <TextBox Grid.Column="0" x:Name="TotpBox" Height="32" PasswordChar="•" FontFamily="Consolas,Menlo,monospace" FontSize="12.5"
                                              PlaceholderText="粘贴 otpauth:// 链接或 Base32 密钥..." TextChanged="TotpBox_TextChanged" />
                                     <Border Grid.Column="2" x:Name="TotpPreviewBadge" IsVisible="False" Background="{DynamicResource BadgePillBackgroundBrush}" CornerRadius="4" Padding="10,0" Height="32">
                                         <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
@@ -179,10 +178,15 @@
                     </Border>
 
                     <!-- ========== Card 2：备注、内联自定义字段与附件 ========== -->
-                    <Border Classes="fluentCard" Padding="16,12">
+                    <Expander HorizontalAlignment="Stretch">
+                        <Expander.Header>
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="备注、自定义字段与附件" FontSize="14" FontWeight="SemiBold" />
+                                <TextBlock x:Name="NotesSummary" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                            </StackPanel>
+                        </Expander.Header>
                         <StackPanel Spacing="8">
-                            <TextBlock Text="备注、自定义字段与附件" FontSize="12.5" FontWeight="SemiBold" />
-                            <TextBox x:Name="NotesBox" AcceptsReturn="True" TextWrapping="Wrap" Height="58" VerticalContentAlignment="Top" Padding="10,7"
+                            <TextBox x:Name="NotesBox" TextChanged="NotesBox_TextChanged" AcceptsReturn="True" TextWrapping="Wrap" Height="58" VerticalContentAlignment="Top" Padding="10,7"
                                      PlaceholderText="输入安全问题、备用恢复码或账号说明..." />
 
                             <StackPanel x:Name="CustomFieldsSection" IsVisible="False" Spacing="4">
@@ -214,7 +218,7 @@
                                 </Button>
                             </StackPanel>
                         </StackPanel>
-                    </Border>
+                    </Expander>
 
                     <!-- ========== Expander 1：到期时间与标签 ========== -->
                     <Expander HorizontalAlignment="Stretch">
@@ -281,13 +285,13 @@
 
         <!-- 固定底部 Footer（使用标准软盘保存图标 IconSave） -->
         <Grid Grid.Row="3" ColumnDefinitions="*, Auto" Margin="20,12">
-            <CheckBox Grid.Column="0" x:Name="AutoCopyAfterSaveCheck" Content="保存后自动复制密码到安全剪贴板" FontSize="12" VerticalAlignment="Center" />
+            <CheckBox Grid.Column="0" x:Name="AutoCopyAfterSaveCheck" Content="保存后复制密码" FontSize="12" VerticalAlignment="Center" />
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                <Button Content="取消" Click="Cancel_Click" MinWidth="76" Height="32" MinHeight="32" />
+                <Button Content="取消" IsCancel="True" Click="Cancel_Click" MinWidth="76" Height="32" MinHeight="32" />
                 <Button x:Name="SaveButton" Classes="accent" Click="Save_Click" MinWidth="108" Height="32" MinHeight="32">
                     <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                         <PathIcon Data="{StaticResource IconSave}" Width="13" Height="13" VerticalAlignment="Center" />
-                        <TextBlock x:Name="SaveButtonText" Text="创建并保存" FontSize="12.5" VerticalAlignment="Center" />
+                        <TextBlock x:Name="SaveButtonText" Text="创建条目" FontSize="12.5" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
             </StackPanel>

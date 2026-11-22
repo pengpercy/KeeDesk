@@ -25,6 +25,26 @@
         <FluentTheme />
         <StyleInclude Source="avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml" />
 
+        <Style Selector=":is(Window)">
+            <Setter Property="FontFamily" Value="{DynamicResource DesktopFontFamily}" />
+        </Style>
+        <Style Selector="ToolTip">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Padding" Value="10,6" />
+        </Style>
+        <Style Selector="TabControl.compactTabs TabItem">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="MinHeight" Value="36" />
+            <Setter Property="Padding" Value="10,0" />
+        </Style>
+        <Style Selector="Button.chromeCommand">
+            <Setter Property="Width" Value="32" />
+            <Setter Property="Height" Value="32" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="ToolTip.ShowDelay" Value="500" />
+        </Style>
+
         <!-- Fluent 2 Typography & Base Controls -->
         <Style Selector="TextBlock">
             <Setter Property="TextWrapping" Value="WrapWithOverflow" />
@@ -33,7 +53,7 @@
         <!-- Fluent 2 输入框：四边始终 1px 中性细框，获焦时底边渲染独立 2px 主题强调色指示条（与 WinUI 3 官方实现一致） -->
         <Style Selector="TextBox">
             <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontSize" Value="14" />
             <Setter Property="Padding" Value="10,5" />
             <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}" />
@@ -252,18 +272,12 @@
         <Style Selector="Button.accent:pointerover /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="Background" Value="{DynamicResource AccentButtonHoverBackgroundBrush}" />
             <Setter Property="BorderBrush" Value="Transparent" />
-            <Setter Property="Foreground" Value="{DynamicResource AccentActionForegroundBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource AccentActionHoverForegroundBrush}" />
         </Style>
         <Style Selector="Button.accent:pressed /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="Background" Value="{DynamicResource AccentButtonPressedBackgroundBrush}" />
             <Setter Property="BorderBrush" Value="Transparent" />
-            <Setter Property="Foreground" Value="{DynamicResource AccentActionForegroundBrush}" />
-        </Style>
-        <Style Selector="Button.accent PathIcon">
-            <Setter Property="Foreground" Value="{DynamicResource AccentActionForegroundBrush}" />
-        </Style>
-        <Style Selector="Button.accent TextBlock">
-            <Setter Property="Foreground" Value="{DynamicResource AccentActionForegroundBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource AccentActionPressedForegroundBrush}" />
         </Style>
 
         <Style Selector="Button.subtle">
@@ -298,7 +312,7 @@
             <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
         </Style>
         <Style Selector="Button.navItem.active PathIcon">
-            <Setter Property="Foreground" Value="{DynamicResource SystemControlHighlightAccentBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
         </Style>
 
         <!-- 中间栏条目列表项（对齐画板 02 / 03 / 12：未选中卡片白底描边，选中态中性灰底 + 左侧 3×24px 指示条 + 品牌色头像） -->
@@ -335,6 +349,30 @@
         </Style>
         <Style Selector="ListBox.entryList ListBoxItem:selected TextBlock.entryAvatarText">
             <Setter Property="Foreground" Value="{DynamicResource AccentActionForegroundBrush}" />
+        </Style>
+
+        <Style Selector="ListBox.workspaceList ListBoxItem">
+            <Setter Property="Margin" Value="{DynamicResource DensityItemMargin}" />
+        </Style>
+        <Style Selector="ListBox.workspaceList ListBoxItem Border.entryCard">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="4" />
+        </Style>
+        <Style Selector="ListBox.workspaceList ListBoxItem:pointerover Border.entryCard">
+            <Setter Property="Background" Value="{DynamicResource EntryRowHoverBackgroundBrush}" />
+        </Style>
+        <Style Selector="ListBox.workspaceList ListBoxItem:selected Border.entryCard">
+            <Setter Property="Background" Value="{DynamicResource EntryRowSelectedBackgroundBrush}" />
+        </Style>
+        <Style Selector="ListBox.workspaceList ListBoxItem:selected Border.entryIndicator">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+        <Style Selector="ListBox.workspaceList ListBoxItem:selected Border.entryAvatar">
+            <Setter Property="Background" Value="{DynamicResource BadgePillBackgroundBrush}" />
+        </Style>
+        <Style Selector="ListBox.workspaceList ListBoxItem:selected TextBlock.entryAvatarText">
+            <Setter Property="Foreground" Value="{DynamicResource BadgePillForegroundBrush}" />
         </Style>
 
         <!-- 最近密码库卡片悬停时显示右侧移除按钮 -->
@@ -411,20 +449,20 @@
             <ResourceDictionary.ThemeDictionaries>
                 <!-- Fluent 2 Light Palette (严格对齐 FigCraft 画板 01 / 02 / 11 / 12) -->
                 <ResourceDictionary x:Key="Light">
-                    <SolidColorBrush x:Key="TitleBarBackgroundBrush" Color="#F3F3F3" />
-                    <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="#EBEBEB" />
-                    <SolidColorBrush x:Key="ListPaneBackgroundBrush" Color="#FAFAFA" />
-                    <SolidColorBrush x:Key="WorkspaceBackgroundBrush" Color="#F5F5F5" />
+                    <SolidColorBrush x:Key="TitleBarBackgroundBrush" Color="#EEF0EF" />
+                    <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="#ECEEF0" />
+                    <SolidColorBrush x:Key="ListPaneBackgroundBrush" Color="#F9F9F9" />
+                    <SolidColorBrush x:Key="WorkspaceBackgroundBrush" Color="#F9F9F9" />
                     <SolidColorBrush x:Key="CardBackgroundBrush" Color="#FFFFFF" />
                     <SolidColorBrush x:Key="CardSubtleBackgroundBrush" Color="#F3F3F3" />
-                    <SolidColorBrush x:Key="CardBorderBrush" Color="#E5E5E5" />
-                    <SolidColorBrush x:Key="DividerBrush" Color="#E0E0E0" />
-                    <SolidColorBrush x:Key="SidebarItemHoverBackgroundBrush" Color="#0C000000" />
-                    <SolidColorBrush x:Key="SidebarItemSelectedBackgroundBrush" Color="#18000000" />
-                    <SolidColorBrush x:Key="EntryRowHoverBackgroundBrush" Color="#F3F3F3" />
-                    <SolidColorBrush x:Key="EntryRowSelectedBackgroundBrush" Color="#EBEBEB" />
-                    <SolidColorBrush x:Key="PrimaryTextBrush" Color="#242424" />
-                    <SolidColorBrush x:Key="SecondaryTextBrush" Color="#616161" />
+                    <SolidColorBrush x:Key="CardBorderBrush" Color="#0F000000" />
+                    <SolidColorBrush x:Key="DividerBrush" Color="#0F000000" />
+                    <SolidColorBrush x:Key="SidebarItemHoverBackgroundBrush" Color="#09000000" />
+                    <SolidColorBrush x:Key="SidebarItemSelectedBackgroundBrush" Color="#0F000000" />
+                    <SolidColorBrush x:Key="EntryRowHoverBackgroundBrush" Color="#09000000" />
+                    <SolidColorBrush x:Key="EntryRowSelectedBackgroundBrush" Color="#0F000000" />
+                    <SolidColorBrush x:Key="PrimaryTextBrush" Color="#1A1A1A" />
+                    <SolidColorBrush x:Key="SecondaryTextBrush" Color="#575757" />
                     <SolidColorBrush x:Key="InputBackgroundBrush" Color="#FFFFFF" />
                     <SolidColorBrush x:Key="InputFocusedBackgroundBrush" Color="#FFFFFF" />
                     <SolidColorBrush x:Key="InputBorderBrush" Color="#D1D1D1" />
@@ -432,45 +470,51 @@
                     <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#FAFAFA" />
                     <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#FFFFFF" />
                     <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#D1D1D1" />
-                    <BoxShadows x:Key="TextControlFocusBottomShadow">inset 0 -2.5 0 0 #056D50</BoxShadows>
+                    <BoxShadows x:Key="TextControlFocusBottomShadow">inset 0 -2.5 0 0 #508252</BoxShadows>
                     <SolidColorBrush x:Key="ToastBackgroundBrush" Color="#FFFFFF" />
-                    <SolidColorBrush x:Key="ToastForegroundBrush" Color="#242424" />
+                    <SolidColorBrush x:Key="ToastForegroundBrush" Color="#1A1A1A" />
                     <SolidColorBrush x:Key="StandardButtonBackgroundBrush" Color="#FFFFFF" />
                     <SolidColorBrush x:Key="StandardButtonHoverBackgroundBrush" Color="#F5F5F5" />
                     <SolidColorBrush x:Key="StandardButtonPressedBackgroundBrush" Color="#EAEAEA" />
                     <SolidColorBrush x:Key="StandardButtonBorderBrush" Color="#D1D1D1" />
-                    <SolidColorBrush x:Key="OptionCardSelectedBackgroundBrush" Color="#ECFDF5" />
-                    <SolidColorBrush x:Key="AccentButtonBackgroundBrush" Color="#056D50" />
-                    <SolidColorBrush x:Key="AccentButtonHoverBackgroundBrush" Color="#045B43" />
-                    <SolidColorBrush x:Key="AccentButtonPressedBackgroundBrush" Color="#034A36" />
+                    <SolidColorBrush x:Key="OptionCardSelectedBackgroundBrush" Color="#E8F0E8" />
+                    <SolidColorBrush x:Key="AccentButtonBackgroundBrush" Color="#508252" />
+                    <SolidColorBrush x:Key="AccentButtonHoverBackgroundBrush" Color="#48754A" />
+                    <SolidColorBrush x:Key="AccentButtonPressedBackgroundBrush" Color="#406841" />
                     <SolidColorBrush x:Key="AccentActionForegroundBrush" Color="#FFFFFF" />
-                    <SolidColorBrush x:Key="BrandEmeraldBrush" Color="#056D50" />
+                    <SolidColorBrush x:Key="BrandEmeraldBrush" Color="#508252" />
                     <SolidColorBrush x:Key="DangerBrush" Color="#C42B1C" />
-                    <SolidColorBrush x:Key="WarningBrush" Color="#D97706" />
-                    <SolidColorBrush x:Key="SuccessBrush" Color="#047857" />
-                    <SolidColorBrush x:Key="BadgePillBackgroundBrush" Color="#E9F6F0" />
-                    <SolidColorBrush x:Key="BadgePillForegroundBrush" Color="#008455" />
+                    <SolidColorBrush x:Key="WarningBrush" Color="#9D5D00" />
+                    <SolidColorBrush x:Key="SuccessBrush" Color="#0F7B0F" />
+                    <SolidColorBrush x:Key="BadgePillBackgroundBrush" Color="#E8F0E8" />
+                    <SolidColorBrush x:Key="BadgePillForegroundBrush" Color="#345E36" />
                     <SolidColorBrush x:Key="MenuGlassBrush" Color="#47FFFFFF" />
                     <SolidColorBrush x:Key="MenuGlassBrushWindows" Color="#A6F5F5F5" />
                     <SolidColorBrush x:Key="MenuGlassBorderBrush" Color="#1F000000" />
+                    <SolidColorBrush x:Key="DetailBackgroundBrush" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="MicaTintBrush" Color="#40F3F3F3" />
+                    <SolidColorBrush x:Key="AccentTextBrush" Color="#345E36" />
+                    <SolidColorBrush x:Key="AccentActionHoverForegroundBrush" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="AccentActionPressedForegroundBrush" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="AttentionBackgroundBrush" Color="#FFF4CE" />
                 </ResourceDictionary>
 
                 <!-- Fluent 2 Dark Palette (严格对齐 FigCraft 画板 03 / 11) -->
                 <ResourceDictionary x:Key="Dark">
-                    <SolidColorBrush x:Key="TitleBarBackgroundBrush" Color="#202020" />
-                    <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="#202020" />
-                    <SolidColorBrush x:Key="ListPaneBackgroundBrush" Color="#1C1C1C" />
-                    <SolidColorBrush x:Key="WorkspaceBackgroundBrush" Color="#171717" />
-                    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#2B2B2B" />
+                    <SolidColorBrush x:Key="TitleBarBackgroundBrush" Color="#232625" />
+                    <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="#242528" />
+                    <SolidColorBrush x:Key="ListPaneBackgroundBrush" Color="#2C2C2C" />
+                    <SolidColorBrush x:Key="WorkspaceBackgroundBrush" Color="#2C2C2C" />
+                    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#333333" />
                     <SolidColorBrush x:Key="CardSubtleBackgroundBrush" Color="#252525" />
-                    <SolidColorBrush x:Key="CardBorderBrush" Color="#3D3D3D" />
-                    <SolidColorBrush x:Key="DividerBrush" Color="#303030" />
-                    <SolidColorBrush x:Key="SidebarItemHoverBackgroundBrush" Color="#14FFFFFF" />
-                    <SolidColorBrush x:Key="SidebarItemSelectedBackgroundBrush" Color="#383838" />
-                    <SolidColorBrush x:Key="EntryRowHoverBackgroundBrush" Color="#303030" />
-                    <SolidColorBrush x:Key="EntryRowSelectedBackgroundBrush" Color="#383838" />
-                    <SolidColorBrush x:Key="PrimaryTextBrush" Color="#F5F5F5" />
-                    <SolidColorBrush x:Key="SecondaryTextBrush" Color="#A3A3A3" />
+                    <SolidColorBrush x:Key="CardBorderBrush" Color="#18FFFFFF" />
+                    <SolidColorBrush x:Key="DividerBrush" Color="#15FFFFFF" />
+                    <SolidColorBrush x:Key="SidebarItemHoverBackgroundBrush" Color="#0FFFFFFF" />
+                    <SolidColorBrush x:Key="SidebarItemSelectedBackgroundBrush" Color="#15FFFFFF" />
+                    <SolidColorBrush x:Key="EntryRowHoverBackgroundBrush" Color="#0FFFFFFF" />
+                    <SolidColorBrush x:Key="EntryRowSelectedBackgroundBrush" Color="#15FFFFFF" />
+                    <SolidColorBrush x:Key="PrimaryTextBrush" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="SecondaryTextBrush" Color="#D1D1D1" />
                     <SolidColorBrush x:Key="InputBackgroundBrush" Color="#2D2D2D" />
                     <SolidColorBrush x:Key="InputFocusedBackgroundBrush" Color="#1F1F1F" />
                     <SolidColorBrush x:Key="InputBorderBrush" Color="#454545" />
@@ -478,27 +522,33 @@
                     <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#333333" />
                     <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#1F1F1F" />
                     <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#454545" />
-                    <BoxShadows x:Key="TextControlFocusBottomShadow">inset 0 -2.5 0 0 #6EE7B7</BoxShadows>
+                    <BoxShadows x:Key="TextControlFocusBottomShadow">inset 0 -2.5 0 0 #508252</BoxShadows>
                     <SolidColorBrush x:Key="ToastBackgroundBrush" Color="#2B2B2B" />
-                    <SolidColorBrush x:Key="ToastForegroundBrush" Color="#F5F5F5" />
+                    <SolidColorBrush x:Key="ToastForegroundBrush" Color="#FFFFFF" />
                     <SolidColorBrush x:Key="StandardButtonBackgroundBrush" Color="#2D2D2D" />
                     <SolidColorBrush x:Key="StandardButtonHoverBackgroundBrush" Color="#383838" />
                     <SolidColorBrush x:Key="StandardButtonPressedBackgroundBrush" Color="#242424" />
                     <SolidColorBrush x:Key="StandardButtonBorderBrush" Color="#454545" />
-                    <SolidColorBrush x:Key="OptionCardSelectedBackgroundBrush" Color="#1F322B" />
-                    <SolidColorBrush x:Key="AccentButtonBackgroundBrush" Color="#6EE7B7" />
-                    <SolidColorBrush x:Key="AccentButtonHoverBackgroundBrush" Color="#86EFAC" />
-                    <SolidColorBrush x:Key="AccentButtonPressedBackgroundBrush" Color="#34D399" />
-                    <SolidColorBrush x:Key="AccentActionForegroundBrush" Color="#052E16" />
-                    <SolidColorBrush x:Key="BrandEmeraldBrush" Color="#6EE7B7" />
-                    <SolidColorBrush x:Key="DangerBrush" Color="#F87171" />
-                    <SolidColorBrush x:Key="WarningBrush" Color="#FBBF24" />
-                    <SolidColorBrush x:Key="SuccessBrush" Color="#6EE7B7" />
-                    <SolidColorBrush x:Key="BadgePillBackgroundBrush" Color="#064E3B" />
-                    <SolidColorBrush x:Key="BadgePillForegroundBrush" Color="#6EE7B7" />
+                    <SolidColorBrush x:Key="OptionCardSelectedBackgroundBrush" Color="#263C27" />
+                    <SolidColorBrush x:Key="AccentButtonBackgroundBrush" Color="#508252" />
+                    <SolidColorBrush x:Key="AccentButtonHoverBackgroundBrush" Color="#48754A" />
+                    <SolidColorBrush x:Key="AccentButtonPressedBackgroundBrush" Color="#406841" />
+                    <SolidColorBrush x:Key="AccentActionForegroundBrush" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="BrandEmeraldBrush" Color="#508252" />
+                    <SolidColorBrush x:Key="DangerBrush" Color="#FF99A4" />
+                    <SolidColorBrush x:Key="WarningBrush" Color="#FCE100" />
+                    <SolidColorBrush x:Key="SuccessBrush" Color="#6CCB5F" />
+                    <SolidColorBrush x:Key="BadgePillBackgroundBrush" Color="#263C27" />
+                    <SolidColorBrush x:Key="BadgePillForegroundBrush" Color="#B2CEB2" />
                     <SolidColorBrush x:Key="MenuGlassBrush" Color="#2E1C1C1E" />
                     <SolidColorBrush x:Key="MenuGlassBrushWindows" Color="#A6202022" />
                     <SolidColorBrush x:Key="MenuGlassBorderBrush" Color="#2EFFFFFF" />
+                    <SolidColorBrush x:Key="DetailBackgroundBrush" Color="#2C2C2C" />
+                    <SolidColorBrush x:Key="MicaTintBrush" Color="#40202020" />
+                    <SolidColorBrush x:Key="AccentTextBrush" Color="#B2CEB2" />
+                    <SolidColorBrush x:Key="AccentActionHoverForegroundBrush" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="AccentActionPressedForegroundBrush" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="AttentionBackgroundBrush" Color="#433519" />
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
         </ResourceDictionary>

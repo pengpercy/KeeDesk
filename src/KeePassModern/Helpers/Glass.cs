@@ -160,9 +160,13 @@ public static class Glass
 
 /// <summary>
 /// 带原生磨砂玻璃效果的右键菜单 ContextMenu。
+/// 注意：在 Avalonia 12 中，继承自 ContextMenu 的子类必须显式重写 StyleKeyOverride => typeof(ContextMenu)，
+/// 否则 FluentTheme 找不到 GlassContextMenu 的 ControlTemplate，甚至会把父容器渲染为空白！
 /// </summary>
 public sealed class GlassContextMenu : ContextMenu
 {
+    protected override Type StyleKeyOverride => typeof(ContextMenu);
+
     public GlassContextMenu()
     {
         Glass.Attach(this);

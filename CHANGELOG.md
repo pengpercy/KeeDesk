@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.0 - 2026-11-22
+
+- **Fluent 2 V3 Workspace**: Added icon-only title-bar commands with tooltips, a full-height three-pane layout on macOS, a title-bar back button in narrow desktop layouts, and a new default accent (`#508252`).
+- **Welcome and Entry Workflows**: Refined the unlock screen with a narrower sidebar, and updated search suggestions, the entry editor, security audit, password generator, and settings to match the V3 design.
+- **Built-in Demo Vaults**: Open sample personal and work vaults from the welcome screen to explore favorites, TOTP, and security audit findings with example data.
+
 ## 1.0.1 - 2026-11-22
 
 - **Frosted Glass Context & Flyout Menus**: Refined all right-click context menus and popup flyouts to use compact `12px` typography, `6px` rounded containers, `4px` row highlights, `13px` Fluent vector icons, and native frosted-glass blur (`NSVisualEffectMaterialMenu` on macOS, DWM rounded Acrylic on Windows 11).

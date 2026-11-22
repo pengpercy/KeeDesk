@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
@@ -20,10 +21,49 @@ public partial class MainWindow : Window
     private KeePassModern.Services.GlobalHotKeyService? _globalHotKeyService;
     private KeePassModern.Services.SystemSleepLockService? _sleepLockService;
 
+    private const double ExpandedWidth = 1180;
+    private const double StackedWidth = 900;
+    private bool? _sidebarExpanded;
+    private bool _stacked;
+    private bool _detailOpen;
+    private bool _searchPendingSelection;
+    private MainWindowViewModel? _layoutViewModel;
+    private EntryItemViewModel? _revealedEntry;
+    private int _workspaceDialogCount;
+
     public MainWindow()
     {
         InitializeComponent();
-        Opened += (_, _) => WireViewModelCallbacks();
+        if (OperatingSystem.IsMacOS()) MinWidth = 960;
+        if (OperatingSystem.IsWindows())
+        {
+            TransparencyLevelHint = [WindowTransparencyLevel.Mica, WindowTransparencyLevel.None];
+            PropertyChanged += (_, e) =>
+            {
+                if (e.Property == ActualTransparencyLevelProperty)
+                    Classes.Set("mica", ActualTransparencyLevel == WindowTransparencyLevel.Mica);
+            };
+        }
+        PasswordRevealButton.AddHandler(PointerPressedEvent, RevealPassword_PointerPressed, RoutingStrategies.Tunnel);
+        PasswordRevealButton.AddHandler(PointerReleasedEvent, (_, _) => HidePassword(), RoutingStrategies.Tunnel, handledEventsToo: true);
+        PasswordRevealButton.PointerCaptureLost += (_, _) => HidePassword();
+        PasswordRevealButton.PointerExited += (_, _) => HidePassword();
+        PasswordRevealButton.AddHandler(KeyDownEvent, RevealPassword_KeyDown, RoutingStrategies.Tunnel);
+        PasswordRevealButton.AddHandler(KeyUpEvent, (_, _) => HidePassword(), RoutingStrategies.Tunnel, handledEventsToo: true);
+        PasswordRevealButton.LostFocus += (_, _) => HidePassword();
+        Deactivated += (_, _) =>
+        {
+            HidePassword();
+            CloseSearchSuggestions();
+        };
+
+        Resized += (_, _) => UpdateWorkspaceLayout();
+        DataContextChanged += (_, _) => ObserveWorkspace();
+        Opened += (_, _) =>
+        {
+            WireViewModelCallbacks();
+            UpdateWorkspaceLayout();
+        };
         KeyDown += OnWindowKeyDown;
 
         // 监听用户交互（鼠标按下、鼠标移动、滚轮、键盘按键）以刷新空闲自动锁定计时器
@@ -42,6 +82,262 @@ public partial class MainWindow : Window
             if (DataContext is MainWindowViewModel vm)
                 vm.UpdateMacTitleBarInsets(right);
         });
+    }
+
+    private void ObserveWorkspace()
+    {
+        HidePassword();
+        if (_layoutViewModel is not null)
+            _layoutViewModel.PropertyChanged -= OnWorkspaceStateChanged;
+        _layoutViewModel = DataContext as MainWindowViewModel;
+        if (_layoutViewModel is not null)
+            _layoutViewModel.PropertyChanged += OnWorkspaceStateChanged;
+        _detailOpen = false;
+        _searchPendingSelection = false;
+        UpdateWorkspaceLayout();
+    }
+
+    private void OnWorkspaceStateChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(MainWindowViewModel.SelectedEntry) or nameof(MainWindowViewModel.IsUnlocked))
+            HidePassword();
+        if (e.PropertyName is nameof(MainWindowViewModel.IsUnlocked) or nameof(MainWindowViewModel.ActiveSection)
+            or nameof(MainWindowViewModel.SearchQuery))
+        {
+            _detailOpen = false;
+            _searchPendingSelection = _layoutViewModel is { IsUnlocked: true, HasSearchQuery: true };
+            UpdateWorkspaceLayout();
+            if (_layoutViewModel?.IsUnlocked != true) CloseSearchSuggestions();
+        }
+    }
+
+    private void UpdateWorkspaceLayout()
+    {
+        double width = ClientSize.Width > 0 ? ClientSize.Width : Width;
+        bool desktop = !UsesMacLayout;
+        bool compact = desktop && width < ExpandedWidth;
+        bool rail = desktop && !(_sidebarExpanded ?? !compact);
+        _stacked = desktop && width < StackedWidth + (!rail && compact ? 176 : 0);
+        if (!_stacked) _detailOpen = false;
+
+        Classes.Set("compactChrome", compact);
+        Classes.Set("rail", rail);
+        WorkspaceSidebar.Width = rail ? 64 : 240;
+        UnlockSidebar.Width = width < 900 ? 224 : 272;
+        DesktopSearchSlot.Width = width < StackedWidth ? 244 : compact ? 310 : width < 1280 ? 320 : 360;
+        DesktopCommands.Margin = new Avalonia.Thickness(0, 0, width < StackedWidth ? 164 : 192, 0);
+        WorkspaceBackButton.IsVisible = _stacked && _detailOpen && _layoutViewModel?.IsUnlocked == true;
+
+        DetailSelectionRegion.IsVisible = !_searchPendingSelection;
+        SearchDetailsPlaceholder.IsVisible = _searchPendingSelection;
+        bool noMatches = _layoutViewModel?.FilteredEntries.Count == 0;
+        SearchResultMessage.Text = noMatches ? "未找到匹配的条目" : "选择一条搜索结果";
+        ClearEmptySearchButton.IsVisible = noMatches;
+        EntryPane.IsVisible = !_stacked || !_detailOpen;
+        EntryDetail.IsVisible = !_stacked || _detailOpen;
+        EntryDivider.IsVisible = !_stacked;
+        EntryWorkspace.ColumnDefinitions[0].Width = _stacked
+            ? (_detailOpen ? new GridLength(0) : GridLength.Star)
+            : new GridLength(width < ExpandedWidth ? 280 : 344);
+        EntryWorkspace.ColumnDefinitions[1].Width = new GridLength(_stacked ? 0 : 1);
+        EntryWorkspace.ColumnDefinitions[2].Width = _stacked && !_detailOpen ? new GridLength(0) : GridLength.Star;
+    }
+
+    private void ToggleSidebar_Click(object? sender, RoutedEventArgs e)
+    {
+        _sidebarExpanded = Classes.Contains("rail");
+        UpdateWorkspaceLayout();
+    }
+
+    private void VaultPicker_SelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (sender is not ListBox { SelectedItem: VaultTabSession session } list || _layoutViewModel is null)
+            return;
+        list.SelectedItem = null;
+        DesktopVaultPicker.Flyout?.Hide();
+        MacVaultPicker.Flyout?.Hide();
+        _detailOpen = false;
+        _layoutViewModel.SwitchVaultTabCommand.Execute(session);
+        UpdateWorkspaceLayout();
+    }
+
+    private void EntryList_Tapped(object? sender, TappedEventArgs e)
+    {
+        if (e.Source is not Avalonia.Visual source || source.FindAncestorOfType<Button>(includeSelf: true) is not null
+            || source.FindAncestorOfType<ListBoxItem>(includeSelf: true) is null)
+            return;
+        AcceptEntrySelection();
+    }
+
+    private void AcceptEntrySelection()
+    {
+        _searchPendingSelection = false;
+        CloseSearchSuggestions();
+        UpdateWorkspaceLayout();
+        OpenStackedDetails();
+    }
+
+    private void EntryList_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Enter || _layoutViewModel?.SelectedEntry is null) return;
+        AcceptEntrySelection();
+        e.Handled = true;
+    }
+
+    private bool OpenStackedDetails()
+    {
+        if (!_stacked || _layoutViewModel is not { SelectedEntry: not null, HasMultipleSelectedEntries: false })
+            return false;
+        _detailOpen = true;
+        UpdateWorkspaceLayout();
+        WorkspaceBackButton.Focus();
+        return true;
+    }
+
+    private void WorkspaceBack_Click(object? sender, RoutedEventArgs e) => BackToEntries();
+
+    private void AuditEntry_Click(object? sender, RoutedEventArgs e)
+        => Avalonia.Threading.Dispatcher.UIThread.Post(AcceptEntrySelection);
+
+    private void BackToEntries()
+    {
+        _detailOpen = false;
+        UpdateWorkspaceLayout();
+        EntryListBox.Focus();
+    }
+
+    private void RevealPassword_PointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (e.GetCurrentPoint(PasswordRevealButton).Properties.IsLeftButtonPressed)
+            RevealPassword();
+    }
+
+    private void RevealPassword_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key is not (Key.Space or Key.Enter)) return;
+        RevealPassword();
+        e.Handled = true;
+    }
+
+    private void RevealPassword()
+    {
+        if (_layoutViewModel is not { IsUnlocked: true, SelectedEntry: { } entry }) return;
+        _revealedEntry = entry;
+        entry.IsPasswordRevealed = true;
+    }
+
+    private void HidePassword()
+    {
+        if (_revealedEntry is { } entry)
+        {
+            entry.IsPasswordRevealed = false;
+            _revealedEntry = null;
+        }
+    }
+
+    private bool UsesMacLayout => _layoutViewModel?.IsMacOS ?? OperatingSystem.IsMacOS();
+
+    private (TextBox Field, Popup Popup, ListBox List) SearchControls => UsesMacLayout
+        ? (MacGlobalSearchBox, MacSearchPopup, MacSearchSuggestions)
+        : (WinGlobalSearchBox, WinSearchPopup, WinSearchSuggestions);
+
+    private void Search_FocusChanged(object? sender, RoutedEventArgs e)
+        => Avalonia.Threading.Dispatcher.UIThread.Post(UpdateSearchSuggestions);
+
+    private void Search_TextChanged(object? sender, TextChangedEventArgs e)
+        => Avalonia.Threading.Dispatcher.UIThread.Post(UpdateSearchSuggestions);
+
+    private void UpdateSearchSuggestions()
+    {
+        var (field, popup, list) = SearchControls;
+        if (popup.IsOpen && list.IsKeyboardFocusWithin) return;
+        if (!field.IsEffectivelyVisible || !field.IsKeyboardFocusWithin
+            || _layoutViewModel is not { IsUnlocked: true, HasSearchQuery: true } vm
+            || vm.FilteredEntries.Count == 0)
+        {
+            popup.IsOpen = false;
+            return;
+        }
+        list.ItemsSource = vm.FilteredEntries.Take(5).ToArray();
+        list.SelectedIndex = 0;
+        popup.IsOpen = true;
+    }
+
+    private void CloseSearchSuggestions()
+    {
+        WinSearchPopup.IsOpen = false;
+        MacSearchPopup.IsOpen = false;
+    }
+
+    private void SearchSuggestion_Tapped(object? sender, TappedEventArgs e)
+    {
+        if (e.Source is Avalonia.Visual source && source.FindAncestorOfType<ListBoxItem>(includeSelf: true) is not null)
+            SubmitSearch();
+    }
+
+    private void SubmitSearch()
+    {
+        if (_layoutViewModel is not { } vm || vm.FilteredEntries.Count == 0) return;
+        var (_, popup, list) = SearchControls;
+        if (popup.IsOpen && list.SelectedItem is EntryItemViewModel suggestion)
+            vm.SelectedEntry = suggestion;
+        AcceptEntrySelection();
+        if (!_stacked) EntryListBox.Focus();
+    }
+
+    private void Search_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (_layoutViewModel is not { } vm) return;
+        if (e.Key == Key.Escape && vm.HasSearchQuery)
+        {
+            ClearSearch_Click(sender, e);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Enter && vm.FilteredEntries.Count > 0)
+        {
+            SubmitSearch();
+            e.Handled = true;
+        }
+        else if ((e.Key is Key.Down or Key.Up) && sender is TextBox && SearchControls is (_, { IsOpen: true }, var list))
+        {
+            int step = e.Key == Key.Down ? 1 : -1;
+            list.SelectedIndex = Math.Clamp(list.SelectedIndex + step, 0, list.ItemCount - 1);
+            list.ScrollIntoView(list.SelectedIndex);
+            e.Handled = true;
+        }
+    }
+
+    private async Task<T> ShowWorkspaceDialogAsync<T>(Window dialog)
+    {
+        DialogSmoke.IsVisible = ++_workspaceDialogCount > 0;
+        try
+        {
+            return await dialog.ShowDialog<T>(this);
+        }
+        finally
+        {
+            DialogSmoke.IsVisible = --_workspaceDialogCount > 0;
+        }
+    }
+
+    private async void MoveSelectedToRecycleBin_Click(object? sender, RoutedEventArgs e)
+    {
+        if (_layoutViewModel is not { IsUnlocked: true, SelectedEntry: { } entry } vm) return;
+        var database = vm.CurrentDatabase;
+        if (await ShowWorkspaceDialogAsync<bool>(new RecycleEntryDialog(entry.Title))
+            && vm.IsUnlocked && ReferenceEquals(vm.CurrentDatabase, database))
+        {
+            vm.DeleteEntryCommand.Execute(entry);
+            if (_stacked) BackToEntries();
+        }
+    }
+
+    private void ClearSearch_Click(object? sender, RoutedEventArgs e)
+    {
+        if (_layoutViewModel is not { } vm) return;
+        vm.SearchQuery = string.Empty;
+        CloseSearchSuggestions();
+        SearchControls.Field.Focus();
     }
 
     private void OnUserActivity(object? sender, RoutedEventArgs e)
@@ -81,7 +377,7 @@ public partial class MainWindow : Window
         vm.OpenEntryEditorAsync = async (entry, group) =>
         {
             var dlg = new EntryEditorWindow(entry, group, vm.CurrentDatabase);
-            var saved = await dlg.ShowDialog<bool>(this);
+            var saved = await ShowWorkspaceDialogAsync<bool>(dlg);
             if (saved && !string.IsNullOrEmpty(dlg.SavedPasswordForClipboard) && vm.CopyToClipboardAsync is not null)
             {
                 await vm.CopyToClipboardAsync(dlg.SavedPasswordForClipboard);
@@ -93,7 +389,7 @@ public partial class MainWindow : Window
         vm.OpenPasswordGeneratorAsync = async () =>
         {
             var dlg = new PasswordGeneratorWindow();
-            return await dlg.ShowDialog<string?>(this);
+            return await ShowWorkspaceDialogAsync<string?>(dlg);
         };
 
         vm.OpenSettingsAsync = async () =>
@@ -267,6 +563,12 @@ public partial class MainWindow : Window
         bool mod = OperatingSystem.IsMacOS() ? e.KeyModifiers.HasFlag(KeyModifiers.Meta) : e.KeyModifiers.HasFlag(KeyModifiers.Control);
         bool shift = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
 
+        if (_stacked && _detailOpen && e.Key == Key.Left && e.KeyModifiers == KeyModifiers.Alt)
+        {
+            BackToEntries();
+            e.Handled = true;
+            return;
+        }
         if (!mod) return;
 
         if (e.Key == Key.K)

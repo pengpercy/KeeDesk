@@ -27,6 +27,8 @@ public sealed partial class GroupItemViewModel : ViewModelBase
         }
     }
 
+    partial void OnIsExpandedChanged(bool value) => Model.IsExpanded = value;
+
     private static int CountEntries(KdbxGroup g)
         => g.Entries.Count + g.Groups.Sum(CountEntries);
 }

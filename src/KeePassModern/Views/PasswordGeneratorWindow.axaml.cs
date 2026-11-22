@@ -6,16 +6,20 @@ using KeePassModern.Core.Services;
 
 namespace KeePassModern.Views;
 
-/// <summary>
-/// 强密码生成器弹窗（对齐 FigCraft 画板 06：随机密码 / 助记词 / KeePass Pattern 模式 + 实时熵值评估）。
-/// </summary>
 public partial class PasswordGeneratorWindow : Window
 {
     private string _currentPassword = string.Empty;
 
-    public PasswordGeneratorWindow()
+    public PasswordGeneratorWindow() : this(false) { }
+
+    public PasswordGeneratorWindow(bool fillEntry)
     {
         InitializeComponent();
+        if (fillEntry)
+        {
+            CancelButton.Content = "取消";
+            AcceptButton.Content = "使用此密码";
+        }
         KeePassModern.Helpers.MacTitleBarInsets.AttachTrafficLightsCentering(this, 42);
         Opened += (_, _) => Regenerate();
     }

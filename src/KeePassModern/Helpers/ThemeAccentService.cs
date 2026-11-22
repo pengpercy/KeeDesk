@@ -6,16 +6,14 @@ namespace KeePassModern.Helpers;
 
 public sealed record AccentPreset(string Id, string Name, string LightHex, string DarkHex);
 
-/// <summary>
-/// 主题与强调色服务：默认跟随操作系统强调色，同时提供 6 款内置预设与自定义取色。
-/// 严格遵循画板 02/03/11 的 Fluent 2 明暗对比度规范（浅色深底白字，深色亮底深字）。
-/// </summary>
 public static class ThemeAccentService
 {
+    public const string DefaultAccent = "#508252";
+
     public static readonly IReadOnlyList<AccentPreset> Presets =
     [
-        new("System", "跟随系统", "#056D50", "#10B981"),
-        new("Emerald", "青翠安全绿", "#056D50", "#10B981"),
+        new("System", "跟随系统", DefaultAccent, DefaultAccent),
+        new("Emerald", "默认绿色", DefaultAccent, DefaultAccent),
         new("ClassicBlue", "经典蓝", "#2563EB", "#3B82F6"),
         new("Indigo", "极光靛", "#4F46E5", "#6366F1"),
         new("Amber", "琥珀金", "#B45309", "#D97706"),
@@ -40,6 +38,8 @@ public static class ThemeAccentService
         var app = Application.Current;
         if (app is null) return;
 
+        if (WindowsContrastPalette.TryApply(app)) return;
+
         var isDark = app.ActualThemeVariant == ThemeVariant.Dark;
         Color accent;
 
@@ -49,7 +49,7 @@ public static class ThemeAccentService
             var platformAccent = app.PlatformSettings?.GetColorValues().AccentColor1;
             accent = platformAccent is { A: > 0 } pa
                 ? (isDark ? EnsureDarkThemeVivid(pa) : pa)
-                : Color.Parse(isDark ? "#6EE7B7" : "#056D50");
+                : Color.Parse(DefaultAccent);
             ApplyActionBrushes(app, accent, isDark);
             return;
         }
@@ -58,11 +58,11 @@ public static class ThemeAccentService
         if (!string.Equals(accentMode, "Custom", StringComparison.OrdinalIgnoreCase))
         {
             var preset = Presets.FirstOrDefault(p => string.Equals(p.Id, accentMode, StringComparison.OrdinalIgnoreCase));
-            hex = preset is not null ? (isDark ? preset.DarkHex : preset.LightHex) : (isDark ? "#6EE7B7" : "#056D50");
+            hex = preset is not null ? (isDark ? preset.DarkHex : preset.LightHex) : DefaultAccent;
         }
 
         if (string.IsNullOrWhiteSpace(hex) || !Color.TryParse(hex, out accent))
-            accent = Color.Parse(isDark ? "#6EE7B7" : "#056D50");
+            accent = Color.Parse(DefaultAccent);
 
         var r = app.Resources;
         r["SystemAccentColor"] = accent;
@@ -75,7 +75,7 @@ public static class ThemeAccentService
 
         var brush = new SolidColorBrush(accent);
         r["SystemControlHighlightAccentBrush"] = brush;
-        r["SystemControlForegroundAccentBrush"] = brush;
+        r["SystemControlForegroundAccentBrush"] = new SolidColorBrush(GetAccentText(accent, isDark));
         r["SystemControlBackgroundAccentBrush"] = brush;
         r["SystemAccentColorBrush"] = brush;
 
@@ -85,12 +85,17 @@ public static class ThemeAccentService
     private static void ApplyActionBrushes(Application app, Color accent, bool isDark)
     {
         var r = app.Resources;
+        bool isV3Green = accent == Color.Parse(DefaultAccent);
+        var hover = isV3Green ? Color.Parse("#48754A") : isDark ? Lighten(accent, .1) : Darken(accent, .12);
+        var pressed = isV3Green ? Color.Parse("#406841") : Darken(accent, isDark ? .12 : .22);
         r["AccentButtonBackgroundBrush"] = new SolidColorBrush(accent);
-        r["AccentButtonHoverBackgroundBrush"] = new SolidColorBrush(isDark ? Lighten(accent, 0.10) : Darken(accent, 0.12));
-        r["AccentButtonPressedBackgroundBrush"] = new SolidColorBrush(isDark ? Darken(accent, 0.12) : Darken(accent, 0.22));
+        r["AccentButtonHoverBackgroundBrush"] = new SolidColorBrush(hover);
+        r["AccentButtonPressedBackgroundBrush"] = new SolidColorBrush(pressed);
         r["AccentActionForegroundBrush"] = new SolidColorBrush(GetContrastForeground(accent));
+        r["AccentActionHoverForegroundBrush"] = new SolidColorBrush(GetContrastForeground(hover));
+        r["AccentActionPressedForegroundBrush"] = new SolidColorBrush(GetContrastForeground(pressed));
+        r["AccentTextBrush"] = new SolidColorBrush(GetAccentText(accent, isDark));
 
-        // Fluent 2 输入框获焦底部强调色下划线（配合 BorderThickness="1,1,1,0" 紧贴最底缘，不被灰边遮挡）
         r["TextControlFocusBottomShadow"] = new BoxShadows(new BoxShadow
         {
             IsInset = true,
@@ -124,10 +129,33 @@ public static class ThemeAccentService
         return lum < 0.45 ? Lighten(c, 0.30) : c;
     }
 
-    private static Color GetContrastForeground(Color bg)
+    private static Color GetContrastForeground(Color background)
     {
-        double luminance = (0.299 * bg.R + 0.587 * bg.G + 0.114 * bg.B) / 255.0;
-        return luminance > 0.58 ? Color.Parse("#052E16") : Colors.White;
+        double value = RelativeLuminance(background);
+        return 1.05 / (value + .05) >= 4.5 ? Colors.White : Colors.Black;
+    }
+
+    private static Color GetAccentText(Color accent, bool isDark)
+    {
+        if (accent == Color.Parse(DefaultAccent))
+            return Color.Parse(isDark ? "#B2CEB2" : "#345E36");
+        double surface = RelativeLuminance(Color.Parse(isDark ? "#2C2C2C" : "#FFFFFF"));
+        var color = accent;
+        for (int step = 1; step <= 10 && Contrast(RelativeLuminance(color), surface) < 4.5; step++)
+            color = isDark ? Lighten(accent, step / 10.0) : Darken(accent, step / 10.0);
+        return color;
+    }
+
+    private static double Contrast(double a, double b) => (Math.Max(a, b) + .05) / (Math.Min(a, b) + .05);
+
+    private static double RelativeLuminance(Color color)
+    {
+        static double Linearize(byte c)
+        {
+            double v = c / 255.0;
+            return v <= .04045 ? v / 12.92 : Math.Pow((v + .055) / 1.055, 2.4);
+        }
+        return .2126 * Linearize(color.R) + .7152 * Linearize(color.G) + .0722 * Linearize(color.B);
     }
 
     private static Color Lighten(Color c, double amount)

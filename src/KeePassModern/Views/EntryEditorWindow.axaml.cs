@@ -45,13 +45,13 @@ public partial class EntryEditorWindow : Window
 
         if (entry is null)
         {
-            Title = "添加新密码条目";
-            DialogHeading.Text = "添加新密码条目";
-            SaveButtonText.Text = "创建并保存";
+            Title = "新建";
+            DialogHeading.Text = "新建";
+            SaveButtonText.Text = "创建条目";
             TemplateCombo.IsVisible = true;
             TemplateCombo.SelectedIndex = 0;
             HistoryToggleBtn.IsVisible = false;
-            AutoCopyAfterSaveCheck.IsChecked = true;
+            AutoCopyAfterSaveCheck.IsChecked = false;
         }
         else
         {
@@ -59,8 +59,8 @@ public partial class EntryEditorWindow : Window
             _selectedCustomIconUuid = entry.CustomIconUuid;
             Title = $"编辑条目 — {entry.Title}";
             RefreshIconBadgePreview();
-            DialogHeading.Text = $"编辑条目 — {entry.Title}";
-            SaveButtonText.Text = "保存修改";
+            DialogHeading.Text = "编辑条目";
+            SaveButtonText.Text = "保存更改";
             TemplateCombo.IsVisible = false;
             HistoryToggleBtn.IsVisible = true;
 
@@ -113,6 +113,7 @@ public partial class EntryEditorWindow : Window
         UpdatePasswordStrength();
         UpdateTotpPreview();
         RefreshExpanderSummaries();
+        RefreshNotesSummary();
     }
 
     private void TitleBar_PointerPressed(object? sender, PointerPressedEventArgs e)
@@ -170,12 +171,24 @@ public partial class EntryEditorWindow : Window
     private void TitleBox_TextChanged(object? sender, TextChangedEventArgs e) => UpdateTitleInitials();
     private void PasswordBox_TextChanged(object? sender, TextChangedEventArgs e) => UpdatePasswordStrength();
     private void TotpBox_TextChanged(object? sender, TextChangedEventArgs e) => UpdateTotpPreview();
+    private void NotesBox_TextChanged(object? sender, TextChangedEventArgs e) => RefreshNotesSummary();
+
+    private void RefreshNotesSummary()
+    {
+        if (NotesSummary is null || NotesBox is null) return;
+        var summary = new List<string>();
+        if (!string.IsNullOrWhiteSpace(NotesBox.Text)) summary.Add("有备注");
+        if (_pendingBinaries.Count > 0) summary.Add($"{_pendingBinaries.Count} 个附件");
+        NotesSummary.Text = summary.Count > 0 ? string.Join(" · ", summary) : "添加备注、额外字段或文件";
+    }
+
     private void UpdateExpanderSummaries(object? sender, RoutedEventArgs e) => RefreshExpanderSummaries();
     private void ExpiryPicker_Changed(object? sender, SelectionChangedEventArgs e) => RefreshExpanderSummaries();
 
     private void UpdateTitleInitials()
     {
         var t = TitleBox.Text?.Trim() ?? "";
+        if (SaveButton is not null) SaveButton.IsEnabled = _editingEntry is not null || t.Length > 0;
         IconBadgeText.Text = string.IsNullOrEmpty(t) ? "KP" : (t.Length >= 2 ? t[..2].ToUpperInvariant() : t.ToUpperInvariant());
     }
 
@@ -234,7 +247,7 @@ public partial class EntryEditorWindow : Window
 
     private async void GeneratePassword_Click(object? sender, RoutedEventArgs e)
     {
-        var gen = new PasswordGeneratorWindow();
+        var gen = new PasswordGeneratorWindow(fillEntry: true);
         var pwd = await gen.ShowDialog<string?>(this);
         if (!string.IsNullOrEmpty(pwd))
             PasswordBox.Text = pwd;
@@ -266,6 +279,7 @@ public partial class EntryEditorWindow : Window
 
     private void RefreshAttachmentList()
     {
+        RefreshNotesSummary();
         AttachmentsSection.IsVisible = _pendingBinaries.Count > 0;
         AttachmentsListBox.ItemsSource = _pendingBinaries
             .Select(kv => $"{kv.Key}  ({kv.Value.Length / 1024.0:0.0} KB)")

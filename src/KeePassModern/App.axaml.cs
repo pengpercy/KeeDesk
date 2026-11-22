@@ -24,6 +24,9 @@ public partial class App : Application
         CultureInfo.CurrentUICulture = zhCulture;
 
         AvaloniaXamlLoader.Load(this);
+        Resources["DesktopFontFamily"] = OperatingSystem.IsWindows()
+            ? new Avalonia.Media.FontFamily("Segoe UI Variable Text, Segoe UI, Microsoft YaHei UI")
+            : Avalonia.Media.FontFamily.Default;
     }
 
     public override void OnFrameworkInitializationCompleted()
@@ -34,10 +37,10 @@ public partial class App : Application
         ThemeAccentService.ApplyAccent(settingsService.Settings.AccentMode, settingsService.Settings.CustomAccentHex);
         DensityService.Apply(settingsService.Settings.UiDensity);
 
-        ActualThemeVariantChanged += (_, _) =>
-        {
-            ThemeAccentService.ApplyAccent(settingsService.Settings.AccentMode, settingsService.Settings.CustomAccentHex);
-        };
+        void UpdateAccent() => ThemeAccentService.ApplyAccent(settingsService.Settings.AccentMode, settingsService.Settings.CustomAccentHex);
+        ActualThemeVariantChanged += (_, _) => UpdateAccent();
+        if (PlatformSettings is { } platformSettings)
+            platformSettings.ColorValuesChanged += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(UpdateAccent);
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {

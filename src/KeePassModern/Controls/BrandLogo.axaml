@@ -1,36 +1,17 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="KeePassModern.Controls.BrandLogo">
-    <!-- 严格对齐 FigCraft 画板 01 & 04 的品牌矢量 Logo：青翠安全绿渐变 Squircle + 柔和光泽 + 纯白盾牌 + 钥匙孔负空间 -->
     <Viewbox Stretch="Uniform">
         <Canvas Width="512" Height="512">
-            <!-- 渐变圆角矩形底座 -->
-            <Border Canvas.Left="24" Canvas.Top="24" Width="464" Height="464" CornerRadius="112">
-                <Border.Background>
-                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                        <GradientStop Offset="0" Color="#10B981" />
-                        <GradientStop Offset="1" Color="#047857" />
-                    </LinearGradientBrush>
-                </Border.Background>
-            </Border>
-
-            <!-- 顶部柔和 Fluent 光泽层 -->
-            <Border Canvas.Left="24" Canvas.Top="24" Width="464" Height="232" CornerRadius="112,112,48,48">
-                <Border.Background>
-                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
-                        <GradientStop Offset="0" Color="#38FFFFFF" />
-                        <GradientStop Offset="1" Color="#00FFFFFF" />
-                    </LinearGradientBrush>
-                </Border.Background>
-            </Border>
-
+            <Border Canvas.Left="24" Canvas.Top="24" Width="464" Height="464" CornerRadius="112"
+                    Background="{DynamicResource BrandEmeraldBrush}" />
             <!-- 纯白安全盾牌 -->
             <Path Data="M256,96 L388,148 V254 C388,338 330,398 256,424 C182,398 124,338 124,254 V148 Z"
-                  Fill="#FAFFFFFF" />
+                  Fill="White" />
 
-            <!-- 深翠绿钥匙孔（圆头 + 梯形柄） -->
-            <Ellipse Canvas.Left="220" Canvas.Top="196" Width="72" Height="72" Fill="#047857" />
-            <Path Data="M238,248 H274 L286,334 H226 Z" Fill="#047857" />
+            <!-- 钥匙孔 -->
+            <Ellipse Canvas.Left="220" Canvas.Top="196" Width="72" Height="72" Fill="{DynamicResource BrandEmeraldBrush}" />
+            <Path Data="M238,248 H274 L286,334 H226 Z" Fill="{DynamicResource BrandEmeraldBrush}" />
         </Canvas>
     </Viewbox>
 </UserControl>

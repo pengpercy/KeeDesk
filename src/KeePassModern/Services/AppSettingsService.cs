@@ -6,8 +6,8 @@ namespace KeePassModern.Services;
 public sealed class AppSettings
 {
     public string ThemeMode { get; set; } = "Default"; // Default / Light / Dark
-    public string AccentMode { get; set; } = "System"; // System / Emerald / ClassicBlue / Indigo / Amber / Rose / Slate / Custom
-    public string CustomAccentHex { get; set; } = "#047857";
+    public string AccentMode { get; set; } = "Emerald"; // System / Emerald / ClassicBlue / Indigo / Amber / Rose / Slate / Custom
+    public string CustomAccentHex { get; set; } = "#508252";
     public string UiDensity { get; set; } = "Normal"; // Compact / Normal / Comfortable
     public string Language { get; set; } = "zh-CN";
     public int ClipboardClearSeconds { get; set; } = 15;
@@ -19,6 +19,7 @@ public sealed class AppSettings
 
 public sealed class RecentVaultItem
 {
+    public string FileName => Path.GetFileName(FilePath);
     public string FilePath { get; set; } = string.Empty;
     public string? KeyFilePath { get; set; }
     public string DisplayName { get; set; } = string.Empty;

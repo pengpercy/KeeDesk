@@ -4,65 +4,71 @@
         xmlns:chrome="clr-namespace:Avalonia.Controls.Chrome;assembly=Avalonia.Controls"
         x:Class="KeePassModern.Views.SettingsWindow"
         Title="偏好设置"
-        Width="700" Height="660"
+        Width="920" Height="720" MinWidth="680" MinHeight="580"
         WindowStartupLocation="CenterOwner"
-        CanResize="False"
+        CanResize="True"
         ExtendClientAreaToDecorationsHint="True"
         WindowDecorations="Full"
-        ExtendClientAreaTitleBarHeightHint="40"
+        ExtendClientAreaTitleBarHeightHint="48"
         Background="{DynamicResource WorkspaceBackgroundBrush}"
         Foreground="{DynamicResource PrimaryTextBrush}">
 
-    <!-- 左右分栏布局（严格对齐画板 07：左侧 184px 导航直通顶部，右侧内容区） -->
-    <Grid ColumnDefinitions="184, 1, *">
+
+    <Grid ColumnDefinitions="220,1,*">
         <!-- 左侧导航栏 -->
         <Border Grid.Column="0" Background="{DynamicResource SidebarBackgroundBrush}">
-            <Grid RowDefinitions="40, Auto, *">
-                <!-- 顶部拖动区（macOS 交通灯安全区） -->
-                <Border Grid.Row="0" Background="Transparent"
-                        chrome:WindowDecorationProperties.ElementRole="TitleBar"
-                        PointerPressed="TitleBar_PointerPressed" />
-
-                <TextBlock Grid.Row="1" Text="{DynamicResource Str_SettingsTitle}" FontSize="15" FontWeight="SemiBold" Margin="18,4,16,12" />
+            <Grid RowDefinitions="48,Auto,*">
+                <Border Background="Transparent" chrome:WindowDecorationProperties.ElementRole="TitleBar"
+                        PointerPressed="TitleBar_PointerPressed">
+                    <StackPanel x:Name="DesktopSettingsChrome" Orientation="Horizontal" Spacing="8">
+                        <Button x:Name="BackButton" Classes="subtle" Width="48" Height="48" MinWidth="0" Padding="0" CornerRadius="0"
+                                Click="Back_Click" AutomationProperties.Name="返回" ToolTip.Tip="返回">
+                            <PathIcon Data="{StaticResource IconBack}" Width="16" Height="16" />
+                        </Button>
+                        <controls:BrandLogo Width="20" Height="20" />
+                        <TextBlock Text="KeePassModern" FontSize="14" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+                <TextBlock Grid.Row="1" Text="{DynamicResource Str_SettingsTitle}" FontSize="28" FontWeight="SemiBold" Margin="20,20,16,24" />
 
                 <StackPanel Grid.Row="2" Spacing="4" Margin="10,0">
-                    <Button x:Name="NavAppearance" Classes="subtle" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="0" Height="34" Click="NavClick" Tag="0">
+                    <Button x:Name="NavAppearance" Classes="navItem" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Height="40" Click="NavClick" Tag="0">
                         <Grid ColumnDefinitions="6, 26, *">
                             <Border x:Name="Ind0" Grid.Column="0" Width="3" Height="16" CornerRadius="2" Background="{DynamicResource SystemControlHighlightAccentBrush}" HorizontalAlignment="Left" />
-                            <PathIcon Grid.Column="1" Data="{StaticResource IconSettings}" Width="14" Height="14" />
-                            <TextBlock Grid.Column="2" Text="{DynamicResource Str_NavAppearance}" FontSize="13" VerticalAlignment="Center" />
+                            <PathIcon Grid.Column="1" Data="{StaticResource IconSettings}" Width="16" Height="16" />
+                            <TextBlock Grid.Column="2" Text="{DynamicResource Str_NavAppearance}" FontSize="14" VerticalAlignment="Center" />
                         </Grid>
                     </Button>
 
-                    <Button x:Name="NavSecurity" Classes="subtle" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="0" Height="34" Click="NavClick" Tag="1">
+                    <Button x:Name="NavSecurity" Classes="navItem" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Height="40" Click="NavClick" Tag="1">
                         <Grid ColumnDefinitions="6, 26, *">
                             <Border x:Name="Ind1" Grid.Column="0" Width="3" Height="16" CornerRadius="2" Background="{DynamicResource SystemControlHighlightAccentBrush}" HorizontalAlignment="Left" IsVisible="False" />
-                            <PathIcon Grid.Column="1" Data="{StaticResource IconShield}" Width="14" Height="14" />
-                            <TextBlock Grid.Column="2" Text="{DynamicResource Str_NavSecurity}" FontSize="13" VerticalAlignment="Center" />
+                            <PathIcon Grid.Column="1" Data="{StaticResource IconShield}" Width="16" Height="16" />
+                            <TextBlock Grid.Column="2" Text="{DynamicResource Str_NavSecurity}" FontSize="14" VerticalAlignment="Center" />
                         </Grid>
                     </Button>
 
-                    <Button x:Name="NavAutoType" Classes="subtle" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="0" Height="34" Click="NavClick" Tag="2">
+                    <Button x:Name="NavAutoType" Classes="navItem" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Height="40" Click="NavClick" Tag="2">
                         <Grid ColumnDefinitions="6, 26, *">
                             <Border x:Name="Ind2" Grid.Column="0" Width="3" Height="16" CornerRadius="2" Background="{DynamicResource SystemControlHighlightAccentBrush}" HorizontalAlignment="Left" IsVisible="False" />
-                            <PathIcon Grid.Column="1" Data="{StaticResource IconKey}" Width="14" Height="14" />
-                            <TextBlock Grid.Column="2" Text="{DynamicResource Str_NavAutoType}" FontSize="13" VerticalAlignment="Center" />
+                            <PathIcon Grid.Column="1" Data="{StaticResource IconKey}" Width="16" Height="16" />
+                            <TextBlock Grid.Column="2" Text="{DynamicResource Str_NavAutoType}" FontSize="14" VerticalAlignment="Center" />
                         </Grid>
                     </Button>
 
-                    <Button x:Name="NavData" Classes="subtle" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="0" Height="34" Click="NavClick" Tag="3">
+                    <Button x:Name="NavData" Classes="navItem" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Height="40" Click="NavClick" Tag="3">
                         <Grid ColumnDefinitions="6, 26, *">
                             <Border x:Name="Ind3" Grid.Column="0" Width="3" Height="16" CornerRadius="2" Background="{DynamicResource SystemControlHighlightAccentBrush}" HorizontalAlignment="Left" IsVisible="False" />
-                            <PathIcon Grid.Column="1" Data="{StaticResource IconExport}" Width="14" Height="14" />
-                            <TextBlock Grid.Column="2" Text="{DynamicResource Str_NavData}" FontSize="13" VerticalAlignment="Center" />
+                            <PathIcon Grid.Column="1" Data="{StaticResource IconExport}" Width="16" Height="16" />
+                            <TextBlock Grid.Column="2" Text="{DynamicResource Str_NavData}" FontSize="14" VerticalAlignment="Center" />
                         </Grid>
                     </Button>
 
-                    <Button x:Name="NavAbout" Classes="subtle" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="0" Height="34" Click="NavClick" Tag="4">
+                    <Button x:Name="NavAbout" Classes="navItem" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Height="40" Click="NavClick" Tag="4">
                         <Grid ColumnDefinitions="6, 26, *">
                             <Border x:Name="Ind4" Grid.Column="0" Width="3" Height="16" CornerRadius="2" Background="{DynamicResource SystemControlHighlightAccentBrush}" HorizontalAlignment="Left" IsVisible="False" />
-                            <PathIcon Grid.Column="1" Data="{StaticResource IconVault}" Width="14" Height="14" />
-                            <TextBlock Grid.Column="2" Text="{DynamicResource Str_NavAbout}" FontSize="13" VerticalAlignment="Center" />
+                            <PathIcon Grid.Column="1" Data="{StaticResource IconVault}" Width="16" Height="16" />
+                            <TextBlock Grid.Column="2" Text="{DynamicResource Str_NavAbout}" FontSize="14" VerticalAlignment="Center" />
                         </Grid>
                     </Button>
                 </StackPanel>
@@ -73,19 +79,119 @@
         <Border Grid.Column="1" Background="{DynamicResource DividerBrush}" />
 
         <!-- 右侧内容区 -->
-        <Grid Grid.Column="2" RowDefinitions="40, *">
+        <Grid Grid.Column="2" RowDefinitions="48,*" Background="{DynamicResource ListPaneBackgroundBrush}">
             <!-- 顶部拖动区 -->
             <Border Grid.Row="0" Background="Transparent"
                     chrome:WindowDecorationProperties.ElementRole="TitleBar"
                     PointerPressed="TitleBar_PointerPressed" />
 
-            <ScrollViewer Grid.Row="1" Padding="24,4,24,24">
+            <ScrollViewer Grid.Row="1" Padding="28,20,28,28">
                 <Panel>
-                    <!-- ========== 页面 0：外观与界面密度（100% 对齐画板 07） ========== -->
-                    <StackPanel x:Name="PageAppearance" Spacing="16">
-                        <TextBlock Text="外观与界面密度" FontSize="20" FontWeight="SemiBold" />
+                    <StackPanel x:Name="PageAppearance" Spacing="12">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="外观" FontSize="28" FontWeight="SemiBold" />
+                            <TextBlock Text="调整主题、强调色和条目列表的显示密度。" Foreground="{DynamicResource SecondaryTextBrush}" />
+                        </StackPanel>
+                        <TextBlock Text="主题与颜色" FontSize="20" FontWeight="SemiBold" Margin="0,10,0,0" />
+                        <Border Classes="fluentCard" Padding="16">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="应用主题" FontWeight="SemiBold" />
+                                    <TextBlock Text="用于应用的窗口、菜单和对话框。" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                </StackPanel>
+                                <ComboBox x:Name="ThemeCombo" Grid.Column="1" Width="156" VerticalAlignment="Center"
+                                          AutomationProperties.Name="应用主题" SelectionChanged="ThemeCombo_Changed">
+                                    <ComboBoxItem Content="跟随系统" Tag="Default" />
+                                    <ComboBoxItem Content="浅色" Tag="Light" />
+                                    <ComboBoxItem Content="深色" Tag="Dark" />
+                                </ComboBox>
+                            </Grid>
+                        </Border>
+                        <Border Classes="fluentCard" Padding="16">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="跟随系统强调色" FontWeight="SemiBold" />
+                                    <TextBlock Text="开启后使用操作系统的强调色。" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" x:Name="FollowSystemAccentCheck" OnContent="" OffContent=""
+                                              AutomationProperties.Name="跟随系统强调色" IsCheckedChanged="FollowSystemAccent_Changed" />
+                            </Grid>
+                        </Border>
+                        <Border Classes="fluentCard" Padding="16">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="应用强调色" FontWeight="SemiBold" />
+                                <UniformGrid Columns="7" Rows="1">
+                                    <Button Classes="subtle" Padding="4,6" Click="AccentPreset_Click" Tag="Emerald">
+                                        <StackPanel Spacing="5" HorizontalAlignment="Center">
+                                            <Border x:Name="RingEmerald" Width="28" Height="28" CornerRadius="6" BorderThickness="2" BorderBrush="Transparent" Padding="2">
+                                                <Border CornerRadius="4" Background="#508252" />
+                                            </Border>
+                                            <TextBlock Text="#508252" FontSize="11" HorizontalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Classes="subtle" Padding="4,6" Click="AccentPreset_Click" Tag="ClassicBlue">
+                                        <StackPanel Spacing="5" HorizontalAlignment="Center">
+                                            <Border x:Name="RingClassicBlue" Width="28" Height="28" CornerRadius="6" BorderThickness="2" BorderBrush="Transparent" Padding="2">
+                                                <Border CornerRadius="4" Background="#3B82F6" />
+                                            </Border>
+                                            <TextBlock Text="经典蓝" FontSize="11" HorizontalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Classes="subtle" Padding="4,6" Click="AccentPreset_Click" Tag="Indigo">
+                                        <StackPanel Spacing="5" HorizontalAlignment="Center">
+                                            <Border x:Name="RingIndigo" Width="28" Height="28" CornerRadius="6" BorderThickness="2" BorderBrush="Transparent" Padding="2">
+                                                <Border CornerRadius="4" Background="#6366F1" />
+                                            </Border>
+                                            <TextBlock Text="极光靛" FontSize="11" HorizontalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Classes="subtle" Padding="4,6" Click="AccentPreset_Click" Tag="Amber">
+                                        <StackPanel Spacing="5" HorizontalAlignment="Center">
+                                            <Border x:Name="RingAmber" Width="28" Height="28" CornerRadius="6" BorderThickness="2" BorderBrush="Transparent" Padding="2">
+                                                <Border CornerRadius="4" Background="#D97706" />
+                                            </Border>
+                                            <TextBlock Text="琥珀金" FontSize="11" HorizontalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Classes="subtle" Padding="4,6" Click="AccentPreset_Click" Tag="Rose">
+                                        <StackPanel Spacing="5" HorizontalAlignment="Center">
+                                            <Border x:Name="RingRose" Width="28" Height="28" CornerRadius="6" BorderThickness="2" BorderBrush="Transparent" Padding="2">
+                                                <Border CornerRadius="4" Background="#E11D48" />
+                                            </Border>
+                                            <TextBlock Text="玫瑰红" FontSize="11" HorizontalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Classes="subtle" Padding="4,6" Click="AccentPreset_Click" Tag="Slate">
+                                        <StackPanel Spacing="5" HorizontalAlignment="Center">
+                                            <Border x:Name="RingSlate" Width="28" Height="28" CornerRadius="6" BorderThickness="2" BorderBrush="Transparent" Padding="2">
+                                                <Border CornerRadius="4" Background="#64748B" />
+                                            </Border>
+                                            <TextBlock Text="石墨灰" FontSize="11" HorizontalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                    <StackPanel Spacing="5" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,6,0,0">
+                                        <ColorPicker x:Name="CustomAccentPicker" Color="#508252" Width="32" Height="28" ColorChanged="CustomAccent_Changed" />
+                                        <TextBlock Text="自定义" FontSize="11" HorizontalAlignment="Center" />
+                                    </StackPanel>
+                                </UniformGrid>
+                            </StackPanel>
+                        </Border>
 
-                        <!-- 界面语言切换卡片（即时生效，无需重启） -->
+                        <TextBlock Text="布局" FontSize="20" FontWeight="SemiBold" Margin="0,10,0,0" />
+                        <Border Classes="fluentCard" Padding="16">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="条目列表密度" FontWeight="SemiBold" />
+                                    <TextBlock Text="改变列表行高和摘要间距。" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                </StackPanel>
+                                <ComboBox x:Name="DensityCombo" Grid.Column="1" Width="156" VerticalAlignment="Center"
+                                          AutomationProperties.Name="条目列表密度" SelectionChanged="DensityCombo_Changed">
+                                    <ComboBoxItem Content="紧凑" Tag="Compact" />
+                                    <ComboBoxItem Content="标准" Tag="Normal" />
+                                    <ComboBoxItem Content="宽松" Tag="Comfortable" />
+                                </ComboBox>
+                            </Grid>
+                        </Border>
                         <Border Classes="fluentCard" Padding="16">
                             <Grid ColumnDefinitions="*, Auto">
                                 <StackPanel Spacing="2" VerticalAlignment="Center">
@@ -99,116 +205,6 @@
                             </Grid>
                         </Border>
 
-                        <!-- 外观模式卡片 -->
-                        <Border Classes="fluentCard" Padding="16">
-                            <StackPanel Spacing="12">
-                                <TextBlock Text="外观模式" FontSize="13.5" FontWeight="SemiBold" />
-                                <UniformGrid Columns="3" Rows="1">
-                                    <Button x:Name="BtnThemeDefault" Classes="optionCard" Height="42" Margin="0,0,8,0" HorizontalAlignment="Stretch" Click="ThemeCard_Click" Tag="Default">
-                                        <TextBlock Classes="optionTitle" Text="跟随系统" FontSize="13" VerticalAlignment="Center" />
-                                    </Button>
-                                    <Button x:Name="BtnThemeLight" Classes="optionCard" Height="42" Margin="4,0" HorizontalAlignment="Stretch" Click="ThemeCard_Click" Tag="Light">
-                                        <TextBlock Classes="optionTitle" Text="浅色模式" FontSize="13" VerticalAlignment="Center" />
-                                    </Button>
-                                    <Button x:Name="BtnThemeDark" Classes="optionCard" Height="42" Margin="8,0,0,0" HorizontalAlignment="Stretch" Click="ThemeCard_Click" Tag="Dark">
-                                        <TextBlock Classes="optionTitle" Text="深色模式" FontSize="13" VerticalAlignment="Center" />
-                                    </Button>
-                                </UniformGrid>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- 主题强调色卡片（默认跟随系统色 + 6 预设 + 自定义，色块与实际强调色一致） -->
-                        <Border Classes="fluentCard" Padding="16">
-                            <StackPanel Spacing="12">
-                                <TextBlock Text="主题强调色（默认跟随系统强调色）" FontSize="13.5" FontWeight="SemiBold" />
-                                <CheckBox x:Name="FollowSystemAccentCheck" Content="跟随操作系统强调色（默认 · macOS / Win11 / Linux）" IsCheckedChanged="FollowSystemAccent_Changed" />
-
-                                <TextBlock Text="内置主题色预设（点击即时切换）：" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
-                                <UniformGrid Columns="7" Rows="1">
-                                    <Button Classes="subtle" Padding="4,6" Click="AccentPreset_Click" Tag="Emerald">
-                                        <StackPanel Spacing="5" HorizontalAlignment="Center">
-                                            <Border x:Name="RingEmerald" Width="28" Height="28" CornerRadius="14" BorderThickness="2" BorderBrush="Transparent" Padding="2">
-                                                <Ellipse Fill="#10B981" />
-                                            </Border>
-                                            <TextBlock Text="安全绿" FontSize="11" HorizontalAlignment="Center" />
-                                        </StackPanel>
-                                    </Button>
-                                    <Button Classes="subtle" Padding="4,6" Click="AccentPreset_Click" Tag="ClassicBlue">
-                                        <StackPanel Spacing="5" HorizontalAlignment="Center">
-                                            <Border x:Name="RingClassicBlue" Width="28" Height="28" CornerRadius="14" BorderThickness="2" BorderBrush="Transparent" Padding="2">
-                                                <Ellipse Fill="#3B82F6" />
-                                            </Border>
-                                            <TextBlock Text="经典蓝" FontSize="11" HorizontalAlignment="Center" />
-                                        </StackPanel>
-                                    </Button>
-                                    <Button Classes="subtle" Padding="4,6" Click="AccentPreset_Click" Tag="Indigo">
-                                        <StackPanel Spacing="5" HorizontalAlignment="Center">
-                                            <Border x:Name="RingIndigo" Width="28" Height="28" CornerRadius="14" BorderThickness="2" BorderBrush="Transparent" Padding="2">
-                                                <Ellipse Fill="#6366F1" />
-                                            </Border>
-                                            <TextBlock Text="极光靛" FontSize="11" HorizontalAlignment="Center" />
-                                        </StackPanel>
-                                    </Button>
-                                    <Button Classes="subtle" Padding="4,6" Click="AccentPreset_Click" Tag="Amber">
-                                        <StackPanel Spacing="5" HorizontalAlignment="Center">
-                                            <Border x:Name="RingAmber" Width="28" Height="28" CornerRadius="14" BorderThickness="2" BorderBrush="Transparent" Padding="2">
-                                                <Ellipse Fill="#D97706" />
-                                            </Border>
-                                            <TextBlock Text="琥珀金" FontSize="11" HorizontalAlignment="Center" />
-                                        </StackPanel>
-                                    </Button>
-                                    <Button Classes="subtle" Padding="4,6" Click="AccentPreset_Click" Tag="Rose">
-                                        <StackPanel Spacing="5" HorizontalAlignment="Center">
-                                            <Border x:Name="RingRose" Width="28" Height="28" CornerRadius="14" BorderThickness="2" BorderBrush="Transparent" Padding="2">
-                                                <Ellipse Fill="#E11D48" />
-                                            </Border>
-                                            <TextBlock Text="玫瑰红" FontSize="11" HorizontalAlignment="Center" />
-                                        </StackPanel>
-                                    </Button>
-                                    <Button Classes="subtle" Padding="4,6" Click="AccentPreset_Click" Tag="Slate">
-                                        <StackPanel Spacing="5" HorizontalAlignment="Center">
-                                            <Border x:Name="RingSlate" Width="28" Height="28" CornerRadius="14" BorderThickness="2" BorderBrush="Transparent" Padding="2">
-                                                <Ellipse Fill="#64748B" />
-                                            </Border>
-                                            <TextBlock Text="石墨灰" FontSize="11" HorizontalAlignment="Center" />
-                                        </StackPanel>
-                                    </Button>
-                                    <StackPanel Spacing="5" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,6,0,0">
-                                        <ColorPicker x:Name="CustomAccentPicker" Color="#10B981" Width="32" Height="28" ColorChanged="CustomAccent_Changed" />
-                                        <TextBlock Text="自定义" FontSize="11" HorizontalAlignment="Center" />
-                                    </StackPanel>
-                                </UniformGrid>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- 界面密度三档卡片（实时生效，无需重启） -->
-                        <Border Classes="fluentCard" Padding="16">
-                            <StackPanel Spacing="12">
-                                <TextBlock Text="界面密度（实时生效，无需重启）" FontSize="13.5" FontWeight="SemiBold" />
-                                <UniformGrid Columns="3" Rows="1">
-                                    <Button x:Name="BtnDensityCompact" Classes="optionCard" Height="64" Margin="0,0,8,0" HorizontalAlignment="Stretch" Click="DensityCard_Click" Tag="Compact">
-                                        <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                            <TextBlock Classes="optionTitle" Text="紧凑" FontSize="13.5" FontWeight="SemiBold" HorizontalAlignment="Center" />
-                                            <TextBlock Classes="optionSub" Text="行高 34px · 紧凑" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Center" />
-                                        </StackPanel>
-                                    </Button>
-                                    <Button x:Name="BtnDensityNormal" Classes="optionCard" Height="64" Margin="4,0" HorizontalAlignment="Stretch" Click="DensityCard_Click" Tag="Normal">
-                                        <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                            <TextBlock Classes="optionTitle" Text="标准" FontSize="13.5" FontWeight="SemiBold" HorizontalAlignment="Center" />
-                                            <TextBlock Classes="optionSub" Text="行高 52px · 默认" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Center" />
-                                        </StackPanel>
-                                    </Button>
-                                    <Button x:Name="BtnDensityComfortable" Classes="optionCard" Height="64" Margin="8,0,0,0" HorizontalAlignment="Stretch" Click="DensityCard_Click" Tag="Comfortable">
-                                        <StackPanel Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                            <TextBlock Classes="optionTitle" Text="宽松" FontSize="13.5" FontWeight="SemiBold" HorizontalAlignment="Center" />
-                                            <TextBlock Classes="optionSub" Text="行高 64px · 宽松" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Center" />
-                                        </StackPanel>
-                                    </Button>
-                                </UniformGrid>
-                            </StackPanel>
-                        </Border>
-
-                        <TextBlock Text="界面默认跟随系统强调色，品牌标识使用安全绿。" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
                     </StackPanel>
 
                     <!-- ========== 页面 1：安全与锁定 ========== -->

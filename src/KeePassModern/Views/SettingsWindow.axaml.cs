@@ -7,9 +7,6 @@ using KeePassModern.ViewModels;
 
 namespace KeePassModern.Views;
 
-/// <summary>
-/// 偏好设置窗口（严格对齐 FigCraft 画板 07：双栏导航 + 明暗卡片 + 跟随系统色/6内置预设/自定义取色 + 三档实时密度卡片）。
-/// </summary>
 public partial class SettingsWindow : Window
 {
     private readonly MainWindowViewModel? _vm;
@@ -20,7 +17,9 @@ public partial class SettingsWindow : Window
     public SettingsWindow(MainWindowViewModel? vm, int initialTabIndex = 0)
     {
         InitializeComponent();
-        MacTitleBarInsets.AttachTrafficLightsCentering(this, 42);
+        DesktopSettingsChrome.IsVisible = !OperatingSystem.IsMacOS();
+        MacTitleBarInsets.AttachTrafficLightsCentering(this, 48);
+        SwitchPage(initialTabIndex);
         _vm = vm;
         if (vm is not null)
         {
@@ -33,18 +32,22 @@ public partial class SettingsWindow : Window
             AutoLockNumeric.Value = s.AutoLockIdleMinutes;
             AutoLockNumeric.IsEnabled = s.AutoLockIdleEnabled;
             LanguageCombo.SelectedIndex = string.Equals(s.Language, "en-US", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
-            RefreshCardHighlights(s.ThemeMode, s.UiDensity);
+            ThemeCombo.SelectedIndex = s.ThemeMode switch { "Light" => 1, "Dark" => 2, _ => 0 };
+            DensityCombo.SelectedIndex = s.UiDensity switch { "Compact" => 0, "Comfortable" => 2, _ => 1 };
+            RefreshAccentRings(s.AccentMode);
         }
-        if (initialTabIndex > 0) SwitchPage(initialTabIndex);
         AboutVersionText.Text = $"KeePassModern v{KeePassModern.Services.AppVersionProvider.GetCurrentVersion()}";
         _loading = false;
     }
 
     private void TitleBar_PointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (e.ClickCount == 1 && e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+        if (e.ClickCount == 1 && e.GetCurrentPoint(this).Properties.IsLeftButtonPressed
+            && !BackButton.IsPointerOver)
             BeginMoveDrag(e);
     }
+
+    private void Back_Click(object? sender, RoutedEventArgs e) => Close();
 
     private void NavClick(object? sender, RoutedEventArgs e)
     {
@@ -65,6 +68,11 @@ public partial class SettingsWindow : Window
         Ind2.IsVisible = idx == 2;
         Ind3.IsVisible = idx == 3;
         Ind4.IsVisible = idx == 4;
+        NavAppearance.Classes.Set("active", idx == 0);
+        NavSecurity.Classes.Set("active", idx == 1);
+        NavAutoType.Classes.Set("active", idx == 2);
+        NavData.Classes.Set("active", idx == 3);
+        NavAbout.Classes.Set("active", idx == 4);
     }
 
     private void LanguageCombo_Changed(object? sender, SelectionChangedEventArgs e)
@@ -77,15 +85,13 @@ public partial class SettingsWindow : Window
         _vm.ShowToast(lang == "en-US" ? "Switched UI language to English" : "已切换界面语言为简体中文");
     }
 
-    private void ThemeCard_Click(object? sender, RoutedEventArgs e)
+    private void ThemeCombo_Changed(object? sender, SelectionChangedEventArgs e)
     {
-        if (_loading || _vm is null || sender is not Button btn) return;
-        var mode = btn.Tag?.ToString() ?? "Default";
+        if (_loading || _vm is null || ThemeCombo.SelectedItem is not ComboBoxItem { Tag: string mode }) return;
         _vm.SettingsService.Settings.ThemeMode = mode;
         _vm.SettingsService.Save();
         ThemeAccentService.ApplyThemeVariant(mode);
         ThemeAccentService.ApplyAccent(_vm.SettingsService.Settings.AccentMode, _vm.SettingsService.Settings.CustomAccentHex);
-        RefreshCardHighlights(mode, _vm.SettingsService.Settings.UiDensity);
     }
 
     private void FollowSystemAccent_Changed(object? sender, RoutedEventArgs e)
@@ -95,6 +101,7 @@ public partial class SettingsWindow : Window
         _vm.SettingsService.Settings.AccentMode = mode;
         _vm.SettingsService.Save();
         ThemeAccentService.ApplyAccent(mode, _vm.SettingsService.Settings.CustomAccentHex);
+        RefreshAccentRings(mode);
     }
 
     private void AccentPreset_Click(object? sender, RoutedEventArgs e)
@@ -121,12 +128,12 @@ public partial class SettingsWindow : Window
         _vm.SettingsService.Settings.CustomAccentHex = hex;
         _vm.SettingsService.Save();
         ThemeAccentService.ApplyAccent("Custom", hex);
+        RefreshAccentRings("Custom");
     }
 
-    private void DensityCard_Click(object? sender, RoutedEventArgs e)
+    private void DensityCombo_Changed(object? sender, SelectionChangedEventArgs e)
     {
-        if (_loading || _vm is null || sender is not Button btn) return;
-        var density = btn.Tag?.ToString() ?? "Normal";
+        if (_loading || _vm is null || DensityCombo.SelectedItem is not ComboBoxItem { Tag: string density }) return;
         _vm.SettingsService.Settings.UiDensity = density;
         _vm.SettingsService.Save();
         DensityService.Apply(density);
@@ -136,44 +143,17 @@ public partial class SettingsWindow : Window
             "Comfortable" => "宽松",
             _ => "标准"
         };
-        RefreshCardHighlights(_vm.SettingsService.Settings.ThemeMode, density);
-    }
-
-    private void RefreshCardHighlights(string themeMode, string density)
-    {
-        SetActiveClass(BtnThemeDefault, string.Equals(themeMode, "Default", StringComparison.OrdinalIgnoreCase));
-        SetActiveClass(BtnThemeLight, string.Equals(themeMode, "Light", StringComparison.OrdinalIgnoreCase));
-        SetActiveClass(BtnThemeDark, string.Equals(themeMode, "Dark", StringComparison.OrdinalIgnoreCase));
-
-        SetActiveClass(BtnDensityCompact, string.Equals(density, "Compact", StringComparison.OrdinalIgnoreCase));
-        SetActiveClass(BtnDensityNormal, string.Equals(density, "Normal", StringComparison.OrdinalIgnoreCase));
-        SetActiveClass(BtnDensityComfortable, string.Equals(density, "Comfortable", StringComparison.OrdinalIgnoreCase));
-
-        if (_vm is not null)
-            RefreshAccentRings(_vm.SettingsService.Settings.AccentMode);
     }
 
     private void RefreshAccentRings(string accentMode)
     {
-        var activeBrush = new SolidColorBrush(Color.Parse("#10B981"));
+        var activeBrush = new SolidColorBrush(Color.Parse(ThemeAccentService.DefaultAccent));
         RingEmerald.BorderBrush = string.Equals(accentMode, "Emerald", StringComparison.OrdinalIgnoreCase) ? activeBrush : Brushes.Transparent;
         RingClassicBlue.BorderBrush = string.Equals(accentMode, "ClassicBlue", StringComparison.OrdinalIgnoreCase) ? new SolidColorBrush(Color.Parse("#3B82F6")) : Brushes.Transparent;
         RingIndigo.BorderBrush = string.Equals(accentMode, "Indigo", StringComparison.OrdinalIgnoreCase) ? new SolidColorBrush(Color.Parse("#6366F1")) : Brushes.Transparent;
         RingAmber.BorderBrush = string.Equals(accentMode, "Amber", StringComparison.OrdinalIgnoreCase) ? new SolidColorBrush(Color.Parse("#D97706")) : Brushes.Transparent;
         RingRose.BorderBrush = string.Equals(accentMode, "Rose", StringComparison.OrdinalIgnoreCase) ? new SolidColorBrush(Color.Parse("#E11D48")) : Brushes.Transparent;
         RingSlate.BorderBrush = string.Equals(accentMode, "Slate", StringComparison.OrdinalIgnoreCase) ? new SolidColorBrush(Color.Parse("#64748B")) : Brushes.Transparent;
-    }
-
-    private static void SetActiveClass(Button btn, bool active)
-    {
-        if (active)
-        {
-            if (!btn.Classes.Contains("active")) btn.Classes.Add("active");
-        }
-        else
-        {
-            btn.Classes.Remove("active");
-        }
     }
 
     private void AutoLockEnabled_Changed(object? sender, RoutedEventArgs e)

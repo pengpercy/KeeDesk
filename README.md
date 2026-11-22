@@ -10,7 +10,7 @@
 完全兼容 **KDBX 3.1 / 4.0 / 4.1** 标准 · 原生支持 **macOS / Windows / Linux**（x64 & arm64）
 
 <p>
-  <a href="https://github.com/pengpercy/KeePassModern/releases"><img src="https://img.shields.io/badge/Version-1.0.0-10B981?style=flat-square" alt="Version" /></a>
+  <a href="https://github.com/pengpercy/KeePassModern/releases/latest"><img src="https://img.shields.io/github/v/release/pengpercy/KeePassModern?style=flat-square&amp;color=508252" alt="最新发布版本" /></a>
   <a href="https://dotnet.microsoft.com/"><img src="https://img.shields.io/badge/.NET-10.0%20NativeAOT-512BD4?style=flat-square&logo=dotnet&logoColor=white" alt=".NET 10 NativeAOT" /></a>
   <a href="https://avaloniaui.net/"><img src="https://img.shields.io/badge/UI-Avalonia%2012%20%C2%B7%20Fluent%202-0078D4?style=flat-square" alt="Avalonia 12 Fluent 2" /></a>
   <img src="https://img.shields.io/badge/KDBX-3.1%20%7C%204.0%20%7C%204.1-047857?style=flat-square" alt="KDBX 3.1/4.0/4.1" />
@@ -42,6 +42,8 @@
 
 ## 界面预览
 
+以下为 Fluent 2 V3 界面渲染预览，使用应用内置的示例密码库。
+
 ### macOS 三栏主工作台（深色 / 浅色模式）
 
 | 深色模式（Dark） | 浅色模式（Light） |
@@ -50,7 +52,7 @@
 
 ### 欢迎解锁页 & Windows 11 桌面端
 
-| 欢迎与密码库解锁（支持 Touch ID / DPAPI / 拖拽） | Windows 11 Fluent 2（48px Mica Alt 标题栏） |
+| 欢迎与密码库解锁 | Windows 11 工作台布局 |
 | :---: | :---: |
 | ![Unlock Screen](docs/screenshots/unlock.png) | ![Windows 11 Workspace](docs/screenshots/workspace-win11.png) |
 
@@ -133,7 +135,7 @@ KeePassModern/
 │   ├── macos/Resources/           # macOS zh-Hans.lproj / en.lproj 本地化资源（已链接至 Solution）
 │   └── scripts/package-macos.sh   # macOS .app Bundle（含 AppIcon.icns / lproj）与 .dmg 打包脚本
 ├── design/
-│   └── KeePassModern.figcraft     # 完整 12 画板 Fluent 2 设计稿
+│   └── KeePassModern-V3.figcraft  # 当前 Fluent 2 V3 设计稿
 └── .github/workflows/             # CI 测试与 6-RID NativeAOT 自动发布工作流
 ```
 

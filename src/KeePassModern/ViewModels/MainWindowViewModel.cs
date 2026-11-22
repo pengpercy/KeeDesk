@@ -36,6 +36,7 @@ public sealed partial class VaultTabSession : ObservableObject
     public ActiveSection SavedSection { get; set; } = ActiveSection.AllEntries;
     public Guid? SavedGroupUuid { get; set; }
     public Guid? SavedEntryUuid { get; set; }
+    public bool SavedSortByModified { get; set; }
 
     public VaultTabSession(KdbxDatabase database, CompositeKey masterKey, string displayName)
     {
@@ -98,13 +99,18 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         IsTouchIdSupported &&
         !string.IsNullOrWhiteSpace(UnlockVaultPath) &&
         MacTouchIdService.HasSavedPassword(UnlockVaultPath);
+    public bool CanEnableTouchId => IsTouchIdSupported && !CanUnlockWithTouchId;
+
     [ObservableProperty] private string _newVaultName = "个人密码库";
     [ObservableProperty] private RecentVaultItem? _selectedRecentVault;
     public ObservableCollection<RecentVaultItem> RecentVaults { get; } = new();
+    public bool HasRecentVaults => RecentVaults.Count != 0;
+
+    public string UnlockVaultFileName => Path.GetFileName(UnlockVaultPath);
 
     public string UnlockVaultHeading => string.IsNullOrWhiteSpace(UnlockVaultPath)
         ? "欢迎使用 KeePassModern"
-        : $"解锁「{Path.GetFileName(UnlockVaultPath)}」";
+        : $"解锁{SelectedRecentVault?.DisplayName ?? Path.GetFileNameWithoutExtension(UnlockVaultPath)}";
 
     public string UnlockKeyFileDisplay => string.IsNullOrWhiteSpace(UnlockKeyFilePath)
         ? "未选择密钥文件（点击浏览 .keyx）"
@@ -112,15 +118,21 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     // Workspace properties
     [ObservableProperty] private string _vaultDisplayName = "KeePassModern";
-    [ObservableProperty] private string _searchQuery = string.Empty;
+    public bool HasSearchQuery => !string.IsNullOrWhiteSpace(SearchQuery);
+    public string VaultSaveStatus => IsModified ? "有未保存的更改" : "所有更改已保存";
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(HasSearchQuery))]
+    private string _searchQuery = string.Empty;
     [ObservableProperty] private string _currentFilterTitle = "全部条目";
     [ObservableProperty] private ActiveSection _activeSection = ActiveSection.AllEntries;
     [ObservableProperty] private int _allCount;
     [ObservableProperty] private int _favoritesCount;
     [ObservableProperty] private int _totpCount;
     [ObservableProperty] private int _auditIssueCount;
+    [ObservableProperty] private int _auditAffectedCount;
+    [ObservableProperty] private string _auditCheckedDisplay = string.Empty;
     [ObservableProperty] private int _recycleBinCount;
-    [ObservableProperty] private bool _isModified;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(VaultSaveStatus))]
+    private bool _isModified;
 
     // Collections
     public ObservableCollection<GroupItemViewModel> RootGroups { get; } = new();
@@ -227,7 +239,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     partial void OnUnlockVaultPathChanged(string value)
     {
         OnPropertyChanged(nameof(UnlockVaultHeading));
+        OnPropertyChanged(nameof(UnlockVaultFileName));
         OnPropertyChanged(nameof(CanUnlockWithTouchId));
+        OnPropertyChanged(nameof(CanEnableTouchId));
     }
     partial void OnUnlockKeyFilePathChanged(string value)
     {
@@ -259,6 +273,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             SelectedRecentVault = RecentVaults[0];
             UnlockVaultPath = RecentVaults[0].FilePath;
         }
+        OnPropertyChanged(nameof(HasRecentVaults));
     }
 
     [RelayCommand]
@@ -411,6 +426,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             {
                 MacTouchIdService.SavePasswordToKeychain(vaultPath, pwd);
                 OnPropertyChanged(nameof(CanUnlockWithTouchId));
+        OnPropertyChanged(nameof(CanEnableTouchId));
             }
             UnlockMasterPassword = string.Empty;
         }
@@ -443,6 +459,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         {
             UnlockError = "未能从 macOS 钥匙串读取主密码，请手动输入主密码。";
             OnPropertyChanged(nameof(CanUnlockWithTouchId));
+        OnPropertyChanged(nameof(CanEnableTouchId));
             return;
         }
 
@@ -469,7 +486,6 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         try
         {
             var db = KdbxDatabase.CreateDefault(NewVaultName);
-            PopulateSampleEntries(db);
 
             var key = CompositeKey.FromPasswordAndKeyFile(UnlockMasterPassword, UnlockKeyFilePath, UnlockUseWindowsUserAccount && IsWindows);
             KdbxFormat.Save(db, savePath, key);
@@ -488,108 +504,17 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private void OpenDemoVault()
     {
-        var db = KdbxDatabase.CreateDefault("个人密码库.kdbx");
-        PopulateSampleEntries(db);
-        ActivateDatabase(db, CompositeKey.FromPassword("demo"));
-        ShowToast("已进入演示密码库（已载入全部 6 条示例密码）");
+        var personal = DemoVaultService.Create();
+        var work = DemoVaultService.CreateWorkVault(personal);
+        ActivateDatabase(personal, CompositeKey.FromPassword("demo"), sortByModified: true);
+        OpenVaults.Add(new VaultTabSession(work, CompositeKey.FromPassword("demo"), work.Meta.DatabaseName)
+        {
+            SavedSortByModified = true,
+        });
+        OnPropertyChanged(nameof(HasMultipleVaults));
     }
 
-    /// <summary>
-    /// 填充设计稿（画板 02 / 12）中的完整子分组与 6 条示例条目，供新建密码库与演示模式共用。
-    /// </summary>
-    private static void PopulateSampleEntries(KdbxDatabase db)
-    {
-        var devGroup = db.RootGroup.Groups[2]; // 开发与云服务
-        var sshSubGroup = new KdbxGroup { Name = "SSH 密钥与令牌", IconId = 3 };
-        var prodDbSubGroup = new KdbxGroup { Name = "生产数据库", IconId = 3 };
-        devGroup.AddGroup(sshSubGroup);
-        devGroup.AddGroup(prodDbSubGroup);
-
-        // 1. GitHub 企业版
-        var e1 = new KdbxEntry
-        {
-            Title = "GitHub 企业版",
-            UserName = "percy@company.com",
-            Password = PasswordGenerator.GenerateFromCharset(new PasswordGeneratorOptions { Length = 22 }),
-            Url = "https://github.com/login",
-            Notes = "主组织管理员账号，已绑定硬件 YubiKey 5C 备用密钥。\nSSH 签名密钥按季度轮换（下次轮换时间：2027-01-15）。",
-            IsFavorite = true
-        };
-        e1.Tags.AddRange(["工作", "代码"]);
-        e1.SetString(KdbxConstants.FieldOtp, "otpauth://totp/GitHub:percy?secret=JBSWY3DPEHPK3PXP&issuer=GitHub", true);
-        e1.SetString("API_Token", "ghp_live_demo_token_9821", true);
-        e1.Binaries["github-恢复码.txt"] = new KeePassModern.Core.Crypto.ProtectedBinary(true, System.Text.Encoding.UTF8.GetBytes("REC-9941-8820-ABCD\nREC-4412-7765-EFGH"));
-        sshSubGroup.AddEntry(e1);
-
-        // 2. AWS 生产环境根账号
-        var e2 = new KdbxEntry
-        {
-            Title = "AWS 生产环境根账号",
-            UserName = "ops-admin@acme.io",
-            Password = PasswordGenerator.GenerateFromCharset(new PasswordGeneratorOptions { Length = 26 }),
-            Url = "https://console.aws.amazon.com",
-            Notes = "生产环境高危账号，操作前请开启 CloudTrail 审计日志。",
-            IsFavorite = true
-        };
-        e2.Tags.AddRange(["工作", "生产"]);
-        e2.SetString(KdbxConstants.FieldOtp, "otpauth://totp/AWS:ops-admin?secret=MZXW6YTBOI======&issuer=AWS", true);
-        devGroup.AddEntry(e2);
-
-        // 3. Cloudflare 域名解析
-        var e3 = new KdbxEntry
-        {
-            Title = "Cloudflare 域名解析",
-            UserName = "percy@dev.io",
-            Password = PasswordGenerator.GenerateFromCharset(new PasswordGeneratorOptions { Length = 20 }),
-            Url = "https://dash.cloudflare.com",
-            Notes = "主域名 DNS 与 Zero Trust 隧道控制台。"
-        };
-        e3.Tags.AddRange(["工作", "生产"]);
-        e3.SetString(KdbxConstants.FieldOtp, "otpauth://totp/Cloudflare:percy?secret=NB2W45DFOIZA====&issuer=Cloudflare", true);
-        devGroup.AddEntry(e3);
-
-        // 4. PostgreSQL 生产数据库（即将过期 + 弱密码示例，便于体验安全审计）
-        var e4 = new KdbxEntry
-        {
-            Title = "PostgreSQL 生产数据库",
-            UserName = "db_readonly",
-            Password = "WeakPassword123",
-            Url = "postgres://db.internal:5432/prod",
-            Expires = true,
-            ExpiryTime = DateTimeOffset.UtcNow.AddDays(5),
-            Notes = "季度轮换只读凭证，将在 5 天后到期。"
-        };
-        e4.Tags.Add("生产");
-        prodDbSubGroup.AddEntry(e4);
-
-        // 5. Stripe 支付控制台
-        var e5 = new KdbxEntry
-        {
-            Title = "Stripe 支付控制台",
-            UserName = "billing@company.com",
-            Password = PasswordGenerator.GenerateFromCharset(new PasswordGeneratorOptions { Length = 24 }),
-            Url = "https://dashboard.stripe.com",
-            Notes = "公司收款与账单管理控制台。",
-            IsFavorite = true
-        };
-        e5.Tags.AddRange(["工作", "个人"]);
-        e5.SetString(KdbxConstants.FieldOtp, "otpauth://totp/Stripe:billing?secret=KRUGS4ZANFZSAYJA&issuer=Stripe", true);
-        db.RootGroup.Groups[3].AddEntry(e5); // 金融与银行
-
-        // 6. Linear 项目协作
-        var e6 = new KdbxEntry
-        {
-            Title = "Linear 项目协作",
-            UserName = "percy@company.com",
-            Password = PasswordGenerator.GenerateFromCharset(new PasswordGeneratorOptions { Length = 20 }),
-            Url = "https://linear.app",
-            Notes = "研发迭代与需求追踪平台。"
-        };
-        e6.Tags.Add("工作");
-        db.RootGroup.Groups[0].AddEntry(e6); // 常用账号
-    }
-
-    private void ActivateDatabase(KdbxDatabase db, CompositeKey key)
+    private void ActivateDatabase(KdbxDatabase db, CompositeKey key, bool? sortByModified = null)
     {
         // 如果已打开相同路径的密码库，直接切换过去，避免重复打开
         if (!string.IsNullOrWhiteSpace(db.FilePath))
@@ -606,7 +531,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         }
 
         var display = string.IsNullOrWhiteSpace(db.FilePath) ? db.Meta.DatabaseName : Path.GetFileName(db.FilePath);
-        var session = new VaultTabSession(db, key, display);
+        var session = new VaultTabSession(db, key, display) { SavedSortByModified = sortByModified ?? SortByModifiedDesc };
         OpenVaults.Add(session);
         OnPropertyChanged(nameof(HasMultipleVaults));
         SwitchVaultTab(session);
@@ -623,6 +548,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             _activeSession.SavedSection = ActiveSection;
             _activeSession.SavedGroupUuid = SelectedGroup?.Model.Uuid;
             _activeSession.SavedEntryUuid = SelectedEntry?.Model.Uuid;
+            _activeSession.SavedSortByModified = SortByModifiedDesc;
             _activeSession.IsActive = false;
         }
 
@@ -635,6 +561,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         RecordUserActivity();
 
         ActiveSection = session.SavedSection;
+        SortByModifiedDesc = session.SavedSortByModified;
         IsAuditViewActive = ActiveSection == ActiveSection.SecurityAudit;
         RebuildWorkspace();
 
@@ -812,6 +739,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         var audit = SecurityAuditService.Analyze(_database);
         AuditScore = audit.SecurityScore;
         AuditIssueCount = audit.TotalIssues;
+        AuditAffectedCount = audit.WeakPasswords.Concat(audit.ReusedPasswords).Concat(audit.ExpiredOrExpiringSoon)
+            .Select(entry => entry.Uuid).Distinct().Count();
+        AuditCheckedDisplay = $"已检查 {audit.TotalEntries} 个条目 · {DateTime.Now:yyyy/MM/dd HH:mm}";
         UpdateObservable(AuditWeakEntries, audit.WeakPasswords);
         UpdateObservable(AuditReusedEntries, audit.ReusedPasswords);
         UpdateObservable(AuditExpiringEntries, audit.ExpiredOrExpiringSoon);
@@ -945,6 +875,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         SelectedEntry = FilteredEntries.FirstOrDefault(e => e.Model.Uuid == item.Model.Uuid);
     }
 
+    [RelayCommand]
+    private void RefreshAudit() => RebuildWorkspace();
+
     private void RefreshFilteredEntries()
     {
         if (_database is null) return;
@@ -970,11 +903,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             ActiveSection.Group when SelectedGroup is not null => SelectedGroup.Name,
             ActiveSection.Tag => $"#{_selectedTag}",
             ActiveSection.CustomFilter => _customFilterTitle,
-            _ => "全部条目"
+            _ => "所有条目"
         };
 
-        if (!string.IsNullOrWhiteSpace(SearchQuery))
+        if (HasSearchQuery)
         {
+            CurrentFilterTitle = "搜索结果";
             var q = SearchQuery.Trim();
             source = source.Where(e =>
                 e.Title.Contains(q, StringComparison.OrdinalIgnoreCase) ||
@@ -1257,13 +1191,6 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         SaveVault();
         RebuildWorkspace();
         ShowToast(ActiveSection == ActiveSection.RecycleBin ? $"已永久删除 {count} 条记录" : $"已将 {count} 条记录移入回收站");
-    }
-
-    [RelayCommand]
-    private void ToggleRevealPassword()
-    {
-        if (SelectedEntry is not null)
-            SelectedEntry.IsPasswordRevealed = !SelectedEntry.IsPasswordRevealed;
     }
 
     [RelayCommand]

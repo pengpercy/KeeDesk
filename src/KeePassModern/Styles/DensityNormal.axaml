@@ -1,15 +1,15 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <!-- Normal Density Tokens (Default · Fluent 2 · 4px grid) -->
-    <x:Double x:Key="DensityRowHeight">52</x:Double>
-    <x:Double x:Key="DensityNavItemHeight">34</x:Double>
+    <x:Double x:Key="DensityRowHeight">50</x:Double>
+    <x:Double x:Key="DensityNavItemHeight">40</x:Double>
     <x:Double x:Key="DensityControlHeight">32</x:Double>
-    <x:Double x:Key="DensityAvatarSize">36</x:Double>
+    <x:Double x:Key="DensityAvatarSize">32</x:Double>
     <x:Double x:Key="DensityFontSizeTitle">20</x:Double>
-    <x:Double x:Key="DensityFontSizeBody">13.5</x:Double>
+    <x:Double x:Key="DensityFontSizeBody">14</x:Double>
     <x:Double x:Key="DensityFontSizeCaption">12</x:Double>
     <Thickness x:Key="DensityCardPadding">16,12</Thickness>
-    <Thickness x:Key="DensityItemMargin">8,2</Thickness>
+    <Thickness x:Key="DensityItemMargin">0,1</Thickness>
     <Thickness x:Key="DensityContainerPadding">16</Thickness>
     <x:Double x:Key="DensityItemSpacing">8</x:Double>
     <CornerRadius x:Key="DensityCardRadius">8</CornerRadius>

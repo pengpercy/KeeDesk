@@ -1,4 +1,6 @@
+using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using KeePassModern.Helpers;
 using CommunityToolkit.Mvvm.ComponentModel;
 using KeePassModern.Core.Kdbx;
 using KeePassModern.Core.Services;
@@ -46,6 +48,13 @@ public sealed partial class EntryItemViewModel : ViewModelBase
     [ObservableProperty] private string _footerMeta = string.Empty;
     [ObservableProperty] private Bitmap? _customIconBitmap;
     public bool HasCustomIcon => CustomIconBitmap is not null;
+    public bool HasStandardIcon => !HasCustomIcon && StandardIcon is not null;
+    public bool ShowInitials => !HasCustomIcon && !HasStandardIcon;
+    public Geometry? StandardIcon { get; private set; }
+    public string EntryKind => string.IsNullOrWhiteSpace(Url) ? "密码条目" : "网站登录";
+    public string UpdatedDisplay => $"更新于 {Model.LastModificationTime.LocalDateTime:yyyy/MM/dd}";
+    public IEnumerable<string> DisplayTags => Model.Tags.Where(t =>
+        !string.Equals(t, "Favorite", StringComparison.OrdinalIgnoreCase) && t != "收藏");
 
     public string DisplayedPassword => IsPasswordRevealed ? Password : MaskedPassword;
 
@@ -79,7 +88,12 @@ public sealed partial class EntryItemViewModel : ViewModelBase
         Url = Model.Url;
         Notes = Model.Notes;
         IsFavorite = Model.IsFavorite;
-        GroupPath = Model.Parent?.GetFullPath("  /  ") ?? string.Empty;
+        const string separator = "  /  ";
+        var fullPath = Model.Parent?.GetFullPath(separator) ?? string.Empty;
+        var rootPrefix = _database?.RootGroup.Name + separator;
+        GroupPath = _database is not null && fullPath.StartsWith(rootPrefix, StringComparison.Ordinal)
+            ? fullPath[rootPrefix.Length..]
+            : fullPath;
         TagsDisplay = Model.Tags.Count > 0 ? string.Join("   ", Model.Tags.Select(t => $"#{t}")) : "无标签";
 
         var words = Title.Split(' ', StringSplitOptions.RemoveEmptyEntries);
@@ -106,11 +120,18 @@ public sealed partial class EntryItemViewModel : ViewModelBase
         HistoryCount = Model.History.Count;
         AttachmentCount = Model.Binaries.Count;
         CustomIconBitmap = FaviconFetcherService.TryDecodeCustomIcon(_database, Model.CustomIconUuid);
+        StandardIcon = Model.IconId != 0 ? KeePassIconCatalog.GetGeometry(Model.IconId) : null;
         OnPropertyChanged(nameof(HasCustomIcon));
+        OnPropertyChanged(nameof(HasStandardIcon));
+        OnPropertyChanged(nameof(ShowInitials));
+        OnPropertyChanged(nameof(StandardIcon));
         FooterMeta = $"修改时间：{Model.LastModificationTime.LocalDateTime:yyyy-MM-dd HH:mm}   ·   创建时间：{Model.CreationTime.LocalDateTime:yyyy-MM-dd HH:mm}   ·   UUID: {Model.Uuid.ToString("N")[..8]}...";
 
         RefreshTotp();
         OnPropertyChanged(nameof(DisplayedPassword));
+        OnPropertyChanged(nameof(EntryKind));
+        OnPropertyChanged(nameof(UpdatedDisplay));
+        OnPropertyChanged(nameof(DisplayTags));
         OnPropertyChanged(nameof(CustomFields));
         OnPropertyChanged(nameof(Attachments));
     }
