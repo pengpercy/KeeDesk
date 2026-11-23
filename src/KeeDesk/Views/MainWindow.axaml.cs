@@ -10,6 +10,7 @@ using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using KeeDesk.Core.Crypto;
 using KeeDesk.Helpers;
 using KeeDesk.Services;
 using KeeDesk.ViewModels;
@@ -482,6 +483,33 @@ public partial class MainWindow : Window
         }
     }
 
+    private async Task<T> ShowUnlockedDialogAsync<T>(MainWindowViewModel vm, Window dialog, Window? owner = null)
+    {
+        var vault = vm.CurrentDatabase;
+        dialog.AddHandler(PointerPressedEvent, OnUserActivity, RoutingStrategies.Tunnel);
+        dialog.AddHandler(PointerWheelChangedEvent, OnUserActivity, RoutingStrategies.Tunnel);
+        dialog.AddHandler(KeyDownEvent, OnUserActivity, RoutingStrategies.Tunnel);
+
+        void CloseOnVaultChange(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(MainWindowViewModel.CurrentDatabase) &&
+                vm.CurrentDatabase != vault && dialog.IsVisible)
+                dialog.Close();
+        }
+
+        vm.PropertyChanged += CloseOnVaultChange;
+        try
+        {
+            return owner is null
+                ? await ShowWorkspaceDialogAsync<T>(dialog)
+                : await dialog.ShowDialog<T>(owner);
+        }
+        finally
+        {
+            vm.PropertyChanged -= CloseOnVaultChange;
+        }
+    }
+
     private async void MoveEntryToRecycleBin_Click(object? sender, RoutedEventArgs e)
     {
         if (_layoutViewModel is not { IsUnlocked: true } vm) return;
@@ -540,15 +568,21 @@ public partial class MainWindow : Window
 
         vm.OpenEntryEditorAsync = async (entry, group, showHistory) =>
         {
-            var dlg = new EntryEditorWindow(entry, group, vm.CurrentDatabase, showHistory);
-            var saved = await ShowWorkspaceDialogAsync<bool>(dlg);
-            if (saved && !string.IsNullOrEmpty(dlg.SavedPasswordForClipboard) && vm.CopyToClipboardAsync is not null)
+            var vault = vm.CurrentDatabase;
+            var dlg = new EntryEditorWindow(entry, group, vault, showHistory);
+            dlg.OpenAttachmentAsync = (name, binary) =>
+                ShowUnlockedDialogAsync<ProtectedBinary?>(vm, new AttachmentWindow(name, binary), dlg);
+            var saved = await ShowUnlockedDialogAsync<bool>(vm, dlg);
+            if (saved && vm.CurrentDatabase == vault && !string.IsNullOrEmpty(dlg.SavedPasswordForClipboard) &&
+                vm.CopyToClipboardAsync is not null)
             {
                 await vm.CopyToClipboardAsync(dlg.SavedPasswordForClipboard);
                 vm.ShowToast(L("Str_SavedAndCopiedPasswordToTheSecure"), ToastSeverity.Success);
             }
             return saved;
         };
+        vm.OpenAttachmentAsync = (name, binary) =>
+            ShowUnlockedDialogAsync<ProtectedBinary?>(vm, new AttachmentWindow(name, binary));
 
         vm.OpenPasswordGeneratorAsync = async () =>
         {
@@ -596,6 +630,11 @@ public partial class MainWindow : Window
                 FileTypeFilter = ext switch
                 {
                     "*" => [FilePickerFileTypes.All],
+                    "migration" => [
+                        new FilePickerFileType("Bitwarden / 1Password") { Patterns = ["*.json", "*.1pux"] },
+                        new FilePickerFileType("Bitwarden JSON") { Patterns = ["*.json"] },
+                        new FilePickerFileType("1Password 1PUX") { Patterns = ["*.1pux"] }
+                    ],
                     "xsl" => [new FilePickerFileType("XSLT") { Patterns = ["*.xsl", "*.xslt"] }, FilePickerFileTypes.All],
                     _ => [new FilePickerFileType(ext.ToUpperInvariant()) { Patterns = [$"*.{ext}"] }, FilePickerFileTypes.All]
                 }
@@ -638,6 +677,16 @@ public partial class MainWindow : Window
             return res is null ? null : (res.Database, res.MasterKey, res.KeyFilePath);
         };
 
+        vm.OpenCloudDriveDialogAsync = (request, token) =>
+        {
+            var dialog = new CloudDriveWindow(request, token);
+            return request.Synchronize || request.CopyName is not null
+                ? ShowUnlockedDialogAsync<CloudDriveResult?>(vm, dialog)
+                : ShowAutoTypeDialogAsync<CloudDriveResult?>(dialog, token);
+        };
+        vm.ConfirmVaultMigrationAsync = (name, count) =>
+            ShowUnlockedDialogAsync<bool>(vm, new VaultMigrationWindow(name, count),
+                OwnedWindows.OfType<SettingsWindow>().FirstOrDefault(window => window.IsVisible));
         vm.PromptRemoteVaultAsync = endpoint =>
             ShowWorkspaceDialogAsync<KeeDesk.Core.Services.RemoteVaultClient?>(new RemoteVaultConnectionWindow(endpoint));
         vm.PickCloudVaultFileAsync = async synchronize =>
@@ -698,23 +747,7 @@ public partial class MainWindow : Window
         vm.OpenAdvancedSearchAsync = async database =>
         {
             var dlg = new AdvancedSearchWindow(database, profiles => vm.TrySaveSearchProfiles(database, profiles));
-            dlg.AddHandler(PointerPressedEvent, OnUserActivity, RoutingStrategies.Tunnel);
-            dlg.AddHandler(KeyDownEvent, OnUserActivity, RoutingStrategies.Tunnel);
-            void CloseOnLock(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
-            {
-                if (e.PropertyName == nameof(MainWindowViewModel.IsUnlocked) && !vm.IsUnlocked)
-                    dlg.Close();
-            }
-
-            vm.PropertyChanged += CloseOnLock;
-            try
-            {
-                return await ShowWorkspaceDialogAsync<(string Query, List<KeeDesk.Core.Kdbx.KdbxEntry> Entries)?>(dlg);
-            }
-            finally
-            {
-                vm.PropertyChanged -= CloseOnLock;
-            }
+            return await ShowUnlockedDialogAsync<(string Query, List<KeeDesk.Core.Kdbx.KdbxEntry> Entries)?>(vm, dlg);
         };
 
         vm.OpenUrlExternal = url =>

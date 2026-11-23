@@ -245,12 +245,20 @@
                             </StackPanel>
 
                             <StackPanel x:Name="AttachmentsSection" IsVisible="False" Spacing="4">
-                                <Grid ColumnDefinitions="*, Auto">
+                                <Grid ColumnDefinitions="*, Auto, Auto" ColumnSpacing="4">
                                     <TextBlock Text="{DynamicResource Str_EncryptedAttachments}" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center" />
-                                    <Button Grid.Column="1" Classes="subtle" Height="22" MinHeight="22" Padding="6,0" FontSize="11" Content="{DynamicResource Str_RemoveSelected}" Click="RemoveAttachment_Click" />
+                                    <Button Grid.Column="1" Classes="subtle" Height="24" MinHeight="24" Padding="6,0" FontSize="11"
+                                            IsEnabled="{Binding #AttachmentsListBox.SelectedItem, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                            Content="{DynamicResource Str_AttachmentPreview}" Click="PreviewAttachment_Click" />
+                                    <Button Grid.Column="2" Classes="subtle" Height="24" MinHeight="24" Padding="6,0" FontSize="11"
+                                            IsEnabled="{Binding #AttachmentsListBox.SelectedItem, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                            Content="{DynamicResource Str_RemoveSelected}" Click="RemoveAttachment_Click" />
                                 </Grid>
-                                <ListBox x:Name="AttachmentsListBox" MaxHeight="76" Background="{DynamicResource CardSubtleBackgroundBrush}" CornerRadius="4" />
+                                <ListBox x:Name="AttachmentsListBox" MaxHeight="96" Background="{DynamicResource CardSubtleBackgroundBrush}"
+                                         CornerRadius="4" DoubleTapped="PreviewAttachment_DoubleTapped" />
                             </StackPanel>
+                            <TextBlock x:Name="AttachmentError" IsVisible="False" FontSize="12" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource DangerBrush}" Text="{DynamicResource Str_AttachmentReadError}" />
 
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <Button Height="28" MinHeight="28" Padding="10,0" Click="ShowCustomFields_Click">

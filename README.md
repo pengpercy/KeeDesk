@@ -68,8 +68,8 @@ KeeDesk 将密码库以加密文件保存在本地。已有的 KeePass 密码库
 - 同时打开多个密码库，切换时保留各自的浏览位置和选中条目。
 - 使用主密码、密钥文件或 Windows 用户账户解锁支持的密码库。macOS 支持 Touch ID 快速解锁。
 - 可从另一份文件合并到当前密码库，也可双向同步两份本地密码库。双向同步会把合并后的条目和历史写回两份文件，各自沿用原有的解锁凭据。
-- 可通过 HTTPS/WebDAV 打开并同步密码库，也能从 Google Drive、Microsoft OneDrive、Dropbox 和 iCloud Drive 的桌面同步目录打开或双向合并加密密码库。
-- 支持导入 KeePass 1.x 密码库和 KeePass 2.x XML。导入 Chrome、Edge、Bitwarden、1Password 或其他 CSV 文件时，可预览结果并调整字段映射。
+- 可通过 HTTPS/WebDAV 打开并同步密码库，或使用 Google Drive、OneDrive、Dropbox 和 iCloud Drive 的桌面同步目录。Google Drive 和 OneDrive 个人版支持直连打开、上传加密副本，以及跨设备合并独立的加密修订版。 [网盘直连配置](docs/cloud-drive.md)
+- 支持导入 KeePass 1.x、KeePass 2.x XML、Bitwarden 未加密 JSON 和 1Password 1PUX。导入 Chrome、Edge 等来源的 CSV 时，可预览结果并调整字段映射。
 - 可导出 CSV、KeePass XML 和自定义 XSLT 报告，或生成表格、逐条详情两种可打印报告。
 
 ### 查找条目与登录

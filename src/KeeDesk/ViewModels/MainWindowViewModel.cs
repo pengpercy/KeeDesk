@@ -1,7 +1,9 @@
 using System.Collections.ObjectModel;
+using System.Security.Cryptography;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using KeeDesk.Core.Crypto;
 using KeeDesk.Core.Kdbx;
 using KeeDesk.Core.Services;
 using KeeDesk.Helpers;
@@ -191,6 +193,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public Func<string, Task>? CopyToClipboardAsync { get; set; }
     public Func<Task<string?>>? GetClipboardTextAsync { get; set; }
     public Func<KdbxEntry?, KdbxGroup, bool, Task<bool>>? OpenEntryEditorAsync { get; set; }
+    public Func<string, ProtectedBinary, Task<ProtectedBinary?>>? OpenAttachmentAsync { get; set; }
     public Func<Task<string?>>? OpenPasswordGeneratorAsync { get; set; }
     public Func<Task>? OpenSettingsAsync { get; set; }
     public Func<Task>? OpenAboutAsync { get; set; }
@@ -258,7 +261,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         _ => L("Str_Standard")
     };
 
-    public KdbxDatabase? CurrentDatabase => _database;
+    public KdbxDatabase? CurrentDatabase
+    {
+        get => _database;
+        private set => SetProperty(ref _database, value);
+    }
 
     public void UpdateMacTitleBarInsets(double trafficLightsRight)
     {
@@ -611,7 +618,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
         _activeSession = session;
         session.IsActive = true;
-        _database = session.Database;
+        CurrentDatabase = session.Database;
         _customFilterEntries = null;
         _advancedSearchQuery = null;
         VaultDisplayName = session.DisplayName;
@@ -674,7 +681,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         else
         {
             _activeSession = null;
-            _database = null;
+            CurrentDatabase = null;
             ClearSensitiveSearchState();
             FilteredEntries.Clear();
             RootGroups.Clear();
@@ -782,7 +789,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         OpenVaults.Clear();
         OnPropertyChanged(nameof(HasMultipleVaults));
         _activeSession = null;
-        _database = null;
+        CurrentDatabase = null;
         ClearSensitiveSearchState();
         FilteredEntries.Clear();
         RootGroups.Clear();
@@ -1163,11 +1170,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private async Task AddEntryAsync()
     {
-        if (_database is null || OpenEntryEditorAsync is null) return;
-        var targetGroup = SelectedGroup?.Model ?? _database.RootGroup.Groups.FirstOrDefault() ?? _database.RootGroup;
-        if (await OpenEntryEditorAsync(null, targetGroup, false))
+        if (_database is not { } vault || OpenEntryEditorAsync is null) return;
+        var targetGroup = SelectedGroup?.Model ?? vault.RootGroup.Groups.FirstOrDefault() ?? vault.RootGroup;
+        if (await OpenEntryEditorAsync(null, targetGroup, false) && _database == vault)
         {
-            _database.IsModified = true;
+            vault.IsModified = true;
             SaveVault();
             RebuildWorkspace();
         }
@@ -1185,11 +1192,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private async Task OpenEntryAsync(EntryItemViewModel? item, bool showHistory)
     {
         var target = item ?? SelectedEntry;
-        if (_database is null || target is null || OpenEntryEditorAsync is null) return;
-        var targetGroup = target.Model.Parent ?? _database.RootGroup;
-        if (await OpenEntryEditorAsync(target.Model, targetGroup, showHistory))
+        if (_database is not { } vault || target is null || OpenEntryEditorAsync is null ||
+            vault.FindEntryByUuid(target.Model.Uuid) != target.Model) return;
+        var targetGroup = target.Model.Parent ?? vault.RootGroup;
+        if (await OpenEntryEditorAsync(target.Model, targetGroup, showHistory) && _database == vault)
         {
-            _database.IsModified = true;
+            vault.IsModified = true;
             SaveVault();
             RebuildWorkspace();
         }
@@ -1570,24 +1578,59 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private async Task PreviewAttachmentAsync(AttachmentItem? attachment)
+    {
+        if (attachment is null || _database is not { } vault || SelectedEntry is not { } selected ||
+            OpenAttachmentAsync is null || !selected.Model.Binaries.TryGetValue(attachment.FileName, out var binary))
+            return;
+
+        var name = attachment.FileName;
+        var entry = selected.Model;
+        var replacement = await OpenAttachmentAsync(name, binary);
+        if (replacement is null) return;
+
+        if (!IsCurrentAttachment(vault, entry, name, binary))
+        {
+            replacement.Dispose();
+            return;
+        }
+
+        entry.CreateHistorySnapshot(vault.Meta.HistoryMaxItems);
+        entry.Binaries[name] = replacement;
+        binary.Dispose();
+        entry.LastModificationTime = DateTimeOffset.UtcNow;
+        vault.IsModified = true;
+        TrySaveActiveVault();
+        RebuildWorkspace();
+    }
+
+    private bool IsCurrentAttachment(KdbxDatabase vault, KdbxEntry entry, string name, ProtectedBinary binary) =>
+        _database == vault && vault.FindEntryByUuid(entry.Uuid) == entry &&
+        entry.Binaries.TryGetValue(name, out var current) && current == binary;
+
+    [RelayCommand]
     private async Task ExportAttachmentAsync(AttachmentItem? attachment)
     {
-        if (attachment is null || SelectedEntry is null || PickSaveFileAsync is null) return;
-        if (!SelectedEntry.Model.Binaries.TryGetValue(attachment.FileName, out var binary)) return;
+        if (attachment is null || _database is not { } vault || SelectedEntry is not { } selected ||
+            PickSaveFileAsync is null || !selected.Model.Binaries.TryGetValue(attachment.FileName, out var binary))
+            return;
 
         var ext = Path.GetExtension(attachment.FileName).TrimStart('.');
         var path = await PickSaveFileAsync(attachment.FileName, string.IsNullOrEmpty(ext) ? "*" : ext);
-        if (string.IsNullOrWhiteSpace(path)) return;
+        if (string.IsNullOrWhiteSpace(path) || !IsCurrentAttachment(vault, selected.Model, attachment.FileName, binary))
+            return;
 
+        var bytes = binary.ReadData();
         try
         {
-            await File.WriteAllBytesAsync(path, binary.ReadData());
+            await File.WriteAllBytesAsync(path, bytes);
             ShowToast(L("Str_ExportedAttachmentFormat", Path.GetFileName(path)));
         }
         catch (Exception ex)
         {
             ShowToast(L("Str_CouldnTExportTheAttachmentFormat", ex.Message), ToastSeverity.Error);
         }
+        finally { CryptographicOperations.ZeroMemory(bytes); }
     }
 
     // ==================== 密码库设置 / 修改主密钥 / 合并同步 ====================
@@ -1745,7 +1788,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         if (session != _activeSession) return;
 
         var selectedGroupId = SelectedGroup?.Model.Uuid;
-        _database = synchronized;
+        CurrentDatabase = synchronized;
         SelectedGroup = null;
         UpdateSelectedEntries(Array.Empty<EntryItemViewModel>());
         _customFilterEntries = null;

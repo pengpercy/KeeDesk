@@ -514,6 +514,7 @@
                                     <TextBlock Classes="settingDescription" Text="{DynamicResource Str_ImportGenericCSVFromChromeFirefoxBitwarden}" />
                                     <WrapPanel ItemSpacing="6" LineSpacing="6" Margin="0,2,0,0">
                                         <Button Classes="settingsAction" Content="{DynamicResource Str_ImportCSV}" Click="ImportCsv_Click" />
+                                        <Button Classes="settingsAction" Content="{DynamicResource Str_MigrationImport}" Click="ImportVaultMigration_Click" />
                                         <Button Classes="settingsAction" Content="{DynamicResource Str_ImportLegacyKdb}" Click="ImportLegacyKdb_Click" />
                                         <Button Classes="settingsAction" Content="{DynamicResource Str_ExportCSV2}" Click="ExportCsv_Click" />
                                         <Button Classes="settingsAction" Content="{DynamicResource Str_ExportVaultStylesheet}" Click="ExportVaultStylesheet_Click" />

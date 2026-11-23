@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using System.Text;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -27,14 +28,22 @@ public partial class EntryEditorWindow : Window
     private Guid _selectedCustomIconUuid;
     private bool _passwordVisible;
     private bool _initializing = true;
+    private bool _closed;
 
     public string? SavedPasswordForClipboard { get; private set; }
+    internal Func<string, ProtectedBinary, Task<ProtectedBinary?>>? OpenAttachmentAsync { get; set; }
 
     public EntryEditorWindow() : this(null, new KdbxGroup(), null) { }
 
     public EntryEditorWindow(KdbxEntry? entry, KdbxGroup targetGroup, KdbxDatabase? db, bool showHistory = false)
     {
         InitializeComponent();
+        Closed += (_, _) =>
+        {
+            _closed = true;
+            foreach (var binary in _pendingBinaries.Values) binary.Dispose();
+            _pendingBinaries.Clear();
+        };
         MacTitleBarInsets.AttachTrafficLightsCentering(this, 44);
 
         _editingEntry = entry;
@@ -265,12 +274,47 @@ public partial class EntryEditorWindow : Window
     {
         var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions { AllowMultiple = false });
         var file = files.FirstOrDefault()?.TryGetLocalPath();
-        if (string.IsNullOrWhiteSpace(file) || !File.Exists(file)) return;
+        if (_closed || string.IsNullOrWhiteSpace(file)) return;
 
-        var bytes = await File.ReadAllBytesAsync(file);
-        var name = Path.GetFileName(file);
-        _pendingBinaries[name] = new ProtectedBinary(true, bytes);
-        RefreshAttachmentList();
+        AttachmentError.IsVisible = false;
+        try
+        {
+            var bytes = await File.ReadAllBytesAsync(file);
+            try
+            {
+                if (_closed) return;
+                var name = Path.GetFileName(file);
+                var binary = new ProtectedBinary(true, bytes);
+                if (_pendingBinaries.Remove(name, out var previous)) previous.Dispose();
+                _pendingBinaries.Add(name, binary);
+                RefreshAttachmentList(name);
+            }
+            finally { CryptographicOperations.ZeroMemory(bytes); }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            if (!_closed) AttachmentError.IsVisible = true;
+        }
+    }
+
+    private async void PreviewAttachment_Click(object? sender, RoutedEventArgs e) => await PreviewSelectedAttachmentAsync();
+
+    private async void PreviewAttachment_DoubleTapped(object? sender, TappedEventArgs e) => await PreviewSelectedAttachmentAsync();
+
+    private async Task PreviewSelectedAttachmentAsync()
+    {
+        var name = _pendingBinaries.Keys.ElementAtOrDefault(AttachmentsListBox.SelectedIndex);
+        if (name is null || OpenAttachmentAsync is null || !_pendingBinaries.TryGetValue(name, out var current)) return;
+        var replacement = await OpenAttachmentAsync(name, current);
+        if (replacement is null) return;
+        if (_closed || !_pendingBinaries.TryGetValue(name, out var latest) || latest != current)
+        {
+            replacement.Dispose();
+            return;
+        }
+        _pendingBinaries[name] = replacement;
+        current.Dispose();
+        RefreshAttachmentList(name);
     }
 
     private void RemoveAttachment_Click(object? sender, RoutedEventArgs e)
@@ -285,13 +329,15 @@ public partial class EntryEditorWindow : Window
         }
     }
 
-    private void RefreshAttachmentList()
+    private void RefreshAttachmentList(string? selectedName = null)
     {
         RefreshNotesSummary();
         AttachmentsSection.IsVisible = _pendingBinaries.Count > 0;
         AttachmentsListBox.ItemsSource = _pendingBinaries
             .Select(kv => $"{kv.Key}  ({kv.Value.Length / 1024.0:0.0} KB)")
             .ToList();
+        if (selectedName is not null)
+            AttachmentsListBox.SelectedIndex = _pendingBinaries.Keys.ToList().IndexOf(selectedName);
     }
 
     private void ExpiryPreset_Click(object? sender, RoutedEventArgs e)
@@ -310,6 +356,7 @@ public partial class EntryEditorWindow : Window
             return;
         var snap = _editingEntry.History[HistoryListBox.SelectedIndex];
         _editingEntry.RestoreFromHistory(snap, _database?.Meta.HistoryMaxItems ?? 10);
+        if (_database is not null) _database.IsModified = true;
         Close(true);
     }
 
@@ -424,11 +471,13 @@ public partial class EntryEditorWindow : Window
         entry.Binaries.Clear();
         foreach (var kv in _pendingBinaries)
             entry.Binaries[kv.Key] = kv.Value;
+        _pendingBinaries.Clear();
 
         entry.LastModificationTime = DateTimeOffset.UtcNow;
         if (_editingEntry is null)
             _targetGroup.AddEntry(entry);
 
+        if (_database is not null) _database.IsModified = true;
         if (AutoCopyAfterSaveCheck.IsChecked == true && !string.IsNullOrEmpty(entry.Password))
             SavedPasswordForClipboard = entry.Password;
 

@@ -1,0 +1,43 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:core="using:KeeDesk.Core.Services"
+        x:Class="KeeDesk.Views.CloudDriveWindow"
+        Title="{DynamicResource Str_CloudDriveOpen}" Width="460" SizeToContent="Height"
+        CanResize="False" WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource WorkspaceBackgroundBrush}" Foreground="{DynamicResource PrimaryTextBrush}">
+    <StackPanel Margin="22,18" Spacing="12">
+        <TextBlock x:Name="Heading" Text="{DynamicResource Str_CloudDriveOpen}" FontSize="18" FontWeight="SemiBold" />
+        <StackPanel x:Name="ConnectionFields" Spacing="8">
+            <ComboBox x:Name="ProviderBox" Classes="localizedOptions" Height="34" HorizontalAlignment="Stretch"
+                      AutomationProperties.Name="{DynamicResource Str_CloudVaultProvider}" SelectionChanged="Provider_Changed">
+                <ComboBoxItem Content="Google Drive" />
+                <ComboBoxItem Content="Microsoft OneDrive" />
+            </ComboBox>
+            <TextBlock x:Name="ProviderHint" TextWrapping="Wrap" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12" />
+            <TextBox x:Name="ClientIdBox" Height="34" PlaceholderText="{DynamicResource Str_CloudDriveClientId}"
+                     AutomationProperties.Name="{DynamicResource Str_CloudDriveClientId}" TextChanged="Credential_Changed" />
+            <TextBox x:Name="ClientSecretBox" Height="34" PasswordChar="•" PlaceholderText="{DynamicResource Str_CloudDriveClientSecret}"
+                     AutomationProperties.Name="{DynamicResource Str_CloudDriveClientSecret}" />
+        </StackPanel>
+        <ListBox x:Name="VaultList" IsVisible="False" MinHeight="92" MaxHeight="240" SelectionChanged="Vault_Changed"
+                 AutomationProperties.Name="{DynamicResource Str_Vaults}">
+            <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="core:CloudDriveVault">
+                    <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Name}" />
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+        <TextBlock x:Name="LocalCopyHint" IsVisible="False" Text="{DynamicResource Str_CloudDriveLocalCopyHint}"
+                   TextWrapping="Wrap" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12" />
+        <ProgressBar x:Name="BusyIndicator" Height="3" IsVisible="False" IsIndeterminate="True" />
+        <TextBlock x:Name="Status" IsVisible="False" TextWrapping="Wrap" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12" />
+        <TextBlock x:Name="Error" IsVisible="False" TextWrapping="Wrap" Foreground="{DynamicResource DangerBrush}" FontSize="12" />
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+            <Button Height="34" IsCancel="True" Content="{DynamicResource Str_Cancel}" Click="Cancel_Click" />
+            <Button x:Name="ConnectButton" IsEnabled="False" Height="34" Classes="accent" IsDefault="True"
+                    Content="{DynamicResource Str_CloudDriveContinue}" Click="Connect_Click" />
+            <Button x:Name="OpenButton" Height="34" Classes="accent" IsDefault="True" IsVisible="False"
+                    Content="{DynamicResource Str_OpenVault}" Click="Open_Click" />
+        </StackPanel>
+    </StackPanel>
+</Window>

@@ -25,9 +25,11 @@
                 <NativeMenu>
                     <NativeMenuItem Header="{DynamicResource Str_OpenAnotherVaultInNewTab}" Gesture="Cmd+O" Command="{Binding OpenAnotherVaultCommand}" />
                     <NativeMenuItem Header="{DynamicResource Str_OpenRemoteVault}" Gesture="Shift+Cmd+O" Command="{Binding OpenRemoteVaultCommand}" />
+                    <NativeMenuItem Header="{DynamicResource Str_CloudDriveOpen}" Command="{Binding OpenCloudDriveCommand}" />
                     <NativeMenuItem Header="{DynamicResource Str_OpenCloudVault}" Command="{Binding OpenCloudVaultCommand}" />
                     <NativeMenuItem Header="{DynamicResource Str_NewVault}" Gesture="Shift+Cmd+N" Command="{Binding CreateNewVaultCommand}" />
                     <NativeMenuItem Header="{DynamicResource Str_SaveVault}" Gesture="Cmd+S" Command="{Binding SaveVaultCommand}" />
+                    <NativeMenuItem Header="{DynamicResource Str_CloudDriveUpload}" Command="{Binding UploadCloudDriveCopyCommand}" />
                     <NativeMenuItem Header="{DynamicResource Str_SaveAs}" Gesture="Shift+Cmd+S" Command="{Binding SaveVaultAsCommand}" />
                     <NativeMenuItemSeparator />
                     <NativeMenuItem Header="{DynamicResource Str_VaultSettingsAndMasterKey2}" Command="{Binding OpenDatabaseSettingsAsyncCommandCommand}" />
@@ -35,10 +37,12 @@
                     <NativeMenuItem Header="{DynamicResource Str_MergeSyncAnotherVault}" Command="{Binding MergeDatabaseCommand}" />
                     <NativeMenuItem Header="{DynamicResource Str_SyncWithLocalVaultMenu}" Command="{Binding SynchronizeVaultCommand}" />
                     <NativeMenuItem Header="{DynamicResource Str_SyncRemoteVault}" Command="{Binding SynchronizeRemoteVaultCommand}" />
+                    <NativeMenuItem Header="{DynamicResource Str_CloudDriveSync}" Command="{Binding SynchronizeCloudDriveCommand}" />
                     <NativeMenuItem Header="{DynamicResource Str_SyncCloudVault}" Command="{Binding SynchronizeCloudVaultCommand}" />
                     <NativeMenuItem Header="{DynamicResource Str_GenerateKeyFileKeyx}" Command="{Binding GenerateKeyFileCommand}" />
                     <NativeMenuItemSeparator />
                     <NativeMenuItem Header="{DynamicResource Str_ImportCSVGenericChromeBitwarden1Password}" Command="{Binding ImportCsvCommand}" />
+                    <NativeMenuItem Header="{DynamicResource Str_MigrationImport}" Command="{Binding ImportVaultMigrationCommand}" />
                     <NativeMenuItem Header="{DynamicResource Str_ImportKeePass2XXML}" Command="{Binding ImportKeePassXmlCommand}" />
                     <NativeMenuItem Header="{DynamicResource Str_ImportLegacyKdb}" Command="{Binding ImportLegacyKdbCommand}" />
                     <NativeMenuItem Header="{DynamicResource Str_ExportCSV}" Command="{Binding ExportCsvCommand}" />
@@ -489,6 +493,7 @@
                                         ToolTip.Tip="{DynamicResource Str_VaultLocations}" AutomationProperties.Name="{DynamicResource Str_VaultLocations}">
                                     <Button.Flyout>
                                         <helpers:GlassMenuFlyout FlyoutPresenterClasses="compactMenu" Placement="BottomEdgeAlignedLeft">
+                                            <MenuItem Header="{DynamicResource Str_CloudDriveOpen}" Command="{Binding OpenCloudDriveCommand}" />
                                             <MenuItem Header="{DynamicResource Str_OpenCloudVault}" Command="{Binding OpenCloudVaultCommand}" />
                                             <MenuItem Header="{DynamicResource Str_OpenRemoteVault}" Command="{Binding OpenRemoteVaultCommand}" />
                                         </helpers:GlassMenuFlyout>
@@ -914,10 +919,16 @@
                                         <MenuItem Header="{DynamicResource Str_OpenRemoteVault}" Command="{Binding OpenRemoteVaultCommand}">
                                             <MenuItem.Icon><PathIcon Data="{StaticResource IconGlobe}" /></MenuItem.Icon>
                                         </MenuItem>
+                                        <MenuItem Header="{DynamicResource Str_CloudDriveOpen}" Command="{Binding OpenCloudDriveCommand}">
+                                            <MenuItem.Icon><PathIcon Data="{StaticResource IconGlobe}" /></MenuItem.Icon>
+                                        </MenuItem>
                                         <MenuItem Header="{DynamicResource Str_OpenCloudVault}" Command="{Binding OpenCloudVaultCommand}">
                                             <MenuItem.Icon><PathIcon Data="{StaticResource IconFolderOpen}" /></MenuItem.Icon>
                                         </MenuItem>
                                         <MenuItem Header="{DynamicResource Str_SaveAs}" Command="{Binding SaveVaultAsCommand}">
+                                            <MenuItem.Icon><PathIcon Data="{StaticResource IconSave}" /></MenuItem.Icon>
+                                        </MenuItem>
+                                        <MenuItem Header="{DynamicResource Str_CloudDriveUpload}" Command="{Binding UploadCloudDriveCopyCommand}">
                                             <MenuItem.Icon><PathIcon Data="{StaticResource IconSave}" /></MenuItem.Icon>
                                         </MenuItem>
                                         <MenuItem Header="{DynamicResource Str_AdvancedSearch2}" Command="{Binding OpenAdvancedSearchAsyncCommandCommand}">
@@ -939,9 +950,13 @@
                                         <MenuItem Header="{DynamicResource Str_SyncRemoteVault}" Command="{Binding SynchronizeRemoteVaultCommand}">
                                             <MenuItem.Icon><PathIcon Data="{StaticResource IconGlobe}" /></MenuItem.Icon>
                                         </MenuItem>
+                                        <MenuItem Header="{DynamicResource Str_CloudDriveSync}" Command="{Binding SynchronizeCloudDriveCommand}">
+                                            <MenuItem.Icon><PathIcon Data="{StaticResource IconRefresh}" /></MenuItem.Icon>
+                                        </MenuItem>
                                         <MenuItem Header="{DynamicResource Str_SyncCloudVault}" Command="{Binding SynchronizeCloudVaultCommand}">
                                             <MenuItem.Icon><PathIcon Data="{StaticResource IconRefresh}" /></MenuItem.Icon>
                                         </MenuItem>
+                                        <MenuItem Header="{DynamicResource Str_MigrationImport}" Command="{Binding ImportVaultMigrationCommand}" />
                                         <MenuItem Header="{DynamicResource Str_PrintVault}" Command="{Binding PrintVaultCommand}" />
                                     </helpers:GlassMenuFlyout>
                                 </Button.Flyout>
@@ -1611,17 +1626,29 @@
                                             <ItemsControl ItemsSource="{Binding SelectedEntry.Attachments}">
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>
-                                                        <Button Padding="8,3" Margin="0,3,0,0" HorizontalAlignment="Left"
-                                                                Background="{DynamicResource CardSubtleBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="6"
-                                                                ToolTip.Tip="{DynamicResource Str_ExportADecryptedCopyOfTheAttachment}"
-                                                                Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ExportAttachmentCommand}"
-                                                                CommandParameter="{Binding}">
-                                                            <Grid ColumnDefinitions="12,*,12" ColumnSpacing="6">
-                                                                <PathIcon Data="{StaticResource IconAttach}" Width="13" Height="13" Foreground="{DynamicResource SecondaryTextBrush}" />
-                                                                <TextBlock Grid.Column="1" Text="{Binding DisplayLabel}" FontSize="12" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                                                                <PathIcon Grid.Column="2" Data="{StaticResource IconExport}" Width="12" Height="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                                        <Border Margin="0,3,0,0" HorizontalAlignment="Left" CornerRadius="6"
+                                                                Background="{DynamicResource CardSubtleBackgroundBrush}"
+                                                                BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                                            <Grid ColumnDefinitions="*,Auto">
+                                                                <Button Classes="subtle" Padding="8,0" Height="28" MinHeight="28"
+                                                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                                                                        ToolTip.Tip="{Binding FileName}" AutomationProperties.Name="{Binding DisplayLabel}"
+                                                                        Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).PreviewAttachmentCommand}"
+                                                                        CommandParameter="{Binding}">
+                                                                    <Grid ColumnDefinitions="13,*" ColumnSpacing="6">
+                                                                        <PathIcon Data="{StaticResource IconAttach}" Width="13" Height="13" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                                                        <TextBlock Grid.Column="1" Text="{Binding DisplayLabel}" FontSize="12" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                                                    </Grid>
+                                                                </Button>
+                                                                <Button Grid.Column="1" Classes="subtle" Width="28" Height="28" MinHeight="28" Padding="0"
+                                                                        ToolTip.Tip="{DynamicResource Str_ExportADecryptedCopyOfTheAttachment}"
+                                                                        AutomationProperties.Name="{DynamicResource Str_ExportADecryptedCopyOfTheAttachment}"
+                                                                        Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ExportAttachmentCommand}"
+                                                                        CommandParameter="{Binding}">
+                                                                    <PathIcon Data="{StaticResource IconExport}" Width="12" Height="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                                                </Button>
                                                             </Grid>
-                                                        </Button>
+                                                        </Border>
                                                     </DataTemplate>
                                                 </ItemsControl.ItemTemplate>
                                             </ItemsControl>

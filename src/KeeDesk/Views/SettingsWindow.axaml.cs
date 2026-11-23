@@ -287,6 +287,11 @@ public partial class SettingsWindow : Window
         if (_vm is not null) await _vm.PrintVaultCommand.ExecuteAsync(null);
     }
 
+    private async void ImportVaultMigration_Click(object? sender, RoutedEventArgs e)
+    {
+        if (_vm is not null) await _vm.ImportVaultMigrationCommand.ExecuteAsync(null);
+    }
+
     private async void ImportLegacyKdb_Click(object? sender, RoutedEventArgs e)
     {
         if (_vm is not null) await _vm.ImportLegacyKdbCommand.ExecuteAsync(null);
