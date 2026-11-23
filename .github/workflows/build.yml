@@ -132,7 +132,7 @@ jobs:
           ln -fs /usr/share/zoneinfo/Etc/UTC /etc/localtime
           apt-get update
           apt-get install -y curl wget git unzip zip libicu66 tzdata clang lld zlib1g-dev libssl-dev \
-            dpkg-dev fakeroot desktop-file-utils rpm libfuse2 file build-essential binutils ffmpeg
+            dpkg-dev fakeroot desktop-file-utils appstream rpm libfuse2 file build-essential binutils ffmpeg
       - name: Checkout sources
         uses: actions/checkout@v7
       - name: Setup .NET

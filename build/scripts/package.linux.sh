@@ -66,6 +66,8 @@ ln -rsf KeeDesk.AppDir/opt/KeeDesk/KeeDesk KeeDesk.AppDir/AppRun
 ln -rsf KeeDesk.AppDir/usr/share/applications/com.KeeDesk.app.desktop KeeDesk.AppDir
 cp resources/appimage/KeeDesk.appdata.xml KeeDesk.AppDir/usr/share/metainfo/com.KeeDesk.app.appdata.xml
 
+# AppImage users need read access and the same execute access as the packaging user.
+chmod -R a+rX KeeDesk.AppDir
 ARCH="$appimage_arch" ./appimagetool -v KeeDesk.AppDir "KeeDesk-$VERSION.linux.$appimage_arch.AppImage"
 
 rm -rf resources/deb/opt resources/deb/usr
