@@ -4,7 +4,6 @@
         x:Class="KeeDesk.Views.FieldReferenceWindow"
         Title="{DynamicResource Str_InsertFieldReference}"
         Width="520" Height="520"
-        WindowStartupLocation="CenterOwner"
         CanResize="False"
         ExtendClientAreaToDecorationsHint="True"
         WindowDecorations="Full"

@@ -7,7 +7,10 @@
     <IsAotCompatible>true</IsAotCompatible>
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
-    <NuGetAudit Condition="'$(CI)' != 'true'">false</NuGetAudit>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(CI)' != 'true'">
+    <NuGetAudit>false</NuGetAudit>
   </PropertyGroup>
 
   <ItemGroup>

@@ -385,22 +385,22 @@
                         <Border x:Name="FieldSurface" Grid.ColumnSpan="2"
                                 Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}" />
-                        <TextBlock x:Name="FieldPlaceholder" Text="{TemplateBinding PlaceholderText}" Margin="{TemplateBinding Padding}"
+                        <TextBlock x:Name="FieldPlaceholder" Grid.Column="0" Text="{TemplateBinding PlaceholderText}" Margin="{TemplateBinding Padding}"
                                    Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
                                    VerticalAlignment="Center" IsHitTestVisible="False"
                                    IsVisible="{Binding #FieldValue.Content, Converter={x:Static ObjectConverters.IsNull}}" />
-                        <ContentPresenter x:Name="FieldValue" Content="{TemplateBinding SelectionBoxItem}"
+                        <ContentPresenter x:Name="FieldValue" Grid.Column="0" Content="{TemplateBinding SelectionBoxItem}"
                                           ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" Margin="{TemplateBinding Padding}"
                                           IsHitTestVisible="False" VerticalContentAlignment="Center"
                                           HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
                                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
                         <PathIcon x:Name="FieldChevron" Grid.Column="1" Width="12" Height="12" IsHitTestVisible="False"
                                   Data="{DynamicResource IconChevronDown}" Foreground="{DynamicResource SecondaryTextBrush}" />
-                        <controls:TextInputFocusIndicator Grid.ColumnSpan="2" x:Name="PART_FocusIndicator" Height="2"
+                        <controls:TextInputFocusIndicator Grid.Column="0" Grid.ColumnSpan="2" x:Name="PART_FocusIndicator" Height="2"
                                                           VerticalAlignment="Bottom" Margin="1,0,1,0" CornerRadius="0,0,4,4"
                                                           IsInputFocused="{TemplateBinding IsKeyboardFocusWithin}" IsHitTestVisible="False"
                                                           Background="{DynamicResource AccentButtonBackgroundBrush}" RenderTransformOrigin="50%,50%" />
-                        <Popup x:Name="PART_Popup" PlacementTarget="FieldSurface" Placement="BottomEdgeAlignedLeft" VerticalOffset="4"
+                        <Popup x:Name="PART_Popup" Grid.Column="0" PlacementTarget="FieldSurface" Placement="BottomEdgeAlignedLeft" VerticalOffset="4"
                                IsOpen="{TemplateBinding IsDropDownOpen, Mode=TwoWay}" IsLightDismissEnabled="True"
                                InheritsTransform="True" ShouldUseOverlayLayer="True"
                                MinWidth="{Binding Bounds.Width, RelativeSource={RelativeSource TemplatedParent}}"
@@ -419,7 +419,12 @@
     </Style>
     <!-- The selection box caches item content, so observe localized labels directly. -->
     <Style Selector="ComboBox.localizedOptions /template/ ContentPresenter#FieldValue">
-        <Setter Property="Content" Value="{CompiledBinding ((ComboBoxItem)SelectedItem).Content, RelativeSource={RelativeSource TemplatedParent}}" />
+        <Setter Property="Content" Value="{CompiledBinding SelectedItem, RelativeSource={RelativeSource TemplatedParent}}" />
+        <Setter Property="ContentTemplate">
+            <DataTemplate x:DataType="ComboBoxItem">
+                <TextBlock Text="{CompiledBinding Content}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+            </DataTemplate>
+        </Setter>
     </Style>
     <Style Selector="ComboBox:pointerover /template/ Border#FieldSurface">
         <Setter Property="BorderBrush" Value="{DynamicResource StandardButtonHoverBorderBrush}" />

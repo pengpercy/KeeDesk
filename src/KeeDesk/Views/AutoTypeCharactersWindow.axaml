@@ -3,7 +3,7 @@
         x:Class="KeeDesk.Views.AutoTypeCharactersWindow"
         Title="{DynamicResource Str_AutoTypePickCharacters}"
         Width="420" SizeToContent="Height" MinHeight="250" MaxHeight="480" CanResize="False"
-        WindowStartupLocation="CenterScreen" Topmost="True"
+        Topmost="True"
         Background="{DynamicResource WorkspaceBackgroundBrush}"
         Foreground="{DynamicResource PrimaryTextBrush}">
     <StackPanel Margin="22,18" Spacing="12">

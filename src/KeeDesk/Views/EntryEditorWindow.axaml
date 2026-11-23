@@ -7,7 +7,6 @@
         Title="{DynamicResource Str_New}"
         Width="656" Height="754"
         MinWidth="560" MinHeight="580"
-        WindowStartupLocation="CenterOwner"
         CanResize="True"
         ExtendClientAreaToDecorationsHint="True"
         WindowDecorations="Full"

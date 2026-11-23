@@ -8,7 +8,6 @@
         x:Class="KeeDesk.Views.SettingsWindow"
         Title="{DynamicResource Str_Settings3}"
         Width="760" Height="560" MinWidth="660" MinHeight="460"
-        WindowStartupLocation="CenterOwner"
         CanResize="True"
         ExtendClientAreaToDecorationsHint="True"
         WindowDecorations="Full"

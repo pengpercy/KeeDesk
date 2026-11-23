@@ -3,7 +3,6 @@
         x:Class="KeeDesk.Views.RecycleEntryDialog"
         Title="{DynamicResource Str_MoveToRecycleBin}"
         Width="436" SizeToContent="Height" CanResize="False"
-        WindowStartupLocation="CenterOwner"
         Background="{DynamicResource WorkspaceBackgroundBrush}"
         Foreground="{DynamicResource PrimaryTextBrush}">
     <StackPanel>

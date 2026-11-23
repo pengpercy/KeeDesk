@@ -2,7 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="KeeDesk.Views.VaultMigrationWindow"
         Title="{DynamicResource Str_MigrationImport}" Width="410" SizeToContent="Height"
-        CanResize="False" WindowStartupLocation="CenterOwner"
+        CanResize="False"
         Background="{DynamicResource WorkspaceBackgroundBrush}" Foreground="{DynamicResource PrimaryTextBrush}">
     <StackPanel Margin="22,18" Spacing="12">
         <TextBlock x:Name="SourceName" FontWeight="SemiBold" FontSize="16" />

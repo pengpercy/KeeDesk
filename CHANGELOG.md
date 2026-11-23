@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.2 - 2026-11-23
+
+- **Window placement.** KeeDesk windows open at the center of the screen's usable area. Dialogs open on the same display as their parent window.
+
 ## 1.3.1 - 2026-11-23
 
 - **Welcome screen.** Aligned the actions for opening, creating, and connecting to vaults in a compact sidebar. Highlighted the selected recent vault, added tooltips for long names, and aligned the lock icon with the unlock heading.

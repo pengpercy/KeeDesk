@@ -4,7 +4,6 @@
         x:Class="KeeDesk.Views.MoveToGroupWindow"
         Title="{DynamicResource Str_MoveToGroup2}"
         Width="400" Height="440"
-        WindowStartupLocation="CenterOwner"
         CanResize="False"
         ExtendClientAreaToDecorationsHint="True"
         WindowDecorations="Full"

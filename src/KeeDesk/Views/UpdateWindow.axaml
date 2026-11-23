@@ -5,7 +5,6 @@
         x:Class="KeeDesk.Views.UpdateWindow"
         Title="{DynamicResource Str_UpdateAvailable}"
         Width="520" Height="460"
-        WindowStartupLocation="CenterOwner"
         CanResize="False"
         ExtendClientAreaToDecorationsHint="True"
         WindowDecorations="Full"

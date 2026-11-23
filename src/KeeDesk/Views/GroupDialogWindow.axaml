@@ -4,7 +4,6 @@
         x:Class="KeeDesk.Views.GroupDialogWindow"
         Title="{DynamicResource Str_GroupSettings}"
         Width="420" Height="300"
-        WindowStartupLocation="CenterOwner"
         CanResize="False"
         ExtendClientAreaToDecorationsHint="True"
         WindowDecorations="Full"

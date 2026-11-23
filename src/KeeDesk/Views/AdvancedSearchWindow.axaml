@@ -4,7 +4,6 @@
         x:Class="KeeDesk.Views.AdvancedSearchWindow"
         Title="{DynamicResource Str_AdvancedSearch}"
         Width="510" Height="528"
-        WindowStartupLocation="CenterOwner"
         CanResize="False"
         ExtendClientAreaToDecorationsHint="True"
         WindowDecorations="Full"

@@ -5,7 +5,6 @@
         Title="{DynamicResource Str_VaultSettingsAndMasterKey}"
         Width="640" Height="680"
         MinWidth="560" MinHeight="540"
-        WindowStartupLocation="CenterOwner"
         ExtendClientAreaToDecorationsHint="True"
         WindowDecorations="Full"
         ExtendClientAreaTitleBarHeightHint="44"

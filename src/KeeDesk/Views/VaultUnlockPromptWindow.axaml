@@ -4,7 +4,6 @@
         x:Class="KeeDesk.Views.VaultUnlockPromptWindow"
         Title="{DynamicResource Str_UnlockVaultToMerge}"
         Width="440" Height="340"
-        WindowStartupLocation="CenterOwner"
         CanResize="False"
         ExtendClientAreaToDecorationsHint="True"
         WindowDecorations="Full"

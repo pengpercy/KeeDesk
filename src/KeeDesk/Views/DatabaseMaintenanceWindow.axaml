@@ -4,7 +4,6 @@
         x:Class="KeeDesk.Views.DatabaseMaintenanceWindow"
         Title="{DynamicResource Str_VaultMaintenance}"
         Width="580" Height="560"
-        WindowStartupLocation="CenterOwner"
         CanResize="False"
         ExtendClientAreaToDecorationsHint="True"
         WindowDecorations="Full"
