@@ -22,13 +22,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    # "release: vX" 提交会连同 tag 一起推送，由 Release 工作流执行完整构建与打包，此处跳过以避免重复占用 macOS runner
-    if: github.event_name != 'push' || !startsWith(github.event.head_commit.message, 'release:')
-    name: Build
-    uses: ./.github/workflows/build.yml
-
   version:
+    # Release commits are tagged and handled by the release workflow.
     if: github.event_name != 'push' || !startsWith(github.event.head_commit.message, 'release:')
     name: Prepare version string
     runs-on: ubuntu-latest
@@ -41,10 +36,10 @@ jobs:
         id: version
         run: echo "version=$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_OUTPUT"
 
-  package:
-    needs: [build, version]
-    name: Package
-    uses: ./.github/workflows/package.yml
+  build:
+    needs: version
+    name: Build and package
+    uses: ./.github/workflows/build.yml
     with:
       version: ${{ needs.version.outputs.version }}
 

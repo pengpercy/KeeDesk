@@ -1,50 +1,138 @@
-name: Build
+name: Build and package
 
 on:
   workflow_call:
+    inputs:
+      version:
+        description: KeeDesk package version
+        required: true
+        type: string
+
+env:
+  NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+  DOTNET_NOLOGO: '1'
+  VERSION: ${{ inputs.version }}
 
 jobs:
-  build:
+  windows:
+    name: Windows (${{ matrix.runtime }})
+    runs-on: windows-2022
+    strategy:
+      matrix:
+        runtime: [win-x64, win-arm64]
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v7
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+      - name: Cache NuGet packages
+        uses: actions/cache@v5
+        with:
+          path: .nuget/packages
+          key: nuget-windows-${{ matrix.runtime }}-${{ hashFiles('src/**/*.csproj') }}
+          restore-keys: |
+            nuget-windows-${{ matrix.runtime }}-
+            nuget-${{ matrix.runtime }}-
+      - name: Publish and package
+        shell: pwsh
+        env:
+          RUNTIME: ${{ matrix.runtime }}
+        run: |
+          $runtime = $env:RUNTIME
+          $packages = @($runtime)
+          if ($runtime -eq 'win-x64') { $packages += 'win7-x64' }
+
+          foreach ($package in $packages) {
+            $output = Join-Path $env:RUNNER_TEMP "keedesk/$package"
+            $publishOptions = @(
+              '-c', 'Release', '-r', $runtime, '-o', 'build/KeeDesk',
+              '--artifacts-path', "$output/compile", '--self-contained',
+              '-p:PublishSingleFile=true', '-p:EnableCompressionInSingleFile=true'
+            )
+            if ($package -eq 'win7-x64') { $publishOptions += '-p:Win7Compat=true' }
+
+            dotnet publish src/KeeDesk/KeeDesk.csproj @publishOptions
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+            $symbols = New-Item -ItemType Directory -Path "$output/symbols"
+            Get-ChildItem build/KeeDesk | Where-Object { $_.Extension -in '.pdb', '.dbg', '.dSYM' } |
+              Move-Item -Destination $symbols.FullName
+
+            $env:RUNTIME = $package
+            ./build/scripts/package.win.ps1
+            Move-Item build/KeeDesk "$output/publish"
+          }
+      - name: Upload symbols
+        uses: actions/upload-artifact@v7
+        with:
+          name: symbols.${{ matrix.runtime }}
+          path: ${{ runner.temp }}/keedesk/${{ matrix.runtime }}/symbols/
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Upload build
+        uses: actions/upload-artifact@v7
+        with:
+          name: keedesk.${{ matrix.runtime }}
+          path: ${{ runner.temp }}/keedesk/${{ matrix.runtime }}/publish/*
+          if-no-files-found: error
+          retention-days: 1
+      - name: Upload package
+        uses: actions/upload-artifact@v7
+        with:
+          name: package.${{ matrix.runtime }}
+          path: build/KeeDesk_${{ inputs.version }}.${{ matrix.runtime }}.zip
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 1
+      - name: Upload Windows 7 symbols
+        if: matrix.runtime == 'win-x64'
+        uses: actions/upload-artifact@v7
+        with:
+          name: symbols.win7-x64
+          path: ${{ runner.temp }}/keedesk/win7-x64/symbols/
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Upload Windows 7 build
+        if: matrix.runtime == 'win-x64'
+        uses: actions/upload-artifact@v7
+        with:
+          name: keedesk.win7-x64
+          path: ${{ runner.temp }}/keedesk/win7-x64/publish/*
+          if-no-files-found: error
+          retention-days: 1
+      - name: Upload Windows 7 package
+        if: matrix.runtime == 'win-x64'
+        uses: actions/upload-artifact@v7
+        with:
+          name: package.win7-x64
+          path: build/KeeDesk_${{ inputs.version }}.win7-x64.zip
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 1
+
+  linux:
+    name: Linux (${{ matrix.runtime }})
+    runs-on: ${{ matrix.os }}
+    # Keep the glibc 2.31 build baseline on both native architectures.
+    container: ubuntu:20.04
     strategy:
       matrix:
         include:
-          - name: Windows x64
-            os: windows-2022
-            runtime: win-x64
-          - name: Windows ARM64
-            os: windows-2022
-            runtime: win-arm64
-          # 独立编译 Windows 7/8/8.1 兼容包 (win7-x64)，通过 YY-Thunks 与 VC-LTL 兼容老系统，不影响常规 win-x64 包
-          - name: Windows 7 x64
-            os: windows-2022
-            runtime: win-x64
-            package: win7-x64
-            publish-args: -p:Win7Compat=true
-          - name: Linux
+          - runtime: linux-x64
             os: ubuntu-latest
-            runtime: linux-x64
-            container: ubuntu:20.04
-          # 在原生 arm64 runner 上使用 Ubuntu 20.04 容器编译，保持 glibc 2.31 低基线兼容性
-          - name: Linux (arm64)
+          - runtime: linux-arm64
             os: ubuntu-24.04-arm
-            runtime: linux-arm64
-            container: ubuntu:20.04
-    name: Build ${{ matrix.name }}
-    runs-on: ${{ matrix.os }}
-    container: ${{ matrix.container || '' }}
-    env:
-      NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
-      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
-      DOTNET_NOLOGO: '1'
     steps:
-      - name: Install common CLI tools
-        if: startsWith(matrix.runtime, 'linux-')
+      - name: Install build and package dependencies
         run: |
           export DEBIAN_FRONTEND=noninteractive
           ln -fs /usr/share/zoneinfo/Etc/UTC /etc/localtime
           apt-get update
-          apt-get install -y sudo
-          sudo apt-get install -y curl wget git unzip zip libicu66 tzdata clang lld zlib1g-dev libssl-dev
+          apt-get install -y curl wget git unzip zip libicu66 tzdata clang lld zlib1g-dev libssl-dev \
+            dpkg-dev fakeroot desktop-file-utils rpm libfuse2 file build-essential binutils ffmpeg
       - name: Checkout sources
         uses: actions/checkout@v7
       - name: Setup .NET
@@ -57,35 +145,41 @@ jobs:
           path: .nuget/packages
           key: nuget-${{ matrix.runtime }}-${{ hashFiles('src/**/*.csproj') }}
           restore-keys: nuget-${{ matrix.runtime }}-
-
-      - name: Publish
-        run: |
-          dotnet publish src/KeeDesk/KeeDesk.csproj -c Release -o publish -r ${{ matrix.runtime }} --self-contained -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true ${{ matrix.publish-args }}
-
-      # 将调试符号 (.dSYM, .dbg, .pdb) 从发布目录剥离并单独归档，不打入最终用户安装包
-      - name: Split off debug symbols
+      - name: Publish and package
         shell: bash
+        env:
+          RUNTIME: ${{ matrix.runtime }}
+          APPIMAGE_EXTRACT_AND_RUN: 1
         run: |
-          mkdir -p symbols
-          find publish -maxdepth 1 \( -name '*.dSYM' -o -name '*.dbg' -o -name '*.pdb' \) -exec mv {} symbols/ \;
+          dotnet publish src/KeeDesk/KeeDesk.csproj -c Release -o build/KeeDesk -r "$RUNTIME" \
+            --self-contained -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true
+          mkdir -p "$RUNNER_TEMP/keedesk/symbols"
+          find build/KeeDesk -maxdepth 1 \( -name '*.dSYM' -o -name '*.dbg' -o -name '*.pdb' \) \
+            -exec mv {} "$RUNNER_TEMP/keedesk/symbols/" \;
+          tar -cf "$RUNNER_TEMP/keedesk/keedesk.$RUNTIME.tar" -C build/KeeDesk .
+          bash ./build/scripts/package.linux.sh
       - name: Upload symbols
         uses: actions/upload-artifact@v7
         with:
-          name: symbols.${{ matrix.package || matrix.runtime }}
-          path: symbols/
+          name: symbols.${{ matrix.runtime }}
+          path: ${{ runner.temp }}/keedesk/symbols/
           if-no-files-found: ignore
           retention-days: 7
-
-      - name: Tar artifact
-        if: startsWith(matrix.runtime, 'linux-')
-        run: |
-          tar -cvf "keedesk.${{ matrix.runtime }}.tar" -C publish .
-          rm -r publish/*
-          mv "keedesk.${{ matrix.runtime }}.tar" publish
-
-      - name: Upload artifact
+      - name: Upload build
         uses: actions/upload-artifact@v7
         with:
-          name: keedesk.${{ matrix.package || matrix.runtime }}
-          path: publish/*
+          name: keedesk.${{ matrix.runtime }}
+          path: ${{ runner.temp }}/keedesk/keedesk.${{ matrix.runtime }}.tar
+          if-no-files-found: error
+          retention-days: 1
+      - name: Upload packages
+        uses: actions/upload-artifact@v7
+        with:
+          name: package.${{ matrix.runtime }}
+          path: |
+            build/KeeDesk-*.AppImage
+            build/KeeDesk_*.deb
+            build/KeeDesk-*.rpm
+          if-no-files-found: error
+          compression-level: 0
           retention-days: 1

@@ -22,7 +22,12 @@ case "$RUNTIME" in
         exit 1;;
 esac
 
-APPIMAGETOOL_URL=https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+host_arch=$(uname -m)
+case "$host_arch" in
+    x86_64|aarch64) ;;
+    *) echo "Unsupported packaging host architecture: $host_arch"; exit 1;;
+esac
+APPIMAGETOOL_URL="https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-$host_arch.AppImage"
 
 cd build
 
@@ -40,7 +45,7 @@ if [[ -f "$ICON_SOURCE" ]]; then
 fi
 
 if [[ ! -f "appimagetool" ]]; then
-    curl -o appimagetool -L "$APPIMAGETOOL_URL"
+    curl -fL -o appimagetool "$APPIMAGETOOL_URL"
     chmod +x appimagetool
 fi
 
