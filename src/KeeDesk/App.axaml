@@ -188,9 +188,6 @@
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="CornerRadius" Value="6" />
         </Style>
-        <Style Selector="ListBox.entryList ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="Transparent" />
-        </Style>
         <Style Selector="ListBox.entryList ListBoxItem Border.entryCard">
             <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
@@ -267,6 +264,7 @@
         </Style>
 
         <Style Selector="ListBoxItem">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="Padding" Value="0" />
             <Setter Property="Margin" Value="{DynamicResource DensityItemMargin}" />
             <Setter Property="CornerRadius" Value="4" />
@@ -326,9 +324,6 @@
         <Style Selector="ContextMenu.workspaceMenu.glass.windows, MenuFlyoutPresenter.workspaceMenu.glass.windows">
             <Setter Property="Background" Value="{DynamicResource MenuGlassBrushWindows}" />
         </Style>
-        <Style Selector="MenuFlyoutPresenter.workspaceMenu /template/ Border#LayoutRoot">
-            <Setter Property="Padding" Value="4,1" />
-        </Style>
         <Style Selector="ContextMenu.workspaceMenu:not(.glass) /template/ Border, MenuFlyoutPresenter.workspaceMenu:not(.glass) /template/ Border#LayoutRoot">
             <Setter Property="BoxShadow" Value="0 5 20 0 #32000000" />
         </Style>
@@ -384,6 +379,9 @@
 
     <Application.Resources>
         <ResourceDictionary>
+            <Thickness x:Key="MenuFlyoutItemMargin">0,1</Thickness>
+            <Thickness x:Key="MenuFlyoutPresenterThemePadding">4,2</Thickness>
+            <Thickness x:Key="ComboBoxDropdownContentMargin">0</Thickness>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceInclude Source="avares://KeeDesk/Styles/FluentIcons.axaml" />
                 <ResourceInclude Source="avares://KeeDesk/Styles/DensityNormal.axaml" />

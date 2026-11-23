@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.4 - 2026-11-24
+
+- **Fluent 2 interface.** Updated the desktop controls and retained KeeDesk’s olive green accent, light and dark themes, and compact layouts.
+- **Vault and entry lists.** Aligned entry cards, recent vaults, and their icons. Tightened the group list in the sidebar.
+- **Menus and pickers.** Made selection and hover highlights fill each option in drop-downs, context menus, submenus, and the vault switcher. Restored the soft shadows on drop-down and calendar panels.
+- **Field focus.** Restored the animated bottom border for text and number inputs. Drop-down fields use that focus animation with a separate selection marker inside the list.
+
 ## 1.3.3 - 2026-11-23
 
 - **Windows menus.** Softened submenu shadows in the quick settings menu and context menus in both light and dark themes.

@@ -5,6 +5,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform;
 using Avalonia.Styling;
+using KeeDesk.Controls;
 using KeeDesk.Helpers;
 using KeeDesk.Services;
 using KeeDesk.ViewModels;
@@ -28,6 +29,8 @@ public partial class App : Application
         CultureInfo.CurrentUICulture = zhCulture;
 
         Glass.AttachSubmenuShadows();
+        PickerSurface.AttachToFluent2Templates();
+        TextInputFocusIndicator.AttachToFluent2Templates();
         MacWindowPlacement.Attach();
         AvaloniaXamlLoader.Load(this);
         Resources["DesktopFontFamily"] = OperatingSystem.IsWindows()

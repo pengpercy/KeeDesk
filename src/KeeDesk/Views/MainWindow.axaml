@@ -832,11 +832,10 @@
                                         <PathIcon Data="{StaticResource IconAdd}" Width="11" Height="11" Foreground="{DynamicResource SecondaryTextBrush}" />
                                     </Button>
                                 </Grid>
-                                <TreeView ItemsSource="{Binding RootGroups}" SelectedItem="{Binding SelectedGroup}" Background="Transparent" BorderThickness="0">
+                                <TreeView Classes="sidebarGroups" ItemsSource="{Binding RootGroups}" SelectedItem="{Binding SelectedGroup}" Background="Transparent" BorderThickness="0">
                                     <TreeView.Styles>
                                         <Style Selector="TreeViewItem" x:DataType="vm:GroupItemViewModel">
                                             <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
-                                            <Setter Property="CornerRadius" Value="6" />
                                         </Style>
                                     </TreeView.Styles>
                                     <TreeView.ItemTemplate>
@@ -1454,14 +1453,23 @@
                                                         <TextBlock Text="{Binding UserName}" FontSize="{DynamicResource DensityFontSizeCaption}" Foreground="{DynamicResource SecondaryTextBrush}" TextTrimming="CharacterEllipsis" />
                                                     </StackPanel>
 
-                                                    <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                                        <PathIcon Data="{StaticResource IconStar}" Width="16" Height="16" IsVisible="{Binding IsFavorite}"
-                                                                  Foreground="{DynamicResource SecondaryTextBrush}" />
-                                                        <PathIcon Data="{StaticResource IconClock}" Width="16" Height="16" IsVisible="{Binding HasTotp}"
-                                                                  Foreground="{DynamicResource SecondaryTextBrush}" />
-                                                        <TextBlock Text="{Binding ExpiryBadge}" FontSize="12" Foreground="{DynamicResource WarningBrush}"
+                                                    <Grid Grid.Column="3" ColumnDefinitions="Auto,22,16" VerticalAlignment="Center">
+                                                        <Grid.IsVisible>
+                                                            <MultiBinding Converter="{x:Static BoolConverters.Or}">
+                                                                <Binding Path="HasExpiryBadge" />
+                                                                <Binding Path="IsFavorite" />
+                                                                <Binding Path="HasTotp" />
+                                                            </MultiBinding>
+                                                        </Grid.IsVisible>
+                                                        <TextBlock Text="{Binding ExpiryBadge}" FontSize="12" Margin="0,0,6,0"
+                                                                   VerticalAlignment="Center" Foreground="{DynamicResource WarningBrush}"
                                                                    IsVisible="{Binding HasExpiryBadge}" />
-                                                    </StackPanel>
+                                                        <PathIcon Grid.Column="1" Data="{StaticResource IconStar}" Width="16" Height="16"
+                                                                  HorizontalAlignment="Left" IsVisible="{Binding IsFavorite}"
+                                                                  Foreground="{DynamicResource SecondaryTextBrush}" />
+                                                        <PathIcon Grid.Column="2" Data="{StaticResource IconClock}" Width="16" Height="16"
+                                                                  IsVisible="{Binding HasTotp}" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                                    </Grid>
                                                 </Grid>
                                             </Border>
                                         </DataTemplate>

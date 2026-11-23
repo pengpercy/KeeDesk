@@ -1,6 +1,121 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:controls="using:KeeDesk.Controls">
+    <!-- Entry cards own their hover, selected and focus visuals. -->
+    <Styles.Resources>
+        <ControlTheme x:Key="EntryCardListItem" TargetType="ListBoxItem">
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <ContentPresenter Name="PART_ContentPresenter"
+                                      TemplatedControl.IsTemplateFocusTarget="True"
+                                      Content="{TemplateBinding Content}"
+                                      ContentTemplate="{TemplateBinding ContentTemplate}"
+                                      Foreground="{TemplateBinding Foreground}"
+                                      HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                      VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+                </ControlTemplate>
+            </Setter>
+        </ControlTheme>
+    </Styles.Resources>
+    <Style Selector="ListBox.entryList">
+        <Setter Property="ItemContainerTheme" Value="{StaticResource EntryCardListItem}" />
+    </Style>
+
+    <Style Selector="TreeView.sidebarGroups TreeViewItem">
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="CornerRadius" Value="6" />
+    </Style>
+    <Style Selector="TreeView.sidebarGroups TreeViewItem /template/ Border#PART_LayoutRoot">
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Margin" Value="0" />
+    </Style>
+    <Style Selector="TreeView.sidebarGroups TreeViewItem /template/ Panel#PART_ExpandCollapseChevronContainer">
+        <Setter Property="Margin" Value="8,0,6,0" />
+    </Style>
+    <Style Selector="TreeView.sidebarGroups TreeViewItem /template/ Border#PART_LayoutRoot:pointerover">
+        <Setter Property="Background" Value="{DynamicResource SidebarItemHoverBackgroundBrush}" />
+    </Style>
+    <Style Selector="TreeView.sidebarGroups TreeViewItem:selected /template/ Border#PART_LayoutRoot">
+        <Setter Property="Background" Value="{DynamicResource SidebarItemSelectedBackgroundBrush}" />
+    </Style>
+    <Style Selector="TreeView.sidebarGroups TreeViewItem:selected /template/ Border#PART_LayoutRoot:pointerover">
+        <Setter Property="Background" Value="{DynamicResource StandardButtonPressedBackgroundBrush}" />
+    </Style>
+
+    <!-- The popup owns the outer inset, so each rounded option can fill the available row. -->
+    <Style Selector="MenuItem /template/ Border#PART_LayoutRoot">
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="MinHeight" Value="{TemplateBinding MinHeight}" />
+    </Style>
+    <Style Selector="MenuItem:selected:not(:disabled) /template/ Border#PART_LayoutRoot">
+        <Setter Property="Background" Value="{DynamicResource SidebarItemSelectedBackgroundBrush}" />
+    </Style>
+    <Style Selector="MenuItem:pressed:not(:disabled) /template/ Border#PART_LayoutRoot:pointerover">
+        <Setter Property="Background" Value="{DynamicResource StandardButtonPressedBackgroundBrush}" />
+    </Style>
+
+    <Style Selector=":is(ComboBox) /template/ Rectangle#Pill">
+        <Setter Property="IsVisible" Value="False" />
+    </Style>
+
+    <Style Selector="ComboBoxItem">
+        <Setter Property="MinHeight" Value="30" />
+        <Setter Property="Padding" Value="12,2" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="CornerRadius" Value="4" />
+    </Style>
+    <Style Selector="ComboBox:dropdownopen ComboBoxItem /template/ Border#LayoutRoot">
+        <Setter Property="Margin" Value="0,1" />
+    </Style>
+    <Style Selector="ComboBoxItem:pointerover:not(:disabled) /template/ Border#LayoutRoot,
+                     ComboBoxItem:selected:not(:disabled) /template/ Border#LayoutRoot">
+        <Setter Property="Background" Value="{DynamicResource SidebarItemSelectedBackgroundBrush}" />
+    </Style>
+    <Style Selector="ComboBoxItem:pressed:not(:disabled) /template/ Border#LayoutRoot,
+                     ComboBoxItem:selected:pointerover:not(:disabled) /template/ Border#LayoutRoot">
+        <Setter Property="Background" Value="{DynamicResource StandardButtonPressedBackgroundBrush}" />
+    </Style>
+    <Style Selector="ComboBox:dropdownopen /template/ Border#PopupBorder, CalendarDatePicker[IsDropDownOpen=True] /template/ Border#PopupBorder">
+        <Setter Property="Margin" Value="0" />
+        <Setter Property="BackgroundSizing" Value="CenterBorder" />
+        <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
+        <Setter Property="Background" Value="{DynamicResource FlyoutSurfaceBrush}" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="BoxShadow" Value="{DynamicResource PickerShadow}" />
+    </Style>
+    <Style Selector="ComboBox:dropdownopen /template/ Border#PopupBorder">
+        <Setter Property="Padding" Value="4,2" />
+    </Style>
+    <Style Selector="ComboBox /template/ Popup#PART_Popup, CalendarDatePicker /template/ Popup#PART_Popup">
+        <Setter Property="ShouldUseOverlayLayer" Value="True" />
+    </Style>
+    <Style Selector="CalendarDatePicker /template/ Popup#PART_Popup">
+        <Setter Property="Placement" Value="BottomEdgeAlignedLeft" />
+        <Setter Property="VerticalOffset" Value="4" />
+    </Style>
+
+    <Style Selector=":is(TextBox):focus /template/ Border#PART_BorderElement">
+        <Setter Property="BorderThickness" Value="{TemplateBinding BorderThickness}" />
+    </Style>
+    <Style Selector=":is(TextBox):focus:not(:error) /template/ Border#PART_BorderElement">
+        <Setter Property="BorderBrush" Value="{TemplateBinding BorderBrush}" />
+    </Style>
+    <Style Selector="CalendarDatePicker:focus-within /template/ Border#Background">
+        <Setter Property="BorderThickness" Value="{TemplateBinding BorderThickness}" />
+    </Style>
+    <Style Selector="CalendarDatePicker:focus-within:not(:error) /template/ Border#Background">
+        <Setter Property="BorderBrush" Value="{TemplateBinding BorderBrush}" />
+    </Style>
+    <Style Selector="ButtonSpinner:focus-within /template/ Border#BorderElement">
+        <Setter Property="BorderThickness" Value="{TemplateBinding BorderThickness}" />
+    </Style>
+    <Style Selector="ButtonSpinner:focus-within:not(:error) /template/ Border#BorderElement">
+        <Setter Property="BorderBrush" Value="{TemplateBinding BorderBrush}" />
+    </Style>
+    <Style Selector="controls|TextInputFocusIndicator">
+        <Setter Property="Background" Value="{DynamicResource AccentButtonBackgroundBrush}" />
+    </Style>
+
     <Style Selector="Button.subtle:disabled /template/ ContentPresenter#PART_ContentPresenter,
                      Button.navItem:disabled /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Background" Value="Transparent" />
@@ -129,9 +244,6 @@
     <Style Selector="ListBox:not(.entryList) ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter,
                      ListBox:not(.entryList) ListBoxItem:selected:pressed /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Background" Value="{DynamicResource StandardButtonPressedBackgroundBrush}" />
-    </Style>
-    <Style Selector="ListBox.entryList ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="Transparent" />
     </Style>
     <Style Selector="ListBox.entryList ListBoxItem:pressed Border.entryCard">
         <Setter Property="Background" Value="{DynamicResource EntryRowSelectedBackgroundBrush}" />
