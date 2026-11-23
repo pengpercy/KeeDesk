@@ -92,6 +92,11 @@ public partial class MainWindow : Window
                 CaptureNormalWindowSize();
             });
         };
+        Closing += (_, args) =>
+        {
+            if (!args.Cancel && DataContext is MainWindowViewModel vm)
+                args.Cancel = !vm.TrySaveBeforeClosing();
+        };
         Closed += (_, _) =>
         {
             ++_presentationVersion;
@@ -454,6 +459,16 @@ public partial class MainWindow : Window
         }
     }
 
+    private async Task<T> ShowAutoTypeDialogAsync<T>(Window dialog, CancellationToken token)
+    {
+        token.ThrowIfCancellationRequested();
+        using var registration = token.Register(() => Dispatcher.UIThread.Post(() =>
+        {
+            if (dialog.IsVisible) dialog.Close();
+        }));
+        return await ShowWorkspaceDialogAsync<T>(dialog);
+    }
+
     private async Task<T> ShowWorkspaceDialogAsync<T>(Window dialog)
     {
         DialogSmoke.IsVisible = ++_workspaceDialogCount > 0;
@@ -578,9 +593,12 @@ public partial class MainWindow : Window
             var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
             {
                 AllowMultiple = false,
-                FileTypeFilter = ext == "*"
-                    ? [FilePickerFileTypes.All]
-                    : [new FilePickerFileType(ext.ToUpperInvariant()) { Patterns = [$"*.{ext}"] }, FilePickerFileTypes.All]
+                FileTypeFilter = ext switch
+                {
+                    "*" => [FilePickerFileTypes.All],
+                    "xsl" => [new FilePickerFileType("XSLT") { Patterns = ["*.xsl", "*.xslt"] }, FilePickerFileTypes.All],
+                    _ => [new FilePickerFileType(ext.ToUpperInvariant()) { Patterns = [$"*.{ext}"] }, FilePickerFileTypes.All]
+                }
             });
             return files.FirstOrDefault()?.TryGetLocalPath();
         };
@@ -591,6 +609,7 @@ public partial class MainWindow : Window
             {
                 SuggestedFileName = suggestedName,
                 DefaultExtension = ext == "*" ? null : ext,
+                ShowOverwritePrompt = true,
                 FileTypeChoices = ext == "*"
                     ? [FilePickerFileTypes.All]
                     : [new FilePickerFileType(ext.ToUpperInvariant()) { Patterns = [$"*.{ext}"] }]
@@ -619,6 +638,51 @@ public partial class MainWindow : Window
             return res is null ? null : (res.Database, res.MasterKey, res.KeyFilePath);
         };
 
+        vm.PromptRemoteVaultAsync = endpoint =>
+            ShowWorkspaceDialogAsync<KeeDesk.Core.Services.RemoteVaultClient?>(new RemoteVaultConnectionWindow(endpoint));
+        vm.PickCloudVaultFileAsync = async synchronize =>
+        {
+            var locations = await Task.Run(KeeDesk.Core.Services.CloudVaultLocations.Discover);
+            var selection = await ShowWorkspaceDialogAsync<CloudVaultSelection?>(new CloudVaultWindow(locations, synchronize));
+            if (selection is null) return null;
+            var folder = selection.DirectoryPath is { } path ? await StorageProvider.TryGetFolderFromPathAsync(path) : null;
+            var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+            {
+                Title = L(synchronize ? "Str_SyncCloudVault" : "Str_OpenCloudVault"),
+                SuggestedStartLocation = folder,
+                AllowMultiple = false,
+                FileTypeFilter = [new FilePickerFileType("KDBX") { Patterns = ["*.kdbx"] }]
+            });
+            return files.FirstOrDefault()?.TryGetLocalPath();
+        };
+        vm.UnlockRemoteVaultAsync = async (vaultPath, token) =>
+        {
+            var dialog = new VaultUnlockPromptWindow(vaultPath, L("Str_OpenRemoteVault"), L("Str_UnlockAndOpen"));
+            var result = await ShowAutoTypeDialogAsync<VaultUnlockResult?>(dialog, token);
+            return result is null ? null : (result.Database, result.MasterKey, result.KeyFilePath);
+        };
+        vm.ShowRemoteSyncAsync = async (synchronize, cancellation) =>
+        {
+            var dialog = new RemoteVaultSyncWindow(synchronize, cancellation);
+            var (vault, error) = await ShowWorkspaceDialogAsync<(KeeDesk.Core.Kdbx.KdbxDatabase?, Exception?)>(dialog);
+            if (error is not null)
+                System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw(error);
+            return vault;
+        };
+        vm.OpenCsvMappingAsync = async content =>
+        {
+            var format = await ShowWorkspaceDialogAsync<CsvImportSelection?>(new CsvImportWindow(content));
+            return format is null ? null : (format.Document, format.Mapping, format.HasHeader);
+        };
+        vm.OpenVaultPrintOptionsAsync = () => ShowWorkspaceDialogAsync<KeeDesk.Core.Services.VaultPrintOptions?>(new VaultPrintWindow());
+        vm.OpenLegacyKdbAsync = async path =>
+        {
+            var dialog = new VaultUnlockPromptWindow(path, L("Str_ImportLegacyKdb"), L("Str_CsvConfirmImport"), legacyImport: true);
+            var result = await ShowWorkspaceDialogAsync<VaultUnlockResult?>(dialog);
+            result?.MasterKey.Dispose();
+            return result?.Database;
+        };
+
         vm.OpenMoveToGroupAsync = async (db, entry) =>
         {
             var dlg = new MoveToGroupWindow(db, entry);
@@ -631,10 +695,26 @@ public partial class MainWindow : Window
             return await dlg.ShowDialog<bool>(this);
         };
 
-        vm.OpenAdvancedSearchAsync = async () =>
+        vm.OpenAdvancedSearchAsync = async database =>
         {
-            var dlg = new AdvancedSearchWindow();
-            return await dlg.ShowDialog<KeeDesk.Core.Services.EntrySearchParameters?>(this);
+            var dlg = new AdvancedSearchWindow(database, profiles => vm.TrySaveSearchProfiles(database, profiles));
+            dlg.AddHandler(PointerPressedEvent, OnUserActivity, RoutingStrategies.Tunnel);
+            dlg.AddHandler(KeyDownEvent, OnUserActivity, RoutingStrategies.Tunnel);
+            void CloseOnLock(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+            {
+                if (e.PropertyName == nameof(MainWindowViewModel.IsUnlocked) && !vm.IsUnlocked)
+                    dlg.Close();
+            }
+
+            vm.PropertyChanged += CloseOnLock;
+            try
+            {
+                return await ShowWorkspaceDialogAsync<(string Query, List<KeeDesk.Core.Kdbx.KdbxEntry> Entries)?>(dlg);
+            }
+            finally
+            {
+                vm.PropertyChanged -= CloseOnLock;
+            }
         };
 
         vm.OpenUrlExternal = url =>
@@ -649,24 +729,34 @@ public partial class MainWindow : Window
 
         vm.MinimizeWindowAction = () => WindowState = WindowState.Minimized;
 
-        vm.OpenAutoTypePickerAsync = async (targetTitle, matches) =>
-        {
-            var dlg = new AutoTypePickerWindow(targetTitle, matches);
-            return await dlg.ShowDialog<KeeDesk.Core.Services.AutoTypeMatchResult?>(this);
-        };
+        vm.OpenAutoTypePickerAsync = (targetTitle, matches, token) =>
+            ShowAutoTypeDialogAsync<KeeDesk.Core.Services.AutoTypeMatchResult?>(
+                new AutoTypePickerWindow(targetTitle, matches), token);
+        vm.OpenAutoTypeCharactersAsync = (pick, token) =>
+            ShowAutoTypeDialogAsync<IReadOnlyList<int>?>(new AutoTypeCharactersWindow(pick), token);
 
-        // 注册 OS 级全局 Auto-Type 热键（Windows: Ctrl+Alt+A / macOS: Control+Option+A）
-        _globalHotKeyService?.Dispose();
-        _globalHotKeyService = new KeeDesk.Services.GlobalHotKeyService();
-        _globalHotKeyService.HotKeyPressed += () =>
+        vm.RegisterAutoTypeShortcut = shortcut =>
         {
-            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            if (_globalHotKeyService?.Shortcut == shortcut) return true;
+            var registration = new GlobalHotKeyService();
+            registration.HotKeyPressed += () => Dispatcher.UIThread.Post(() =>
             {
-                if (vm.IsUnlocked)
+                if (_globalHotKeyService == registration && vm.IsUnlocked)
                     vm.TriggerGlobalAutoTypeCommand.Execute(null);
             });
+            if (!registration.TryRegister(shortcut))
+            {
+                registration.Dispose();
+                return false;
+            }
+
+            var previous = _globalHotKeyService;
+            _globalHotKeyService = registration;
+            previous?.Dispose();
+            vm.IsAutoTypeShortcutRegistered = true;
+            return true;
         };
-        _globalHotKeyService.TryRegisterDefault();
+        vm.IsAutoTypeShortcutRegistered = vm.RegisterAutoTypeShortcut(vm.SettingsService.Settings.AutoTypeShortcut ?? DesktopShortcut.Default);
 
         // 注册系统休眠与锁屏自动锁定监听
         _sleepLockService?.Dispose();
@@ -676,9 +766,7 @@ public partial class MainWindow : Window
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
             {
                 if (!vm.IsUnlocked) return;
-                vm.LockVaultCommand.Execute(null);
-                vm.ShowToast(reason);
-                KeeDesk.Services.NativeNotificationService.Send("KeeDesk", reason);
+                vm.LockAllVaults(reason);
             });
         };
 
@@ -745,6 +833,16 @@ public partial class MainWindow : Window
         else if (!vm.IsMacOS && e.Key == Key.O && e.KeyModifiers == KeyModifiers.Control)
         {
             vm.OpenAnotherVaultCommand.Execute(null);
+            e.Handled = true;
+        }
+        else if (!vm.IsMacOS && e.Key == Key.O && e.KeyModifiers == (KeyModifiers.Control | KeyModifiers.Shift))
+        {
+            vm.OpenRemoteVaultCommand.Execute(null);
+            e.Handled = true;
+        }
+        else if (!vm.IsMacOS && e.Key == Key.P && e.KeyModifiers == KeyModifiers.Control)
+        {
+            vm.PrintVaultCommand.Execute(null);
             e.Handled = true;
         }
         else if (e.Key == Key.N || e.Key == Key.I)

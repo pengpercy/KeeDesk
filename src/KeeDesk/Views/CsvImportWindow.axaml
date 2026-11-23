@@ -1,0 +1,39 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="KeeDesk.Views.CsvImportWindow"
+        Title="{DynamicResource Str_CsvImportMapping}"
+        Width="530" Height="510" CanResize="False" WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource WorkspaceBackgroundBrush}" Foreground="{DynamicResource PrimaryTextBrush}">
+    <Grid Margin="22,18" RowDefinitions="Auto,*,Auto,Auto" RowSpacing="12">
+        <StackPanel Spacing="8">
+            <TextBlock Text="{DynamicResource Str_CsvImportMapping}" FontSize="18" FontWeight="SemiBold" />
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <CheckBox x:Name="HeaderCheck" Content="{DynamicResource Str_CsvHasHeader}" IsChecked="True"
+                          IsCheckedChanged="Layout_Changed" />
+                <ComboBox Grid.Column="1" x:Name="DelimiterBox" Classes="localizedOptions" SelectedIndex="0"
+                          AutomationProperties.Name="{DynamicResource Str_CsvDelimiter}" SelectionChanged="Layout_Changed">
+                    <ComboBoxItem Content="{DynamicResource Str_CsvDelimiterAutomatic}" />
+                    <ComboBoxItem Content="{DynamicResource Str_CsvDelimiterComma}" />
+                    <ComboBoxItem Content="{DynamicResource Str_CsvDelimiterSemicolon}" />
+                    <ComboBoxItem Content="{DynamicResource Str_CsvDelimiterTab}" />
+                </ComboBox>
+            </Grid>
+        </StackPanel>
+        <Border Grid.Row="1" Classes="fluentCard" Padding="10">
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                <StackPanel x:Name="MappingRows" Spacing="6" />
+            </ScrollViewer>
+        </Border>
+        <StackPanel Grid.Row="2" Spacing="6">
+            <TextBlock x:Name="PreviewHeading" FontSize="12" FontWeight="SemiBold" />
+            <TextBlock x:Name="PreviewText" MaxHeight="105" TextWrapping="Wrap"
+                       Foreground="{DynamicResource SecondaryTextBrush}" />
+            <TextBlock x:Name="ErrorText" TextWrapping="Wrap" IsVisible="False" Foreground="{DynamicResource DangerBrush}" />
+        </StackPanel>
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+            <Button Height="34" Content="{DynamicResource Str_Cancel}" IsCancel="True" Click="Cancel_Click" />
+            <Button x:Name="ImportButton" Height="34" Classes="accent" Content="{DynamicResource Str_CsvConfirmImport}"
+                    IsDefault="True" Click="Import_Click" />
+        </StackPanel>
+    </Grid>
+</Window>

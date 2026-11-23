@@ -4,12 +4,15 @@ using KeeDesk.Core.Crypto;
 
 namespace KeeDesk.Core.Kdbx;
 
+public sealed class KdbxFileChangedException()
+    : IOException("The database file changed on disk after it was opened or while it was being saved.");
+
 /// <summary>
 /// 完整的 KDBX 3.1 / 4.0 / 4.1 二进制读写引擎。
 /// 支持 AES-256-CBC / ChaCha20 / Twofish 加密，Argon2d / Argon2id / AES-KDF 密钥派生，
 /// 以及 KDBX 4 HMAC-SHA-256 块流认证与 KDBX 3.1 HashedBlockStream 校验。
 /// </summary>
-public static class KdbxFormat
+public static partial class KdbxFormat
 {
     private const byte HeaderEnd = 0;
     private const byte HeaderCipherId = 2;
@@ -30,22 +33,23 @@ public static class KdbxFormat
 
     public static KdbxDatabase Load(string filePath, CompositeKey key)
     {
-        using var fs = File.OpenRead(filePath);
-        var db = Load(fs, key);
+        filePath = Path.GetFullPath(filePath);
+        byte[] encrypted = File.ReadAllBytes(filePath);
+        var db = LoadEncrypted(encrypted, key);
         db.FilePath = filePath;
-        db.IsModified = false;
+        db.SavedFileHash = SHA256.HashData(encrypted);
         return db;
     }
 
     public static KdbxDatabase Load(Stream stream, CompositeKey key)
     {
-        byte[] allBytes;
-        using (var ms = new MemoryStream())
-        {
-            stream.CopyTo(ms);
-            allBytes = ms.ToArray();
-        }
+        using var ms = new MemoryStream();
+        stream.CopyTo(ms);
+        return LoadEncrypted(ms.ToArray(), key);
+    }
 
+    private static KdbxDatabase LoadEncrypted(byte[] allBytes, CompositeKey key)
+    {
         int pos = 0;
         uint sig1 = BinaryPrimitives.ReadUInt32LittleEndian(allBytes.AsSpan(pos, 4)); pos += 4;
         uint sig2 = BinaryPrimitives.ReadUInt32LittleEndian(allBytes.AsSpan(pos, 4)); pos += 4;
@@ -240,19 +244,6 @@ public static class KdbxFormat
             CryptographicOperations.ZeroMemory(transformedKey);
             CryptographicOperations.ZeroMemory(masterKey);
         }
-    }
-
-    public static void Save(KdbxDatabase db, string filePath, CompositeKey key)
-    {
-        // Atomic write via temp file to prevent vault corruption on crash
-        string tempPath = filePath + ".tmp";
-        using (var fs = File.Create(tempPath))
-        {
-            Save(db, fs, key);
-        }
-        File.Move(tempPath, filePath, overwrite: true);
-        db.FilePath = filePath;
-        db.IsModified = false;
     }
 
     public static void Save(KdbxDatabase db, Stream output, CompositeKey key)

@@ -1,0 +1,27 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="KeeDesk.Views.CloudVaultWindow"
+        Title="{DynamicResource Str_OpenCloudVault}"
+        Width="460" SizeToContent="Height" CanResize="False" WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource WorkspaceBackgroundBrush}" Foreground="{DynamicResource PrimaryTextBrush}">
+    <StackPanel Margin="22,18" Spacing="12">
+        <TextBlock x:Name="Heading" Text="{DynamicResource Str_OpenCloudVault}" FontSize="18" FontWeight="SemiBold" />
+        <ComboBox x:Name="ProviderBox" Classes="localizedOptions" Height="34" HorizontalAlignment="Stretch" SelectedIndex="0"
+                  AutomationProperties.Name="{DynamicResource Str_CloudVaultProvider}" SelectionChanged="Provider_Changed">
+            <ComboBoxItem Content="Google Drive" />
+            <ComboBoxItem Content="Microsoft OneDrive" />
+            <ComboBoxItem Content="Dropbox" />
+            <ComboBoxItem Content="iCloud Drive" />
+            <ComboBoxItem Content="{DynamicResource Str_CloudVaultOtherFolder}" />
+        </ComboBox>
+        <ComboBox x:Name="FolderBox" Height="34" HorizontalAlignment="Stretch"
+                  MaxDropDownHeight="220" AutomationProperties.Name="{DynamicResource Str_CloudVaultSyncFolder}" />
+        <TextBlock x:Name="FolderHint" Text="{DynamicResource Str_CloudVaultNoFolder}"
+                   Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap" />
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+            <Button Height="34" IsCancel="True" Content="{DynamicResource Str_Cancel}" Click="Cancel_Click" />
+            <Button Height="34" Classes="accent" IsDefault="True" Content="{DynamicResource Str_CloudVaultChooseFile}"
+                    Click="Choose_Click" />
+        </StackPanel>
+    </StackPanel>
+</Window>

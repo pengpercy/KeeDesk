@@ -24,6 +24,8 @@
             <NativeMenuItem Header="{DynamicResource Str_File}">
                 <NativeMenu>
                     <NativeMenuItem Header="{DynamicResource Str_OpenAnotherVaultInNewTab}" Gesture="Cmd+O" Command="{Binding OpenAnotherVaultCommand}" />
+                    <NativeMenuItem Header="{DynamicResource Str_OpenRemoteVault}" Gesture="Shift+Cmd+O" Command="{Binding OpenRemoteVaultCommand}" />
+                    <NativeMenuItem Header="{DynamicResource Str_OpenCloudVault}" Command="{Binding OpenCloudVaultCommand}" />
                     <NativeMenuItem Header="{DynamicResource Str_NewVault}" Gesture="Shift+Cmd+N" Command="{Binding CreateNewVaultCommand}" />
                     <NativeMenuItem Header="{DynamicResource Str_SaveVault}" Gesture="Cmd+S" Command="{Binding SaveVaultCommand}" />
                     <NativeMenuItem Header="{DynamicResource Str_SaveAs}" Gesture="Shift+Cmd+S" Command="{Binding SaveVaultAsCommand}" />
@@ -31,12 +33,18 @@
                     <NativeMenuItem Header="{DynamicResource Str_VaultSettingsAndMasterKey2}" Command="{Binding OpenDatabaseSettingsAsyncCommandCommand}" />
                     <NativeMenuItem Header="{DynamicResource Str_VaultMaintenance2}" Command="{Binding OpenDatabaseMaintenanceAsyncCommandCommand}" />
                     <NativeMenuItem Header="{DynamicResource Str_MergeSyncAnotherVault}" Command="{Binding MergeDatabaseCommand}" />
+                    <NativeMenuItem Header="{DynamicResource Str_SyncWithLocalVaultMenu}" Command="{Binding SynchronizeVaultCommand}" />
+                    <NativeMenuItem Header="{DynamicResource Str_SyncRemoteVault}" Command="{Binding SynchronizeRemoteVaultCommand}" />
+                    <NativeMenuItem Header="{DynamicResource Str_SyncCloudVault}" Command="{Binding SynchronizeCloudVaultCommand}" />
                     <NativeMenuItem Header="{DynamicResource Str_GenerateKeyFileKeyx}" Command="{Binding GenerateKeyFileCommand}" />
                     <NativeMenuItemSeparator />
                     <NativeMenuItem Header="{DynamicResource Str_ImportCSVGenericChromeBitwarden1Password}" Command="{Binding ImportCsvCommand}" />
                     <NativeMenuItem Header="{DynamicResource Str_ImportKeePass2XXML}" Command="{Binding ImportKeePassXmlCommand}" />
+                    <NativeMenuItem Header="{DynamicResource Str_ImportLegacyKdb}" Command="{Binding ImportLegacyKdbCommand}" />
                     <NativeMenuItem Header="{DynamicResource Str_ExportCSV}" Command="{Binding ExportCsvCommand}" />
                     <NativeMenuItem Header="{DynamicResource Str_ExportKeePass2XXML}" Command="{Binding ExportKeePassXmlCommand}" />
+                    <NativeMenuItem Header="{DynamicResource Str_ExportVaultStylesheet}" Command="{Binding ExportVaultStylesheetCommand}" />
+                    <NativeMenuItem Header="{DynamicResource Str_PrintVault}" Gesture="Cmd+P" Command="{Binding PrintVaultCommand}" />
                     <NativeMenuItem Header="{DynamicResource Str_GenerateHTMLEmergencySheet}" Command="{Binding ExportEmergencySheetCommand}" />
                     <NativeMenuItemSeparator />
                     <NativeMenuItem Header="{DynamicResource Str_CloseCurrentVaultTab}" Command="{Binding CloseVaultTabCommand}" />
@@ -72,7 +80,7 @@
             <NativeMenuItem Header="{DynamicResource Str_Search}">
                 <NativeMenu>
                     <NativeMenuItem Header="{DynamicResource Str_QuickSearch}" Gesture="Cmd+K" Command="{Binding FocusSearchCommand}" />
-                    <NativeMenuItem Header="{DynamicResource Str_AdvancedSearchRegexSupported}" Gesture="Cmd+F" Command="{Binding OpenAdvancedSearchAsyncCommandCommand}" />
+                    <NativeMenuItem Header="{DynamicResource Str_AdvancedSearch}" Gesture="Cmd+F" Command="{Binding OpenAdvancedSearchAsyncCommandCommand}" />
                     <NativeMenuItemSeparator />
                     <NativeMenuItem Header="{DynamicResource Str_ExpiredEntries}" Command="{Binding ShowQuickFilterCommand}" CommandParameter="Expired" />
                     <NativeMenuItem Header="{DynamicResource Str_ExpiresWithin7Days}" Command="{Binding ShowQuickFilterCommand}" CommandParameter="Expiring7" />
@@ -80,6 +88,7 @@
                     <NativeMenuItemSeparator />
                     <NativeMenuItem Header="{DynamicResource Str_RecentlyModifiedEntries}" Command="{Binding ShowQuickFilterCommand}" CommandParameter="LastModified" />
                     <NativeMenuItem Header="{DynamicResource Str_LargeEntriesAndAttachments}" Command="{Binding ShowQuickFilterCommand}" CommandParameter="Large" />
+                    <NativeMenuItem Header="{DynamicResource Str_FindSimilarPasswords}" Command="{Binding ScanSimilarPasswordsCommand}" />
                 </NativeMenu>
             </NativeMenuItem>
             <NativeMenuItem Header="{DynamicResource Str_View}">
@@ -476,6 +485,16 @@
                                     </StackPanel>
                                 </Button>
                                 <Button Classes="subtle welcomeAction" Command="{Binding CreateNewVaultCommand}" Padding="8,0" Content="{DynamicResource Str_NewVault2}" />
+                                <Button Classes="subtle welcomeAction" Width="32" Padding="0"
+                                        ToolTip.Tip="{DynamicResource Str_VaultLocations}" AutomationProperties.Name="{DynamicResource Str_VaultLocations}">
+                                    <Button.Flyout>
+                                        <helpers:GlassMenuFlyout FlyoutPresenterClasses="compactMenu" Placement="BottomEdgeAlignedLeft">
+                                            <MenuItem Header="{DynamicResource Str_OpenCloudVault}" Command="{Binding OpenCloudVaultCommand}" />
+                                            <MenuItem Header="{DynamicResource Str_OpenRemoteVault}" Command="{Binding OpenRemoteVaultCommand}" />
+                                        </helpers:GlassMenuFlyout>
+                                    </Button.Flyout>
+                                    <PathIcon Data="{StaticResource IconGlobe}" Width="15" Height="15" />
+                                </Button>
                             </WrapPanel>
                             <Border Height="1" Margin="0,4,0,0" Background="{DynamicResource DividerBrush}" />
                             <TextBlock Text="{DynamicResource Str_RecentVaults2}" FontWeight="SemiBold" Foreground="{DynamicResource SecondaryTextBrush}" />
@@ -892,6 +911,15 @@
                                         <MenuItem Header="{DynamicResource Str_OpenVault}" InputGesture="Ctrl+O" Command="{Binding OpenAnotherVaultCommand}">
                                             <MenuItem.Icon><PathIcon Data="{StaticResource IconFolderOpen}" /></MenuItem.Icon>
                                         </MenuItem>
+                                        <MenuItem Header="{DynamicResource Str_OpenRemoteVault}" Command="{Binding OpenRemoteVaultCommand}">
+                                            <MenuItem.Icon><PathIcon Data="{StaticResource IconGlobe}" /></MenuItem.Icon>
+                                        </MenuItem>
+                                        <MenuItem Header="{DynamicResource Str_OpenCloudVault}" Command="{Binding OpenCloudVaultCommand}">
+                                            <MenuItem.Icon><PathIcon Data="{StaticResource IconFolderOpen}" /></MenuItem.Icon>
+                                        </MenuItem>
+                                        <MenuItem Header="{DynamicResource Str_SaveAs}" Command="{Binding SaveVaultAsCommand}">
+                                            <MenuItem.Icon><PathIcon Data="{StaticResource IconSave}" /></MenuItem.Icon>
+                                        </MenuItem>
                                         <MenuItem Header="{DynamicResource Str_AdvancedSearch2}" Command="{Binding OpenAdvancedSearchAsyncCommandCommand}">
                                             <MenuItem.Icon><PathIcon Data="{StaticResource IconSearch}" /></MenuItem.Icon>
                                         </MenuItem>
@@ -902,6 +930,19 @@
                                         <MenuItem Header="{DynamicResource Str_VaultMaintenance}" Command="{Binding OpenDatabaseMaintenanceAsyncCommandCommand}">
                                             <MenuItem.Icon><PathIcon Data="{StaticResource IconRefresh}" /></MenuItem.Icon>
                                         </MenuItem>
+                                        <MenuItem Header="{DynamicResource Str_MergeSyncAnotherVault}" Command="{Binding MergeDatabaseCommand}">
+                                            <MenuItem.Icon><PathIcon Data="{StaticResource IconMerge}" /></MenuItem.Icon>
+                                        </MenuItem>
+                                        <MenuItem Header="{DynamicResource Str_SyncWithLocalVaultMenu}" Command="{Binding SynchronizeVaultCommand}">
+                                            <MenuItem.Icon><PathIcon Data="{StaticResource IconRefresh}" /></MenuItem.Icon>
+                                        </MenuItem>
+                                        <MenuItem Header="{DynamicResource Str_SyncRemoteVault}" Command="{Binding SynchronizeRemoteVaultCommand}">
+                                            <MenuItem.Icon><PathIcon Data="{StaticResource IconGlobe}" /></MenuItem.Icon>
+                                        </MenuItem>
+                                        <MenuItem Header="{DynamicResource Str_SyncCloudVault}" Command="{Binding SynchronizeCloudVaultCommand}">
+                                            <MenuItem.Icon><PathIcon Data="{StaticResource IconRefresh}" /></MenuItem.Icon>
+                                        </MenuItem>
+                                        <MenuItem Header="{DynamicResource Str_PrintVault}" Command="{Binding PrintVaultCommand}" />
                                     </helpers:GlassMenuFlyout>
                                 </Button.Flyout>
                                 <PathIcon Data="{StaticResource IconMore}" Width="16" Height="16" />
@@ -972,6 +1013,49 @@
                                             <TextBlock Text="{DynamicResource Str_AnEntryCanAppearInMultipleRisk}" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
                                         </StackPanel>
                                     </Grid>
+                                </Border>
+                                <Border Classes="fluentCard" Padding="12,10">
+                                    <StackPanel Spacing="8">
+                                        <WrapPanel Orientation="Horizontal">
+                                            <Button Content="{DynamicResource Str_FindSimilarPasswords}" Command="{Binding ScanSimilarPasswordsCommand}"
+                                                    IsVisible="{Binding !ScanSimilarPasswordsCommand.IsRunning}" />
+                                            <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding ScanSimilarPasswordsCommand.IsRunning}">
+                                                <TextBlock Text="{DynamicResource Str_ScanningSimilarPasswords}" VerticalAlignment="Center"
+                                                           AutomationProperties.LiveSetting="Polite" />
+                                                <Button Classes="subtle" Content="{DynamicResource Str_Cancel}" Command="{Binding ScanSimilarPasswordsCancelCommand}" />
+                                            </StackPanel>
+                                        </WrapPanel>
+                                        <StackPanel IsVisible="{Binding HasSimilarPasswordScanResult}">
+                                            <TextBlock Text="{DynamicResource Str_NoSimilarPasswords}" IsVisible="{Binding IsSimilarPasswordScanEmpty}"
+                                                       Foreground="{DynamicResource SecondaryTextBrush}" AutomationProperties.LiveSetting="Polite" />
+                                            <ListBox ItemsSource="{Binding AuditSimilarPasswords}" IsVisible="{Binding !IsSimilarPasswordScanEmpty}"
+                                                     MaxHeight="284" Background="Transparent"
+                                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                                     AutomationProperties.Name="{DynamicResource Str_FindSimilarPasswords}">
+                                                <ListBox.Styles>
+                                                    <Style Selector="ListBoxItem">
+                                                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                                    </Style>
+                                                </ListBox.Styles>
+                                                <ListBox.ItemTemplate>
+                                                    <DataTemplate x:DataType="vm:SimilarPasswordPairViewModel">
+                                                        <StackPanel>
+                                                            <TextBlock FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" Margin="12,4">
+                                                                <TextBlock.Text>
+                                                                    <MultiBinding Converter="{x:Static services:LocalizationService.FormatConverter}">
+                                                                        <DynamicResource ResourceKey="Str_PasswordSimilarityFormat" />
+                                                                        <Binding Path="Similarity" />
+                                                                    </MultiBinding>
+                                                                </TextBlock.Text>
+                                                            </TextBlock>
+                                                            <ContentControl Content="{Binding First}" ContentTemplate="{StaticResource AuditFindingTemplate}" />
+                                                            <ContentControl Content="{Binding Second}" ContentTemplate="{StaticResource AuditFindingTemplate}" />
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </ListBox.ItemTemplate>
+                                            </ListBox>
+                                        </StackPanel>
+                                    </StackPanel>
                                 </Border>
                                 <TextBlock Text="{DynamicResource Str_ViewByRisk}" FontSize="20" FontWeight="SemiBold" />
                                 <TabControl Classes="compactTabs">

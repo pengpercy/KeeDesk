@@ -3,7 +3,7 @@
         xmlns:chrome="clr-namespace:Avalonia.Controls.Chrome;assembly=Avalonia.Controls"
         x:Class="KeeDesk.Views.AdvancedSearchWindow"
         Title="{DynamicResource Str_AdvancedSearch}"
-        Width="480" Height="460"
+        Width="510" Height="528"
         WindowStartupLocation="CenterOwner"
         CanResize="False"
         ExtendClientAreaToDecorationsHint="True"
@@ -15,6 +15,15 @@
     <Window.Styles>
         <Style Selector="CheckBox">
             <Setter Property="FontSize" Value="13" />
+        </Style>
+        <Style Selector="TextBox#QueryBox">
+            <Setter Property="PlaceholderText" Value="{DynamicResource Str_SimpleSearchExample}" />
+        </Style>
+        <Style Selector="TextBox#QueryBox.regexSearch">
+            <Setter Property="PlaceholderText" Value="{DynamicResource Str_RegexSearchExample}" />
+        </Style>
+        <Style Selector="TextBox#QueryBox.xpathSearch">
+            <Setter Property="PlaceholderText" Value="{DynamicResource Str_XPathSearchExample}" />
         </Style>
     </Window.Styles>
 
@@ -28,9 +37,45 @@
         <ScrollViewer Grid.Row="1" x:Name="SearchFormScroll" ClipToBounds="True"
                       HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
             <StackPanel Spacing="8" Margin="24,4,24,6">
+                <StackPanel x:Name="ProfilesPanel" Spacing="6">
+                    <TextBlock Text="{DynamicResource Str_SearchProfiles}" FontSize="12" FontWeight="Medium" Foreground="{DynamicResource SecondaryTextBrush}" />
+                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+                        <ComboBox x:Name="ProfileBox" Height="32" HorizontalAlignment="Stretch"
+                                  PlaceholderText="{DynamicResource Str_ChooseSearchProfile}" AutomationProperties.Name="{DynamicResource Str_SearchProfiles}" />
+                        <Button Grid.Column="1" Classes="subtle chromeCommand" Click="ShowSaveProfile_Click"
+                                ToolTip.Tip="{DynamicResource Str_SaveSearchProfile}" AutomationProperties.Name="{DynamicResource Str_SaveSearchProfile}">
+                            <PathIcon Data="{StaticResource IconSave}" Width="16" Height="16" />
+                        </Button>
+                        <Button Grid.Column="2" x:Name="DeleteProfileButton" Classes="subtle chromeCommand" Click="DeleteProfile_Click"
+                                ToolTip.Tip="{DynamicResource Str_DeleteSearchProfile}" AutomationProperties.Name="{DynamicResource Str_DeleteSearchProfile}">
+                            <PathIcon Data="{StaticResource IconTrash}" Width="16" Height="16" />
+                        </Button>
+                    </Grid>
+                    <StackPanel x:Name="ProfileEditor" IsVisible="False" Spacing="6">
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+                            <TextBox x:Name="ProfileNameBox" Height="32" MaxLength="80" KeyDown="ProfileNameBox_KeyDown"
+                                     PlaceholderText="{DynamicResource Str_SearchProfileName}" AutomationProperties.Name="{DynamicResource Str_SearchProfileName}" />
+                            <Button Grid.Column="1" Height="32" Content="{DynamicResource Str_Cancel}" Click="CancelProfile_Click" />
+                            <Button Grid.Column="2" Height="32" Content="{DynamicResource Str_Save}" Click="SaveProfile_Click" />
+                        </Grid>
+                        <TextBlock Text="{DynamicResource Str_SearchProfileOverwriteHint}" FontSize="12"
+                                   Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <TextBlock x:Name="ProfileErrorText" Foreground="{DynamicResource DangerBrush}" FontSize="12"
+                               TextWrapping="Wrap" IsVisible="False" />
+                </StackPanel>
                 <StackPanel Spacing="6">
                     <TextBlock Text="{DynamicResource Str_SearchTerm}" FontSize="12" FontWeight="Medium" Foreground="{DynamicResource SecondaryTextBrush}" />
-                    <TextBox x:Name="QueryBox" Height="34" PlaceholderText="{DynamicResource Str_EnterAKeywordOrRegularExpression}" KeyDown="QueryBox_KeyDown" />
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                        <TextBox x:Name="QueryBox" Height="34" KeyDown="QueryBox_KeyDown"
+                                 AutomationProperties.Name="{DynamicResource Str_SearchTerm}" />
+                        <ComboBox Grid.Column="1" x:Name="ModeBox" Classes="localizedOptions" Height="34" MinWidth="112" SelectedIndex="0"
+                                  AutomationProperties.Name="{DynamicResource Str_SearchMode}">
+                            <ComboBoxItem Content="{DynamicResource Str_SimpleSearchMode}" />
+                            <ComboBoxItem Content="{DynamicResource Str_RegexSearchMode}" />
+                            <ComboBoxItem Content="XPath" />
+                        </ComboBox>
+                    </Grid>
                     <TextBlock x:Name="ErrorText" Foreground="{DynamicResource DangerBrush}" FontSize="12"
                                TextWrapping="Wrap" IsVisible="False" />
                 </StackPanel>
@@ -47,6 +92,7 @@
                             <CheckBox x:Name="ChkTags" Content="{DynamicResource Str_Tags}" IsChecked="True" />
                             <CheckBox x:Name="ChkCustom" Content="{DynamicResource Str_CustomFields}" IsChecked="True" />
                             <CheckBox x:Name="ChkUuid" Content="UUID" IsChecked="False" />
+                            <CheckBox x:Name="ChkHistory" Content="{DynamicResource Str_History}" />
                         </UniformGrid>
                     </StackPanel>
                 </Border>
@@ -55,10 +101,9 @@
                     <StackPanel Spacing="4">
                         <TextBlock Text="{DynamicResource Str_MatchingOptions}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource SecondaryTextBrush}" />
                         <UniformGrid Columns="2">
-                            <CheckBox x:Name="ChkRegex" Content="{DynamicResource Str_UseRegularExpressions}" />
                             <CheckBox x:Name="ChkCase" Content="{DynamicResource Str_MatchCase}" />
-                            <CheckBox x:Name="ChkExcludeExpired" Content="{DynamicResource Str_ExcludeExpiredEntries}" />
                             <CheckBox x:Name="ChkIncludeBin" Content="{DynamicResource Str_IncludeRecycleBinEntries}" />
+                            <CheckBox x:Name="ChkExcludeExpired" Content="{DynamicResource Str_ExcludeExpiredEntries}" />
                         </UniformGrid>
                     </StackPanel>
                 </Border>

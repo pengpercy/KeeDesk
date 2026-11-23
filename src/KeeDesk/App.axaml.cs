@@ -105,9 +105,10 @@ public partial class App : Application
             var exitItem = new NativeMenuItem(L("Str_QuitKeeDesk"));
             exitItem.Click += (_, _) =>
             {
-                if (vm.IsUnlocked) vm.LockVaultCommand.Execute(null);
-                _trayIcon?.Dispose();
-                desktop.Shutdown();
+                if (vm.TrySaveBeforeClosing() && desktop.TryShutdown())
+                    _trayIcon?.Dispose();
+                else
+                    RestoreMainWindow(mainWindow);
             };
             menu.Add(exitItem);
 

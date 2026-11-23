@@ -456,7 +456,24 @@
                                     <TextBlock x:Name="ManualAutoTypeHint" Classes="settingDescription" TextWrapping="Wrap"
                                                Text="{DynamicResource Str_GlobalAutoTypeUnavailable}" IsVisible="False" />
                                 </StackPanel>
-                                <ItemsControl x:Name="GlobalAutoTypeKeys" Grid.Column="2" Classes="shortcutKeys" />
+                                <StackPanel Grid.Column="2" x:Name="GlobalAutoTypeActions" Spacing="5" VerticalAlignment="Center">
+                                    <ItemsControl x:Name="GlobalAutoTypeKeys" Classes="shortcutKeys" HorizontalAlignment="Right" />
+                                    <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right">
+                                        <Button x:Name="ChangeAutoTypeShortcutButton" Classes="subtle" Click="ChangeAutoTypeShortcut_Click"
+                                                KeyDown="AutoTypeShortcut_KeyDown" LostFocus="AutoTypeShortcut_LostFocus">
+                                            <Grid>
+                                                <TextBlock x:Name="EditAutoTypeShortcutText" Text="{DynamicResource Str_ChangeAutoTypeShortcut}" />
+                                                <TextBlock x:Name="RecordAutoTypeShortcutText" Text="{DynamicResource Str_RecordAutoTypeShortcut}" IsVisible="False" />
+                                            </Grid>
+                                        </Button>
+                                        <Button x:Name="ResetAutoTypeShortcutButton" Classes="subtle" Click="ResetAutoTypeShortcut_Click"
+                                                ToolTip.Tip="{DynamicResource Str_ResetAutoTypeShortcut}" AutomationProperties.Name="{DynamicResource Str_ResetAutoTypeShortcut}">
+                                            <PathIcon Data="{StaticResource IconRefresh}" Width="14" Height="14" />
+                                        </Button>
+                                    </StackPanel>
+                                    <TextBlock x:Name="GlobalAutoTypeStatus" Classes="settingDescription" MaxWidth="200" TextWrapping="Wrap"
+                                               Foreground="{DynamicResource DangerBrush}" IsVisible="False" />
+                                </StackPanel>
                             </Grid>
                         </Border>
                         <StackPanel Spacing="10">
@@ -497,7 +514,10 @@
                                     <TextBlock Classes="settingDescription" Text="{DynamicResource Str_ImportGenericCSVFromChromeFirefoxBitwarden}" />
                                     <WrapPanel ItemSpacing="6" LineSpacing="6" Margin="0,2,0,0">
                                         <Button Classes="settingsAction" Content="{DynamicResource Str_ImportCSV}" Click="ImportCsv_Click" />
+                                        <Button Classes="settingsAction" Content="{DynamicResource Str_ImportLegacyKdb}" Click="ImportLegacyKdb_Click" />
                                         <Button Classes="settingsAction" Content="{DynamicResource Str_ExportCSV2}" Click="ExportCsv_Click" />
+                                        <Button Classes="settingsAction" Content="{DynamicResource Str_ExportVaultStylesheet}" Click="ExportVaultStylesheet_Click" />
+                                        <Button Classes="settingsAction" Content="{DynamicResource Str_PrintVault}" Click="PrintVault_Click" />
                                         <Button Classes="accent settingsAction" Content="{DynamicResource Str_GenerateHTMLEmergencySheet2}" Click="ExportEmergency_Click" />
                                     </WrapPanel>
                                 </StackPanel>

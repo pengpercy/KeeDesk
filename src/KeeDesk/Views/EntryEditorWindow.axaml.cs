@@ -2,6 +2,7 @@ using System.Text;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.VisualTree;
 using KeeDesk.Core.Crypto;
@@ -21,6 +22,7 @@ public partial class EntryEditorWindow : Window
     private readonly KdbxGroup _targetGroup;
     private readonly KdbxDatabase? _database;
     private readonly Dictionary<string, ProtectedBinary> _pendingBinaries = new(StringComparer.Ordinal);
+    private readonly List<(TextBox Pattern, TextBox Sequence)> _autoTypeAssociations = [];
     private int _selectedIconId;
     private Guid _selectedCustomIconUuid;
     private bool _passwordVisible;
@@ -85,7 +87,9 @@ public partial class EntryEditorWindow : Window
 
             AutoTypeEnabledCheck.IsChecked = entry.AutoType.Enabled;
             AutoTypeSeqBox.Text = entry.AutoType.DefaultSequence;
-            AutoTypeObfuscateCheck.IsChecked = entry.AutoType.DataTransferObfuscation != 0;
+            foreach (var association in entry.AutoType.Associations)
+                AddAutoTypeAssociation(association.Window, association.KeystrokeSequence);
+            AutoTypeObfuscationNotice.IsVisible = entry.AutoType.DataTransferObfuscation != 0;
 
             var sb = new StringBuilder();
             foreach (var kv in entry.GetCustomStrings())
@@ -309,8 +313,54 @@ public partial class EntryEditorWindow : Window
         Close(true);
     }
 
+    private void AddAutoTypeAssociation_Click(object? sender, RoutedEventArgs e) =>
+        AddAutoTypeAssociation(string.Empty, string.Empty).Focus();
+
+    private TextBox AddAutoTypeAssociation(string pattern, string sequence)
+    {
+        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("2*,3*,Auto"), ColumnSpacing = 6 };
+        var patternBox = new TextBox { Text = pattern, PlaceholderText = L("Str_AutoTypeWindowPattern"), Height = 32 };
+        var sequenceBox = new TextBox
+        {
+            Text = sequence, PlaceholderText = L("Str_AutoTypeAssociationSequence"), Height = 32,
+            FontFamily = new FontFamily("Consolas,Menlo,monospace")
+        };
+        var icon = new PathIcon { Width = 14, Height = 14 };
+        if (this.TryFindResource("IconTrash", out var resource) && resource is Geometry geometry)
+            icon.Data = geometry;
+        var remove = new Button { Content = icon, Height = 32 };
+        remove.Classes.Add("subtle");
+        ToolTip.SetTip(remove, L("Str_RemoveAutoTypeAssociation"));
+        Avalonia.Automation.AutomationProperties.SetName(remove, L("Str_RemoveAutoTypeAssociation"));
+        Avalonia.Automation.AutomationProperties.SetName(patternBox, L("Str_AutoTypeWindowPattern"));
+        Avalonia.Automation.AutomationProperties.SetName(sequenceBox, L("Str_AutoTypeAssociationSequence"));
+        remove.Click += (_, _) =>
+        {
+            _autoTypeAssociations.Remove((patternBox, sequenceBox));
+            AutoTypeAssociationRows.Children.Remove(row);
+            AutoTypeAssociationError.IsVisible = false;
+        };
+        Grid.SetColumn(sequenceBox, 1);
+        Grid.SetColumn(remove, 2);
+        row.Children.Add(patternBox);
+        row.Children.Add(sequenceBox);
+        row.Children.Add(remove);
+        _autoTypeAssociations.Add((patternBox, sequenceBox));
+        AutoTypeAssociationRows.Children.Add(row);
+        return patternBox;
+    }
+
     private void Save_Click(object? sender, RoutedEventArgs e)
     {
+        if (_autoTypeAssociations.FirstOrDefault(row => string.IsNullOrWhiteSpace(row.Pattern.Text) &&
+            !string.IsNullOrWhiteSpace(row.Sequence.Text)) is { Pattern: { } emptyPattern })
+        {
+            AutoTypeAssociationError.IsVisible = true;
+            emptyPattern.Focus();
+            emptyPattern.BringIntoView();
+            return;
+        }
+        AutoTypeAssociationError.IsVisible = false;
         var entry = _editingEntry ?? new KdbxEntry();
         if (_editingEntry is not null)
             entry.CreateHistorySnapshot(_database?.Meta.HistoryMaxItems ?? 10);
@@ -343,7 +393,17 @@ public partial class EntryEditorWindow : Window
 
         entry.AutoType.Enabled = AutoTypeEnabledCheck.IsChecked != false;
         entry.AutoType.DefaultSequence = AutoTypeSeqBox.Text?.Trim() ?? string.Empty;
-        entry.AutoType.DataTransferObfuscation = AutoTypeObfuscateCheck.IsChecked == true ? 1 : 0;
+        entry.AutoType.Associations.Clear();
+        foreach (var (pattern, sequence) in _autoTypeAssociations)
+        {
+            var title = pattern.Text?.Trim() ?? string.Empty;
+            if (title.Length != 0)
+                entry.AutoType.Associations.Add(new KdbxAutoTypeAssociation
+                {
+                    Window = title,
+                    KeystrokeSequence = sequence.Text?.Trim() ?? string.Empty
+                });
+        }
 
         // 同步自定义字段
         var customLines = (CustomFieldsBox.Text ?? string.Empty).Split('\n', StringSplitOptions.RemoveEmptyEntries);

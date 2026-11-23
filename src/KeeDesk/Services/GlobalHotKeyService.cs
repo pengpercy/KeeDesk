@@ -1,246 +1,190 @@
-using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Text;
+using KeeDesk.Core.Services;
 
 namespace KeeDesk.Services;
 
-/// <summary>
-/// 跨平台前台窗口标题探测与 OS 级全局热键服务（默认 Ctrl+Alt+A / macOS Control+Option+A）。
-/// 100% NativeAOT 兼容，无反射。
-/// </summary>
-public sealed partial class GlobalHotKeyService : IDisposable
+public sealed class GlobalHotKeyService : IDisposable
 {
     public event Action? HotKeyPressed;
+    public DesktopShortcut? Shortcut { get; private set; }
 
-    private bool _registered;
-    private IntPtr _macHotKeyRef;
-    private IntPtr _macHandlerRef;
-    private CancellationTokenSource? _winLoopCts;
+    private nint _macHotKeyRef;
+    private nint _macHandlerRef;
+    private EventHandlerDelegate? _macCallback;
+    private IDisposable? _keyboardLoop;
+    private static int _nextMacId;
 
-    /// <summary>
-    /// 获取当前操作系统前台活跃窗口的标题（用于全局 Auto-Type 自动匹配条目）。
-    /// </summary>
-    public static string GetForegroundWindowTitle()
+    public bool TryRegister(DesktopShortcut shortcut)
     {
+        if (Shortcut == shortcut) return true;
+        if (Shortcut is not null || !shortcut.IsValid) return false;
         try
         {
-            if (OperatingSystem.IsWindows())
-            {
-                var hwnd = GetForegroundWindow();
-                if (hwnd == IntPtr.Zero) return string.Empty;
-                var buf = new char[512];
-                int len = GetWindowTextW(hwnd, buf, buf.Length);
-                return len > 0 ? new string(buf, 0, len) : string.Empty;
-            }
-
-            if (OperatingSystem.IsMacOS())
-            {
-                var psi = new ProcessStartInfo("osascript")
-                {
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true
-                };
-                psi.ArgumentList.Add("-e");
-                psi.ArgumentList.Add(
-                    "tell application \"System Events\" to set frontApp to first application process whose frontmost is true\n" +
-                    "set appName to name of frontApp\n" +
-                    "try\n" +
-                    "  set winTitle to name of front window of frontApp\n" +
-                    "  return appName & \" - \" & winTitle\n" +
-                    "on error\n" +
-                    "  return appName\n" +
-                    "end try");
-                using var proc = Process.Start(psi);
-                if (proc is null) return string.Empty;
-                var output = proc.StandardOutput.ReadToEnd().Trim();
-                proc.WaitForExit(1500);
-                return output;
-            }
-
-            if (OperatingSystem.IsLinux())
-            {
-                var psi = new ProcessStartInfo("xdotool", "getactivewindow getwindowname")
-                {
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true
-                };
-                using var proc = Process.Start(psi);
-                if (proc is null) return string.Empty;
-                var output = proc.StandardOutput.ReadToEnd().Trim();
-                proc.WaitForExit(1500);
-                return output;
-            }
+            bool registered = OperatingSystem.IsMacOS() ? TryRegisterMacHotKey(shortcut) :
+                OperatingSystem.IsWindows() ? TryRunKeyboardLoop(token => RunWindows(shortcut, token)) :
+                AutoTypeTarget.IsX11 && TryRunKeyboardLoop(token =>
+                    X11GlobalHotKey.Start(shortcut, () => HotKeyPressed?.Invoke(), token));
+            if (registered) Shortcut = shortcut;
+            return registered;
         }
-        catch { }
-
-        return string.Empty;
-    }
-
-    /// <summary>
-    /// 注册全局 Auto-Type 快捷键（Windows: Ctrl+Alt+A；macOS: Control+Option+A）。
-    /// </summary>
-    public bool TryRegisterDefault()
-    {
-        if (_registered) return true;
-        try
+        catch (Exception ex) when (ex is DllNotFoundException or EntryPointNotFoundException or NotSupportedException)
         {
-            if (OperatingSystem.IsMacOS())
-            {
-                _registered = TryRegisterMacHotKey();
-                return _registered;
-            }
-
-            if (OperatingSystem.IsWindows())
-            {
-                _registered = TryRegisterWindowsHotKey();
-                return _registered;
-            }
+            return false;
         }
-        catch { }
-
-        return false;
     }
 
     public void Dispose()
     {
-        if (!_registered) return;
-        _registered = false;
-
-        try
+        Shortcut = null;
+        if (_macHotKeyRef != 0)
         {
-            if (OperatingSystem.IsMacOS())
-            {
-                if (_macHotKeyRef != IntPtr.Zero) { UnregisterEventHotKey(_macHotKeyRef); _macHotKeyRef = IntPtr.Zero; }
-                if (_macHandlerRef != IntPtr.Zero) { RemoveEventHandler(_macHandlerRef); _macHandlerRef = IntPtr.Zero; }
-            }
-            else if (OperatingSystem.IsWindows())
-            {
-                _winLoopCts?.Cancel();
-                _winLoopCts?.Dispose();
-                _winLoopCts = null;
-            }
+            _ = UnregisterEventHotKey(_macHotKeyRef);
+            _macHotKeyRef = 0;
         }
-        catch { }
-    }
-
-    // ==================== macOS Carbon RegisterEventHotKey ====================
-    private const uint KEventClassKeyboard = 0x6B657962; // 'keyb'
-    private const uint KEventHotKeyPressed = 6;
-    private const uint ControlKeyMask = 0x1000;
-    private const uint OptionKeyMask = 0x0800;
-    private const uint KeyCodeA = 0x00;
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct EventTypeSpec
-    {
-        public uint EventClass;
-        public uint EventKind;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct EventHotKeyID
-    {
-        public uint Signature;
-        public uint Id;
-    }
-
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    private delegate int EventHandlerDelegate(IntPtr nextHandler, IntPtr theEvent, IntPtr userData);
-
-    private EventHandlerDelegate? _macCallbackKeepAlive;
-
-    [DllImport("/System/Library/Frameworks/Carbon.framework/Carbon")]
-    private static extern IntPtr GetApplicationEventTarget();
-
-    [DllImport("/System/Library/Frameworks/Carbon.framework/Carbon")]
-    private static extern int InstallEventHandler(IntPtr target, EventHandlerDelegate handler, uint numTypes, in EventTypeSpec list, IntPtr userData, out IntPtr outRef);
-
-    [DllImport("/System/Library/Frameworks/Carbon.framework/Carbon")]
-    private static extern int RemoveEventHandler(IntPtr handlerRef);
-
-    [DllImport("/System/Library/Frameworks/Carbon.framework/Carbon")]
-    private static extern int RegisterEventHotKey(uint inHotKeyCode, uint inHotKeyModifiers, EventHotKeyID inHotKeyID, IntPtr inTarget, uint inOptions, out IntPtr outRef);
-
-    [DllImport("/System/Library/Frameworks/Carbon.framework/Carbon")]
-    private static extern int UnregisterEventHotKey(IntPtr inHotKey);
-
-    private bool TryRegisterMacHotKey()
-    {
-        var target = GetApplicationEventTarget();
-        if (target == IntPtr.Zero) return false;
-
-        _macCallbackKeepAlive = (_, _, _) =>
+        if (_macHandlerRef != 0)
         {
+            _ = RemoveEventHandler(_macHandlerRef);
+            _macHandlerRef = 0;
+            _macCallback = null;
+        }
+        _keyboardLoop?.Dispose();
+        _keyboardLoop = null;
+    }
+
+    private bool TryRegisterMacHotKey(DesktopShortcut shortcut)
+    {
+        const uint keyboard = 0x6B657962; // 'keyb'
+        const uint hotKeyPressed = 6;
+        const uint directObject = 0x2D2D2D2D; // '----'
+        const uint hotKeyId = 0x686B6964; // 'hkid'
+        var target = GetApplicationEventTarget();
+        if (target == 0) return false;
+
+        var id = new EventHotKeyId(0x4B454544, unchecked((uint)Interlocked.Increment(ref _nextMacId)));
+        _macCallback = (_, @event, _) =>
+        {
+            if (GetEventParameter(@event, directObject, hotKeyId, 0, (uint)Marshal.SizeOf<EventHotKeyId>(), 0, out var actual) != 0 ||
+                actual.Signature != id.Signature || actual.Id != id.Id)
+                return -9874; // eventNotHandledErr
+
             HotKeyPressed?.Invoke();
             return 0;
         };
 
-        var spec = new EventTypeSpec { EventClass = KEventClassKeyboard, EventKind = KEventHotKeyPressed };
-        int hr1 = InstallEventHandler(target, _macCallbackKeepAlive, 1, in spec, IntPtr.Zero, out _macHandlerRef);
-        if (hr1 != 0) return false;
+        var spec = new EventTypeSpec(keyboard, hotKeyPressed);
+        if (InstallEventHandler(target, _macCallback, 1, in spec, 0, out _macHandlerRef) != 0)
+            return false;
 
-        var id = new EventHotKeyID { Signature = 0x4B454544, Id = 1 }; // 'KEED'
-        int hr2 = RegisterEventHotKey(KeyCodeA, ControlKeyMask | OptionKeyMask, id, target, 0, out _macHotKeyRef);
-        return hr2 == 0;
+        uint flags = 0;
+        if (shortcut.Modifiers.HasFlag(AutoTypeModifiers.Command)) flags |= 0x0100;
+        if (shortcut.Modifiers.HasFlag(AutoTypeModifiers.Shift)) flags |= 0x0200;
+        if (shortcut.Modifiers.HasFlag(AutoTypeModifiers.Alt)) flags |= 0x0800;
+        if (shortcut.Modifiers.HasFlag(AutoTypeModifiers.Control)) flags |= 0x1000;
+        if (RegisterEventHotKey(DesktopShortcut.GetMacKeyCode(char.ToUpperInvariant(shortcut.Key)), flags,
+            id, target, 0, out _macHotKeyRef) == 0)
+            return true;
+
+        Dispose();
+        return false;
     }
 
-    // ==================== Windows RegisterHotKey ====================
-    private const uint ModAlt = 0x0001;
-    private const uint ModControl = 0x0002;
-    private const uint VkA = 0x41;
-    private const uint WmHotKey = 0x0312;
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct WinMsg
+    private Action? RunWindows(DesktopShortcut shortcut, CancellationToken token)
     {
-        public IntPtr Hwnd;
-        public uint Message;
-        public nuint WParam;
-        public nint LParam;
-        public uint Time;
-        public int PtX;
-        public int PtY;
-    }
-
-    [DllImport("user32.dll")]
-    private static extern IntPtr GetForegroundWindow();
-
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
-    private static extern int GetWindowTextW(IntPtr hWnd, [Out] char[] lpString, int nMaxCount);
-
-    [DllImport("user32.dll")]
-    private static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
-
-    [DllImport("user32.dll")]
-    private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
-
-    [DllImport("user32.dll")]
-    private static extern bool PeekMessageW(out WinMsg lpMsg, IntPtr hWnd, uint wMsgFilterMin, uint wMsgFilterMax, uint wRemoveMsg);
-
-    private bool TryRegisterWindowsHotKey()
-    {
-        _winLoopCts = new CancellationTokenSource();
-        var token = _winLoopCts.Token;
-        var thread = new Thread(() =>
+        const uint wmHotKey = 0x0312;
+        uint flags = 0x4000;
+        if (shortcut.Modifiers.HasFlag(AutoTypeModifiers.Alt)) flags |= 0x0001;
+        if (shortcut.Modifiers.HasFlag(AutoTypeModifiers.Control)) flags |= 0x0002;
+        if (shortcut.Modifiers.HasFlag(AutoTypeModifiers.Shift)) flags |= 0x0004;
+        if (!RegisterHotKey(0, 1, flags, DesktopShortcut.GetKeyCode(shortcut.Key)))
+            return null;
+        return () =>
         {
-            if (!RegisterHotKey(IntPtr.Zero, 1, ModControl | ModAlt, VkA))
-                return;
             try
             {
                 while (!token.IsCancellationRequested)
                 {
-                    if (PeekMessageW(out var msg, IntPtr.Zero, WmHotKey, WmHotKey, 1))
+                    if (PeekMessageW(out _, 0, wmHotKey, wmHotKey, 1))
                         HotKeyPressed?.Invoke();
-                    Thread.Sleep(40);
+                    token.WaitHandle.WaitOne(20);
                 }
             }
             finally
             {
-                UnregisterHotKey(IntPtr.Zero, 1);
+                _ = UnregisterHotKey(0, 1);
             }
-        }) { IsBackground = true, Name = "WinGlobalHotKeyThread" };
-        thread.Start();
-        return true;
+        };
     }
+
+    private bool TryRunKeyboardLoop(Func<CancellationToken, Action?> start)
+    {
+        var cancellation = new CancellationTokenSource();
+        var started = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                var loop = start(cancellation.Token);
+                started.TrySetResult(loop is not null);
+                loop?.Invoke();
+            }
+            catch (Exception ex) when (ex is DllNotFoundException or EntryPointNotFoundException or NotSupportedException)
+            {
+                started.TrySetResult(false);
+            }
+        }) { IsBackground = true, Name = "KeeDesk global hotkey" };
+        thread.Start();
+        var registration = new KeyboardLoop(thread, cancellation);
+        if (started.Task.Wait(TimeSpan.FromSeconds(2)) && started.Task.Result)
+        {
+            _keyboardLoop = registration;
+            return true;
+        }
+        registration.Dispose();
+        return false;
+    }
+
+    private sealed class KeyboardLoop(Thread thread, CancellationTokenSource cancellation) : IDisposable
+    {
+        public void Dispose()
+        {
+            cancellation.Cancel();
+            if (thread.Join(200))
+                cancellation.Dispose();
+            else
+                _ = Task.Run(() => { thread.Join(); cancellation.Dispose(); });
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private readonly record struct EventTypeSpec(uint EventClass, uint EventKind);
+    [StructLayout(LayoutKind.Sequential)]
+    private readonly record struct EventHotKeyId(uint Signature, uint Id);
+    [StructLayout(LayoutKind.Sequential)]
+    private struct WinMsg
+    {
+        public nint Window;
+        public uint Message;
+        public nuint WParam;
+        public nint LParam;
+        public uint Time;
+        public int X;
+        public int Y;
+        public uint Private;
+    }
+
+    private const string Carbon = "/System/Library/Frameworks/Carbon.framework/Carbon";
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int EventHandlerDelegate(nint nextHandler, nint @event, nint userData);
+    [DllImport(Carbon)] private static extern nint GetApplicationEventTarget();
+    [DllImport(Carbon)] private static extern int InstallEventHandler(nint target, EventHandlerDelegate handler, uint numTypes,
+        in EventTypeSpec spec, nint userData, out nint reference);
+    [DllImport(Carbon)] private static extern int GetEventParameter(nint @event, uint name, uint desiredType, nint actualType,
+        uint size, nint actualSize, out EventHotKeyId result);
+    [DllImport(Carbon)] private static extern int RemoveEventHandler(nint handler);
+    [DllImport(Carbon)] private static extern int RegisterEventHotKey(uint key, uint flags, EventHotKeyId id,
+        nint target, uint options, out nint reference);
+    [DllImport(Carbon)] private static extern int UnregisterEventHotKey(nint key);
+    [DllImport("user32.dll")] private static extern bool RegisterHotKey(nint window, int id, uint flags, uint key);
+    [DllImport("user32.dll")] private static extern bool UnregisterHotKey(nint window, int id);
+    [DllImport("user32.dll")] private static extern bool PeekMessageW(out WinMsg message, nint window, uint min, uint max, uint remove);
 }

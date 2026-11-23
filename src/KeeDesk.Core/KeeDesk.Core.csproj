@@ -10,4 +10,8 @@
     <NuGetAudit Condition="'$(CI)' != 'true'">false</NuGetAudit>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="KeeDesk.Tests" />
+  </ItemGroup>
+
 </Project>

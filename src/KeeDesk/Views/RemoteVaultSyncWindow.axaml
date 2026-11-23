@@ -1,0 +1,13 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="KeeDesk.Views.RemoteVaultSyncWindow"
+        Title="{DynamicResource Str_SyncRemoteVault}"
+        Width="400" SizeToContent="Height" CanResize="False" WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource WorkspaceBackgroundBrush}" Foreground="{DynamicResource PrimaryTextBrush}">
+    <StackPanel Margin="22,18" Spacing="14">
+        <TextBlock Text="{DynamicResource Str_RemoteVaultSyncing}" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" />
+        <ProgressBar IsIndeterminate="True" />
+        <Button x:Name="CancelButton" Content="{DynamicResource Str_Cancel}" IsCancel="True" Click="Cancel_Click"
+                Height="34" HorizontalAlignment="Right" />
+    </StackPanel>
+</Window>

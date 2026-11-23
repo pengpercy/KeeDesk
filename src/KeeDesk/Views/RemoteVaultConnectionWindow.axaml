@@ -1,0 +1,28 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="KeeDesk.Views.RemoteVaultConnectionWindow"
+        Title="{DynamicResource Str_RemoteVaultConnection}"
+        Width="460" SizeToContent="Height" CanResize="False" WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource WorkspaceBackgroundBrush}" Foreground="{DynamicResource PrimaryTextBrush}">
+    <StackPanel Margin="22,18" Spacing="12">
+        <TextBlock Text="{DynamicResource Str_RemoteVaultConnection}" FontSize="18" FontWeight="SemiBold" />
+        <StackPanel Spacing="6">
+            <TextBlock Text="{DynamicResource Str_RemoteVaultUrl}" FontSize="12" />
+            <TextBox x:Name="UrlBox" Height="34" PlaceholderText="https://server.example/vault.kdbx"
+                     AutomationProperties.Name="{DynamicResource Str_RemoteVaultUrl}" />
+        </StackPanel>
+        <StackPanel Spacing="6">
+            <TextBlock Text="{DynamicResource Str_RemoteVaultServerCredentials}" FontSize="12" />
+            <TextBox x:Name="UsernameBox" Height="34" PlaceholderText="{DynamicResource Str_UserName}"
+                     AutomationProperties.Name="{DynamicResource Str_UserName}" />
+            <TextBox x:Name="ServerPasswordBox" Height="34" PasswordChar="•"
+                     PlaceholderText="{DynamicResource Str_Password}" AutomationProperties.Name="{DynamicResource Str_Password}" />
+        </StackPanel>
+        <TextBlock x:Name="ErrorText" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap" IsVisible="False"
+                   Text="{DynamicResource Str_RemoteVaultInvalidUrl}" />
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+            <Button Height="34" Content="{DynamicResource Str_Cancel}" IsCancel="True" Click="Cancel_Click" />
+            <Button Height="34" Classes="accent" Content="{DynamicResource Str_RemoteVaultConnect}" IsDefault="True" Click="Connect_Click" />
+        </StackPanel>
+    </StackPanel>
+</Window>

@@ -20,22 +20,26 @@ public sealed record VaultUnlockResult(KdbxDatabase Database, CompositeKey Maste
 public partial class VaultUnlockPromptWindow : Window
 {
     private readonly string _vaultPath;
+    private readonly bool _legacyImport;
     private string _keyFilePath = string.Empty;
     private bool _isWorking;
+    private bool _closed;
 
     public VaultUnlockPromptWindow() : this(string.Empty, L("Str_UnlockVault"), L("Str_Unlock")) { }
 
-    public VaultUnlockPromptWindow(string vaultPath, string? heading = null, string? confirmButtonText = null)
+    public VaultUnlockPromptWindow(string vaultPath, string? heading = null, string? confirmButtonText = null, bool legacyImport = false)
     {
         InitializeComponent();
         _vaultPath = vaultPath;
+        _legacyImport = legacyImport;
         Title = heading ?? L("Str_MergeSyncAnotherVault2");
         DialogHeading.Text = Title;
         MergeBtn.Content = confirmButtonText ?? L("Str_DecryptAndMerge");
         FilePathLabel.Text = Path.GetFileName(vaultPath);
-        UseWindowsUserAccountCheck.IsVisible = OperatingSystem.IsWindows();
+        UseWindowsUserAccountCheck.IsVisible = OperatingSystem.IsWindows() && !legacyImport;
         MacTitleBarInsets.AttachTrafficLightsCentering(this, 40);
         Opened += (_, _) => PasswordBox.Focus();
+        Closed += (_, _) => { _closed = true; PasswordBox.Text = string.Empty; };
     }
 
     private async void BrowseKeyFile_Click(object? sender, RoutedEventArgs e)
@@ -69,10 +73,18 @@ public partial class VaultUnlockPromptWindow : Window
         {
             var (db, key) = await Task.Run(() =>
             {
+                if (_legacyImport)
+                    return (LegacyKdbReader.Load(_vaultPath, pwd, keyFile), new CompositeKey());
                 var k = CompositeKey.FromPasswordAndKeyFile(pwd, keyFile, useWua);
-                var loaded = KdbxFormat.Load(_vaultPath, k);
-                return (loaded, k);
+                try { return (KdbxFormat.Load(_vaultPath, k), k); }
+                catch { k.Dispose(); throw; }
             });
+            if (_closed)
+            {
+                db.Dispose();
+                key.Dispose();
+                return;
+            }
             Close(new VaultUnlockResult(db, key, keyFile));
         }
         catch (Exception ex)

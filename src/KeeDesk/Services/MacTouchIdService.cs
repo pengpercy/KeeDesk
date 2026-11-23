@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -10,20 +11,26 @@ namespace KeeDesk.Services;
 /// 通过原生 LocalAuthentication.framework 弹出 Touch ID 验证框，校验通过后从 Keychain 取出主密码，
 /// 零额外依赖、100% NativeAOT 兼容。
 /// </summary>
-public static unsafe class MacTouchIdService
+public static class MacTouchIdService
 {
     // Keep the service identifier so Touch ID can find items created before the rename.
     private const string KeychainServiceName = "com.pengpercy.keepassmodern.vault";
     private const string ObjCLib = "/usr/lib/libobjc.A.dylib";
+    private const string SystemLib = "/usr/lib/libSystem.B.dylib";
     private const nint LaPolicyBiometricsOrWatchOrPasscode = 2; // LAPolicyDeviceOwnerAuthentication
 
-    private static bool _frameworkLoaded;
-
-    private static void EnsureFrameworkLoaded()
+    private static IntPtr CreateContext()
     {
-        if (_frameworkLoaded || !OperatingSystem.IsMacOS()) return;
-        _frameworkLoaded = true;
-        NativeLibrary.TryLoad("/System/Library/Frameworks/LocalAuthentication.framework/LocalAuthentication", out _);
+        if (LocalAuthentication.Class == IntPtr.Zero) return IntPtr.Zero;
+        return MsgSend_IntPtr(MsgSend_IntPtr(LocalAuthentication.Class, sel_registerName("alloc")), sel_registerName("init"));
+    }
+
+    private static class LocalAuthentication
+    {
+        internal static readonly IntPtr Class =
+            NativeLibrary.TryLoad("/System/Library/Frameworks/LocalAuthentication.framework/LocalAuthentication", out _)
+                ? objc_getClass("LAContext")
+                : IntPtr.Zero;
     }
 
     /// <summary>
@@ -32,12 +39,9 @@ public static unsafe class MacTouchIdService
     public static bool IsSupported()
     {
         if (!OperatingSystem.IsMacOS()) return false;
-        EnsureFrameworkLoaded();
         try
         {
-            var cls = objc_getClass("LAContext");
-            if (cls == IntPtr.Zero) return false;
-            var ctx = MsgSend_IntPtr(MsgSend_IntPtr(cls, sel_registerName("alloc")), sel_registerName("init"));
+            var ctx = CreateContext();
             if (ctx == IntPtr.Zero) return false;
             try
             {
@@ -59,50 +63,28 @@ public static unsafe class MacTouchIdService
     /// <summary>
     /// 弹出 macOS 原生 Touch ID / 系统认证框。
     /// </summary>
-    public static Task<bool> AuthenticateAsync(string reason)
+    public static async Task<bool> AuthenticateAsync(string reason)
     {
-        if (!OperatingSystem.IsMacOS()) return Task.FromResult(false);
-        EnsureFrameworkLoaded();
+        if (!OperatingSystem.IsMacOS()) return false;
 
-        var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var ctx = IntPtr.Zero;
         try
         {
-            var cls = objc_getClass("LAContext");
-            if (cls == IntPtr.Zero) return Task.FromResult(false);
-            var ctx = MsgSend_IntPtr(MsgSend_IntPtr(cls, sel_registerName("alloc")), sel_registerName("init"));
-            if (ctx == IntPtr.Zero) return Task.FromResult(false);
-
-            var handle = GCHandle.Alloc((tcs, ctx));
-            var descriptor = new BlockDescriptor
-            {
-                Reserved = 0,
-                Size = (nuint)sizeof(BlockLiteral)
-            };
-            var descPtr = (BlockDescriptor*)Marshal.AllocHGlobal(sizeof(BlockDescriptor));
-            *descPtr = descriptor;
-
-            var blockPtr = (BlockLiteral*)Marshal.AllocHGlobal(sizeof(BlockLiteral));
-            blockPtr->Isa = GetNSConcreteGlobalBlock();
-            blockPtr->Flags = 0;
-            blockPtr->Reserved = 0;
-            blockPtr->Invoke = &OnAuthReply;
-            blockPtr->Descriptor = descPtr;
-            blockPtr->UserHandle = GCHandle.ToIntPtr(handle);
-
-            var nsReason = MsgSend_IntPtr_Utf8(objc_getClass("NSString"), sel_registerName("stringWithUTF8String:"), reason);
-            MsgSend_Void_NInt_IntPtr_IntPtr(
-                ctx,
-                sel_registerName("evaluatePolicy:localizedReason:reply:"),
-                LaPolicyBiometricsOrWatchOrPasscode,
-                nsReason,
-                (IntPtr)blockPtr);
+            ctx = CreateContext();
+            if (ctx == IntPtr.Zero) return false;
+            var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            EvaluatePolicy(ctx, reason, completion);
+            return await completion.Task.ConfigureAwait(false);
         }
         catch
         {
-            tcs.TrySetResult(false);
+            return false;
         }
-
-        return tcs.Task;
+        finally
+        {
+            if (ctx != IntPtr.Zero)
+                MsgSend_Void(ctx, sel_registerName("release"));
+        }
     }
 
     // ==================== macOS Keychain 托管主密码（按密码库路径哈希隔离） ====================
@@ -202,15 +184,95 @@ public static unsafe class MacTouchIdService
     }
 
     // ==================== ObjC Block & Runtime P/Invoke ====================
-    [StructLayout(LayoutKind.Sequential)]
-    private struct BlockDescriptor
+    private static void EvaluatePolicy(IntPtr ctx, string reason, TaskCompletionSource<bool> completion)
     {
-        public nuint Reserved;
-        public nuint Size;
+        var nsReason = MsgSend_IntPtr_Utf8(
+            MsgSend_IntPtr(objc_getClass("NSString"), sel_registerName("alloc")),
+            sel_registerName("initWithUTF8String:"),
+            reason);
+        var block = IntPtr.Zero;
+        try
+        {
+            block = CreateAuthReplyBlock(completion);
+            MsgSend_Void_NInt_IntPtr_IntPtr(
+                ctx, sel_registerName("evaluatePolicy:localizedReason:reply:"),
+                LaPolicyBiometricsOrWatchOrPasscode, nsReason, block);
+        }
+        finally
+        {
+            if (block != IntPtr.Zero)
+                BlockRelease(block);
+            MsgSend_Void(nsReason, sel_registerName("release"));
+        }
+    }
+
+    private static unsafe IntPtr CreateAuthReplyBlock(TaskCompletionSource<bool> completion)
+    {
+        var literal = new BlockLiteral
+        {
+            Isa = AuthReplyBlock.StackClass,
+            Flags = (1 << 25) | (1 << 30), // BLOCK_HAS_COPY_DISPOSE | BLOCK_HAS_SIGNATURE
+            Invoke = &OnAuthReply,
+            Descriptor = AuthReplyBlock.Descriptor
+        };
+
+        // _Block_copy creates a ref-counted block. Its final release frees the captured handle.
+        var handle = GCHandle.Alloc(completion);
+        literal.UserHandle = GCHandle.ToIntPtr(handle);
+        try
+        {
+            var block = BlockCopy(&literal);
+            if (block == IntPtr.Zero)
+                throw new OutOfMemoryException();
+            return block;
+        }
+        catch
+        {
+            handle.Free();
+            throw;
+        }
+    }
+
+    private static unsafe class AuthReplyBlock
+    {
+        internal static readonly IntPtr StackClass =
+            NativeLibrary.GetExport(NativeLibrary.Load(SystemLib), "_NSConcreteStackBlock");
+        internal static readonly BlockDescriptor* Descriptor = CreateDescriptor();
+
+        private static BlockDescriptor* CreateDescriptor()
+        {
+            var descriptor = (BlockDescriptor*)RuntimeHelpers.AllocateTypeAssociatedMemory(
+                typeof(AuthReplyBlock), sizeof(BlockDescriptor));
+            // Match Clang's encoding for void (^)(BOOL, NSError *) on each macOS ABI.
+            ReadOnlySpan<byte> signature = RuntimeInformation.ProcessArchitecture == Architecture.Arm64
+                ? "v20@?0B8@\"NSError\"12"u8
+                : "v20@?0c8@\"NSError\"12"u8;
+            fixed (byte* signaturePtr = signature)
+            {
+                *descriptor = new BlockDescriptor
+                {
+                    Size = (nuint)sizeof(BlockLiteral),
+                    Copy = &CopyAuthReply,
+                    Dispose = &DisposeAuthReply,
+                    Signature = signaturePtr
+                };
+            }
+            return descriptor;
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    private struct BlockLiteral
+    private unsafe struct BlockDescriptor
+    {
+        public nuint Reserved;
+        public nuint Size;
+        public delegate* unmanaged[Cdecl]<BlockLiteral*, BlockLiteral*, void> Copy;
+        public delegate* unmanaged[Cdecl]<BlockLiteral*, void> Dispose;
+        public byte* Signature;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private unsafe struct BlockLiteral
     {
         public IntPtr Isa;
         public int Flags;
@@ -220,32 +282,28 @@ public static unsafe class MacTouchIdService
         public IntPtr UserHandle;
     }
 
-    [UnmanagedCallersOnly(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
-    private static void OnAuthReply(BlockLiteral* block, byte success, IntPtr nsError)
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+    private static unsafe void OnAuthReply(BlockLiteral* block, byte success, IntPtr nsError)
     {
-        try
-        {
-            var handle = GCHandle.FromIntPtr(block->UserHandle);
-            if (handle.Target is ValueTuple<TaskCompletionSource<bool>, IntPtr> state)
-            {
-                state.Item1.TrySetResult(success != 0);
-                if (state.Item2 != IntPtr.Zero)
-                    MsgSend_Void(state.Item2, sel_registerName("release"));
-            }
-            handle.Free();
-        }
-        finally
-        {
-            if (block->Descriptor != null) Marshal.FreeHGlobal((IntPtr)block->Descriptor);
-            Marshal.FreeHGlobal((IntPtr)block);
-        }
+        if (GCHandle.FromIntPtr(block->UserHandle).Target is TaskCompletionSource<bool> completion)
+            completion.TrySetResult(success != 0);
     }
 
-    private static IntPtr GetNSConcreteGlobalBlock()
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+    private static unsafe void CopyAuthReply(BlockLiteral* destination, BlockLiteral* source)
     {
-        var lib = NativeLibrary.Load("/usr/lib/libSystem.B.dylib");
-        return NativeLibrary.GetExport(lib, "_NSConcreteGlobalBlock");
+        // The stack block is copied once. Subsequent copies retain the same heap block.
     }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+    private static unsafe void DisposeAuthReply(BlockLiteral* block)
+        => GCHandle.FromIntPtr(block->UserHandle).Free();
+
+    [DllImport(SystemLib, EntryPoint = "_Block_copy")]
+    private static extern unsafe IntPtr BlockCopy(BlockLiteral* block);
+
+    [DllImport(SystemLib, EntryPoint = "_Block_release")]
+    private static extern void BlockRelease(IntPtr block);
 
     [DllImport(ObjCLib)]
     private static extern IntPtr objc_getClass(string name);

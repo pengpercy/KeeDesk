@@ -2,7 +2,9 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using KeeDesk.Core.Services;
 using KeeDesk.Helpers;
+using KeeDesk.Services;
 using KeeDesk.ViewModels;
 using static KeeDesk.Services.LocalizationService;
 
@@ -12,17 +14,18 @@ public partial class SettingsWindow : Window
 {
     private readonly MainWindowViewModel? _vm;
     private bool _loading = true;
+    private bool _recordingAutoTypeShortcut;
 
     public SettingsWindow() : this(null, 0) { }
 
     public SettingsWindow(MainWindowViewModel? vm, int initialTabIndex = 0)
     {
         InitializeComponent();
+        _vm = vm;
         DesktopSettingsChrome.IsVisible = !DesktopWindowChrome.ButtonsOnLeft;
         MacTitleBarInsets.AttachTrafficLightsCentering(this, ExtendClientAreaTitleBarHeightHint);
         InitializeShortcutReference();
         SwitchPage(initialTabIndex);
-        _vm = vm;
         AboutActions.DataContext = vm;
         CheckUpdateIcon.Classes.Set("animateUpdate", !SystemMotionPreferences.ReduceMotion);
         if (vm is not null)
@@ -47,18 +50,94 @@ public partial class SettingsWindow : Window
     private void InitializeShortcutReference()
     {
         bool macOS = OperatingSystem.IsMacOS();
-        bool hasGlobalAutoType = macOS || OperatingSystem.IsWindows();
+        bool hasGlobalAutoType = DesktopShortcut.IsSupported;
         GlobalAutoTypeHint.IsVisible = hasGlobalAutoType;
-        GlobalAutoTypeKeys.IsVisible = hasGlobalAutoType;
+        GlobalAutoTypeActions.IsVisible = hasGlobalAutoType;
         ManualAutoTypeHint.IsVisible = !hasGlobalAutoType;
         if (hasGlobalAutoType)
-            GlobalAutoTypeKeys.ItemsSource = macOS ? new[] { "⌃", "⌥", "A" } : new[] { "Ctrl", "Alt", "A" };
+        {
+            var shortcut = _vm?.SettingsService.Settings.AutoTypeShortcut ?? DesktopShortcut.Default;
+            GlobalAutoTypeKeys.ItemsSource = shortcut.GetLabels().ToArray();
+            if (_vm is { IsAutoTypeShortcutRegistered: false })
+                ShowAutoTypeShortcutError("Str_AutoTypeShortcutUnavailable");
+        }
 
         string modifier = macOS ? "⌘" : "Ctrl";
         SearchShortcutKeys.ItemsSource = new[] { modifier, "K" };
         NewEntryShortcutKeys.ItemsSource = new[] { modifier, "N" };
         SaveShortcutKeys.ItemsSource = new[] { modifier, "S" };
         LockShortcutKeys.ItemsSource = new[] { modifier, "L" };
+    }
+
+    private void ChangeAutoTypeShortcut_Click(object? sender, RoutedEventArgs e)
+    {
+        SetAutoTypeRecording(true);
+        GlobalAutoTypeStatus.IsVisible = false;
+        ChangeAutoTypeShortcutButton.Focus();
+    }
+
+    private void ResetAutoTypeShortcut_Click(object? sender, RoutedEventArgs e) =>
+        SaveAutoTypeShortcut(DesktopShortcut.Default);
+
+    private void AutoTypeShortcut_LostFocus(object? sender, RoutedEventArgs e) => SetAutoTypeRecording(false);
+
+    private void AutoTypeShortcut_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (!_recordingAutoTypeShortcut) return;
+        e.Handled = true;
+        if (e.Key == Key.Escape)
+        {
+            SetAutoTypeRecording(false);
+            return;
+        }
+        if (e.Key is Key.LeftAlt or Key.RightAlt or Key.LeftCtrl or Key.RightCtrl or Key.LeftShift or Key.RightShift or Key.LWin or Key.RWin)
+            return;
+
+        char key = e.Key switch
+        {
+            >= Key.A and <= Key.Z => (char)('A' + (int)(e.Key - Key.A)),
+            >= Key.D0 and <= Key.D9 => (char)('0' + (int)(e.Key - Key.D0)),
+            _ => '\0'
+        };
+        var modifiers = AutoTypeModifiers.None;
+        if (e.KeyModifiers.HasFlag(KeyModifiers.Alt)) modifiers |= AutoTypeModifiers.Alt;
+        if (e.KeyModifiers.HasFlag(KeyModifiers.Control)) modifiers |= AutoTypeModifiers.Control;
+        if (e.KeyModifiers.HasFlag(KeyModifiers.Shift)) modifiers |= AutoTypeModifiers.Shift;
+        if (e.KeyModifiers.HasFlag(KeyModifiers.Meta)) modifiers |= AutoTypeModifiers.Command;
+        var shortcut = new DesktopShortcut(key, modifiers);
+        if (!shortcut.IsValid)
+        {
+            ShowAutoTypeShortcutError("Str_AutoTypeShortcutInvalid");
+            return;
+        }
+        SaveAutoTypeShortcut(shortcut);
+    }
+
+    private void SaveAutoTypeShortcut(DesktopShortcut shortcut)
+    {
+        SetAutoTypeRecording(false);
+        if (_vm?.RegisterAutoTypeShortcut?.Invoke(shortcut) != true)
+        {
+            ShowAutoTypeShortcutError("Str_AutoTypeShortcutUnavailable");
+            return;
+        }
+        _vm.SettingsService.Settings.AutoTypeShortcut = shortcut;
+        _vm.SettingsService.Save();
+        GlobalAutoTypeKeys.ItemsSource = shortcut.GetLabels().ToArray();
+        GlobalAutoTypeStatus.IsVisible = false;
+    }
+
+    private void SetAutoTypeRecording(bool recording)
+    {
+        _recordingAutoTypeShortcut = recording;
+        EditAutoTypeShortcutText.IsVisible = !recording;
+        RecordAutoTypeShortcutText.IsVisible = recording;
+    }
+
+    private void ShowAutoTypeShortcutError(string key)
+    {
+        GlobalAutoTypeStatus.Text = L(key);
+        GlobalAutoTypeStatus.IsVisible = true;
     }
 
     private void TitleBar_PointerPressed(object? sender, PointerPressedEventArgs e)
@@ -201,6 +280,21 @@ public partial class SettingsWindow : Window
     private async void ExportEmergency_Click(object? sender, RoutedEventArgs e)
     {
         if (_vm is not null) await _vm.ExportEmergencySheetCommand.ExecuteAsync(null);
+    }
+
+    private async void PrintVault_Click(object? sender, RoutedEventArgs e)
+    {
+        if (_vm is not null) await _vm.PrintVaultCommand.ExecuteAsync(null);
+    }
+
+    private async void ImportLegacyKdb_Click(object? sender, RoutedEventArgs e)
+    {
+        if (_vm is not null) await _vm.ImportLegacyKdbCommand.ExecuteAsync(null);
+    }
+
+    private async void ExportVaultStylesheet_Click(object? sender, RoutedEventArgs e)
+    {
+        if (_vm is not null) await _vm.ExportVaultStylesheetCommand.ExecuteAsync(null);
     }
 
     private void OpenGitHub_Click(object? sender, RoutedEventArgs e)

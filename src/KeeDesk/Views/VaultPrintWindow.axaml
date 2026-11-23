@@ -1,0 +1,22 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="KeeDesk.Views.VaultPrintWindow"
+        Title="{DynamicResource Str_PrintVault}"
+        Width="420" SizeToContent="Height" CanResize="False" WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource WorkspaceBackgroundBrush}" Foreground="{DynamicResource PrimaryTextBrush}">
+    <StackPanel Margin="22,18" Spacing="12">
+        <TextBlock Text="{DynamicResource Str_PrintVault}" FontSize="18" FontWeight="SemiBold" />
+        <ComboBox x:Name="LayoutBox" Classes="localizedOptions" HorizontalAlignment="Stretch" SelectedIndex="0"
+                  AutomationProperties.Name="{DynamicResource Str_PrintLayout}">
+            <ComboBoxItem Content="{DynamicResource Str_PrintTableLayout}" />
+            <ComboBoxItem Content="{DynamicResource Str_PrintDetailLayout}" />
+        </ComboBox>
+        <CheckBox x:Name="SelectionCheck" Content="{DynamicResource Str_PrintCurrentList}" />
+        <CheckBox x:Name="IncludePasswordsCheck" Content="{DynamicResource Str_PrintIncludePasswords}" />
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+            <Button Height="34" Content="{DynamicResource Str_Cancel}" IsCancel="True" Click="Cancel_Click" />
+            <Button Height="34" Classes="accent" Content="{DynamicResource Str_PrintSaveAndOpen}"
+                    IsDefault="True" Click="Print_Click" />
+        </StackPanel>
+    </StackPanel>
+</Window>

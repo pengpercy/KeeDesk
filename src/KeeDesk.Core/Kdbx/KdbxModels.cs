@@ -17,9 +17,10 @@ public sealed class KdbxDatabase : IDisposable
 
     public KdbxMeta Meta { get; set; } = new();
     public KdbxGroup RootGroup { get; set; } = new() { Name = "Root", IconId = 48 };
-    public List<KdbxDeletedObject> DeletedObjects { get; } = new();
+    public List<KdbxDeletedObject> DeletedObjects { get; private set; } = new();
 
     public string? FilePath { get; set; }
+    internal byte[]? SavedFileHash { get; set; }
     public bool IsModified { get; set; }
 
     public IEnumerable<KdbxEntry> EnumerateAllEntries(bool includeRecycleBin = false)
@@ -274,6 +275,19 @@ public sealed class KdbxDatabase : IDisposable
     {
         RootGroup.Dispose();
     }
+
+    internal KdbxDatabase CloneForSynchronization()
+    {
+        var copy = (KdbxDatabase)MemberwiseClone();
+        copy.Meta = Meta.Clone();
+        copy.RootGroup = RootGroup.CloneTree();
+        copy.DeletedObjects = DeletedObjects.Select(item => new KdbxDeletedObject
+        {
+            Uuid = item.Uuid,
+            DeletionTime = item.DeletionTime
+        }).ToList();
+        return copy;
+    }
 }
 
 public sealed class KdbxMeta
@@ -304,8 +318,16 @@ public sealed class KdbxMeta
     public long HistoryMaxSize { get; set; } = 6 * 1024 * 1024;
     public Guid LastSelectedGroup { get; set; } = Guid.Empty;
     public Guid LastTopVisibleGroup { get; set; } = Guid.Empty;
-    public List<KdbxCustomIcon> CustomIcons { get; } = new();
-    public Dictionary<string, KdbxCustomDataItem> CustomData { get; } = new();
+    public List<KdbxCustomIcon> CustomIcons { get; private set; } = new();
+    public Dictionary<string, KdbxCustomDataItem> CustomData { get; private set; } = new();
+
+    internal KdbxMeta Clone()
+    {
+        var copy = (KdbxMeta)MemberwiseClone();
+        copy.CustomIcons = CustomIcons.Select(icon => icon.Clone()).ToList();
+        copy.CustomData = CustomData.ToDictionary(pair => pair.Key, pair => pair.Value.Clone(), CustomData.Comparer);
+        return copy;
+    }
 }
 
 public sealed class KdbxCustomIcon
@@ -314,12 +336,21 @@ public sealed class KdbxCustomIcon
     public byte[] Data { get; set; } = Array.Empty<byte>();
     public string Name { get; set; } = string.Empty;
     public DateTimeOffset? LastModificationTime { get; set; }
+
+    internal KdbxCustomIcon Clone()
+    {
+        var copy = (KdbxCustomIcon)MemberwiseClone();
+        copy.Data = Data.ToArray();
+        return copy;
+    }
 }
 
 public sealed class KdbxCustomDataItem
 {
     public string Value { get; set; } = string.Empty;
     public DateTimeOffset? LastModificationTime { get; set; }
+
+    internal KdbxCustomDataItem Clone() => (KdbxCustomDataItem)MemberwiseClone();
 }
 
 public sealed class KdbxGroup : IDisposable
@@ -336,7 +367,7 @@ public sealed class KdbxGroup : IDisposable
     public Guid LastTopVisibleEntry { get; set; } = Guid.Empty;
     public Guid PreviousParentGroup { get; set; } = Guid.Empty;
     public List<string> Tags { get; set; } = new();
-    public Dictionary<string, KdbxCustomDataItem> CustomData { get; } = new();
+    public Dictionary<string, KdbxCustomDataItem> CustomData { get; private set; } = new();
 
     public DateTimeOffset CreationTime { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset LastModificationTime { get; set; } = DateTimeOffset.UtcNow;
@@ -347,8 +378,8 @@ public sealed class KdbxGroup : IDisposable
     public DateTimeOffset LocationChanged { get; set; } = DateTimeOffset.UtcNow;
 
     public KdbxGroup? Parent { get; internal set; }
-    public List<KdbxGroup> Groups { get; } = new();
-    public List<KdbxEntry> Entries { get; } = new();
+    public List<KdbxGroup> Groups { get; private set; } = new();
+    public List<KdbxEntry> Entries { get; private set; } = new();
 
     public void AddGroup(KdbxGroup group)
     {
@@ -378,6 +409,27 @@ public sealed class KdbxGroup : IDisposable
     {
         foreach (var e in Entries) e.Dispose();
         foreach (var g in Groups) g.Dispose();
+    }
+
+    internal KdbxGroup CloneWithoutChildren()
+    {
+        var copy = (KdbxGroup)MemberwiseClone();
+        copy.Parent = null;
+        copy.Groups = new List<KdbxGroup>();
+        copy.Entries = new List<KdbxEntry>();
+        copy.Tags = Tags.ToList();
+        copy.CustomData = CustomData.ToDictionary(pair => pair.Key, pair => pair.Value.Clone(), CustomData.Comparer);
+        return copy;
+    }
+
+    internal KdbxGroup CloneTree()
+    {
+        var copy = CloneWithoutChildren();
+        foreach (var group in Groups)
+            copy.AddGroup(group.CloneTree());
+        foreach (var entry in Entries)
+            copy.AddEntry(entry.CloneWithHistory());
+        return copy;
     }
 }
 
@@ -529,7 +581,12 @@ public sealed class KdbxEntry : IDisposable
     public void RestoreFromHistory(KdbxEntry snapshot, int maxItems = 10)
     {
         CreateHistorySnapshot(maxItems);
+        CopyContentFrom(snapshot);
+        LastModificationTime = DateTimeOffset.UtcNow;
+    }
 
+    internal void CopyContentFrom(KdbxEntry snapshot)
+    {
         IconId = snapshot.IconId;
         CustomIconUuid = snapshot.CustomIconUuid;
         ForegroundColor = snapshot.ForegroundColor;
@@ -551,7 +608,14 @@ public sealed class KdbxEntry : IDisposable
         foreach (var kv in snapshot.Binaries)
             Binaries[kv.Key] = kv.Value.Clone();
 
-        LastModificationTime = DateTimeOffset.UtcNow;
+    }
+
+    internal KdbxEntry CloneWithHistory()
+    {
+        var copy = CloneWithoutHistory();
+        foreach (var snapshot in History)
+            copy.History.Add(snapshot.CloneWithoutHistory());
+        return copy;
     }
 
     public void Dispose()

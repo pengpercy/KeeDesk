@@ -16,7 +16,7 @@ public static class ImportExportService
 
         foreach (var entry in db.EnumerateAllEntries(includeRecycleBin: false))
         {
-            string groupPath = entry.Parent?.GetFullPath("/") ?? string.Empty;
+            string groupPath = ExportGroupPath(entry.Parent, db.RootGroup);
             string totp = entry.GetString(KdbxConstants.FieldOtp);
             if (string.IsNullOrEmpty(totp)) totp = entry.GetString(KdbxConstants.FieldTimeOtpSecretBase32);
 
@@ -35,69 +35,79 @@ public static class ImportExportService
 
     public static int ImportFromCsv(KdbxDatabase db, string csvContent, KdbxGroup? targetGroup = null)
     {
-        var rows = ParseCsv(csvContent);
-        if (rows.Count < 2) return 0;
+        var document = CsvImportDocument.Parse(csvContent);
+        return ImportFromCsv(db, document, document.GuessMapping(hasHeader: true), hasHeader: true, targetGroup);
+    }
 
-        var header = rows[0].Select(h => h.Trim().ToLowerInvariant()).ToList();
-        int idxTitle = FindColumn(header, "title", "name", "account", "service");
-        int idxUser = FindColumn(header, "username", "login_username", "user", "login", "email");
-        int idxPass = FindColumn(header, "password", "login_password", "pass");
-        int idxUrl = FindColumn(header, "url", "login_uri", "website", "uri");
-        int idxNotes = FindColumn(header, "notes", "note", "comments", "extra");
-        int idxTotp = FindColumn(header, "totp", "login_totp", "otpauth", "otp", "2fa");
-        int idxGroup = FindColumn(header, "group", "folder", "grouping", "category");
-        int idxTags = FindColumn(header, "tags", "tag");
-        int idxFav = FindColumn(header, "favorite", "starred");
+    public static int ImportFromCsv(KdbxDatabase db, CsvImportDocument document, IReadOnlyList<CsvImportField> mapping,
+        bool hasHeader, KdbxGroup? targetGroup = null, Func<int, string>? untitled = null)
+    {
+        var selectedFields = mapping.Where(field => field != CsvImportField.Ignore).ToArray();
+        if (selectedFields.Length == 0) return 0;
+        if (mapping.Count != document.ColumnCount || selectedFields.Distinct().Count() != selectedFields.Length)
+            throw new ArgumentException("Each destination field should be mapped once.", nameof(mapping));
 
-        var destRoot = targetGroup ?? db.RootGroup;
+        var root = targetGroup ?? db.RootGroup;
         int imported = 0;
-
-        for (int i = 1; i < rows.Count; i++)
+        foreach (var row in document.Rows.Skip(hasHeader ? 1 : 0))
         {
-            var row = rows[i];
-            if (row.All(string.IsNullOrWhiteSpace)) continue;
-
-            string Get(int idx) => idx >= 0 && idx < row.Count ? row[idx] : string.Empty;
-
+            string Get(CsvImportField field) => CsvImportDocument.Cell(row, mapping, field);
+            if (selectedFields.All(field => string.IsNullOrWhiteSpace(Get(field)))) continue;
             var entry = new KdbxEntry
             {
-                Title = Get(idxTitle),
-                UserName = Get(idxUser),
-                Password = Get(idxPass),
-                Url = Get(idxUrl),
-                Notes = Get(idxNotes)
+                Title = Get(CsvImportField.Title),
+                UserName = Get(CsvImportField.UserName),
+                Password = Get(CsvImportField.Password),
+                Url = Get(CsvImportField.Url),
+                Notes = Get(CsvImportField.Notes)
             };
-
             if (string.IsNullOrWhiteSpace(entry.Title))
-                entry.Title = !string.IsNullOrWhiteSpace(entry.Url) ? entry.Url : $"导入条目 #{i}";
+                entry.Title = !string.IsNullOrWhiteSpace(entry.Url) ? entry.Url :
+                    (untitled?.Invoke(imported + 1) ?? $"Imported entry #{imported + 1}");
 
-            var totp = Get(idxTotp);
-            if (!string.IsNullOrWhiteSpace(totp))
-                entry.SetString(KdbxConstants.FieldOtp, totp, true);
+            string totp = Get(CsvImportField.Totp);
+            if (!string.IsNullOrWhiteSpace(totp)) entry.SetString(KdbxConstants.FieldOtp, totp, true);
+            entry.Tags = Get(CsvImportField.Tags).Split([';', ','], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+            var favorite = Get(CsvImportField.Favorite).Trim();
+            if (favorite == "1" || favorite.Equals("true", StringComparison.OrdinalIgnoreCase) ||
+                favorite.Equals("yes", StringComparison.OrdinalIgnoreCase)) entry.IsFavorite = true;
 
-            var tags = Get(idxTags);
-            if (!string.IsNullOrWhiteSpace(tags))
-                entry.Tags = tags.Split([';', ','], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
-
-            var fav = Get(idxFav).Trim();
-            if (fav is "1" or "true" or "True" or "TRUE" or "yes")
-                entry.IsFavorite = true;
-
-            var groupName = Get(idxGroup).Trim();
-            KdbxGroup dest = destRoot;
-            if (!string.IsNullOrWhiteSpace(groupName))
-            {
-                var leafName = groupName.Split('/').LastOrDefault(s => !string.IsNullOrWhiteSpace(s)) ?? groupName;
-                dest = destRoot.Groups.FirstOrDefault(g => string.Equals(g.Name, leafName, StringComparison.OrdinalIgnoreCase))
-                       ?? CreateSubGroup(destRoot, leafName);
-            }
-
-            dest.AddEntry(entry);
+            var destination = root;
+            foreach (var name in SplitGroupPath(Get(CsvImportField.Group)))
+                destination = destination.Groups.FirstOrDefault(group => group.Name.Equals(name, StringComparison.OrdinalIgnoreCase)
+                    && !db.IsInRecycleBin(group)) ?? CreateSubGroup(destination, name);
+            destination.AddEntry(entry);
             imported++;
         }
-
         if (imported > 0) db.IsModified = true;
         return imported;
+    }
+
+    private static string ExportGroupPath(KdbxGroup? group, KdbxGroup root)
+    {
+        var names = new Stack<string>();
+        for (; group is not null && group != root; group = group.Parent)
+            names.Push(group.Name.Replace(@"\", @"\\").Replace("/", @"\/"));
+        return string.Join("/", names);
+    }
+
+    private static IEnumerable<string> SplitGroupPath(string path)
+    {
+        var name = new StringBuilder();
+        for (int i = 0; i < path.Length; i++)
+        {
+            char ch = path[i];
+            if (ch == '\\' && i + 1 < path.Length && path[i + 1] is '\\' or '/')
+                name.Append(path[++i]);
+            else if (ch == '/')
+            {
+                if (name.Length > 0) yield return name.ToString();
+                name.Clear();
+            }
+            else
+                name.Append(ch);
+        }
+        if (name.Length > 0) yield return name.ToString();
     }
 
     public static string ExportEmergencySheetHtml(KdbxDatabase db)
@@ -155,16 +165,6 @@ public static class ImportExportService
         return g;
     }
 
-    private static int FindColumn(List<string> headers, params string[] candidates)
-    {
-        foreach (var c in candidates)
-        {
-            int idx = headers.IndexOf(c);
-            if (idx >= 0) return idx;
-        }
-        return -1;
-    }
-
     private static string EscapeCsv(string? value)
     {
         if (string.IsNullOrEmpty(value)) return string.Empty;
@@ -173,54 +173,4 @@ public static class ImportExportService
         return value;
     }
 
-    private static List<List<string>> ParseCsv(string content)
-    {
-        var rows = new List<List<string>>();
-        var row = new List<string>();
-        var cell = new StringBuilder();
-        bool inQuotes = false;
-
-        for (int i = 0; i < content.Length; i++)
-        {
-            char c = content[i];
-            if (inQuotes)
-            {
-                if (c == '"')
-                {
-                    if (i + 1 < content.Length && content[i + 1] == '"')
-                    {
-                        cell.Append('"');
-                        i++;
-                    }
-                    else inQuotes = false;
-                }
-                else cell.Append(c);
-            }
-            else
-            {
-                if (c == '"') inQuotes = true;
-                else if (c == ',')
-                {
-                    row.Add(cell.ToString());
-                    cell.Clear();
-                }
-                else if (c == '\r') continue;
-                else if (c == '\n')
-                {
-                    row.Add(cell.ToString());
-                    cell.Clear();
-                    rows.Add(row);
-                    row = new List<string>();
-                }
-                else cell.Append(c);
-            }
-        }
-
-        if (cell.Length > 0 || row.Count > 0)
-        {
-            row.Add(cell.ToString());
-            rows.Add(row);
-        }
-        return rows;
-    }
 }

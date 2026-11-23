@@ -1,4 +1,8 @@
+using System.Text;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
+using System.Xml.XPath;
 using KeeDesk.Core.Kdbx;
 
 namespace KeeDesk.Core.Services;
@@ -10,6 +14,7 @@ public sealed class EntrySearchParameters
 {
     public string Query { get; set; } = string.Empty;
     public bool UseRegex { get; set; }
+    public bool UseXPath { get; set; }
     public bool CaseSensitive { get; set; }
     public bool SearchTitles { get; set; } = true;
     public bool SearchUserNames { get; set; } = true;
@@ -19,9 +24,20 @@ public sealed class EntrySearchParameters
     public bool SearchTags { get; set; } = true;
     public bool SearchCustomFields { get; set; } = true;
     public bool SearchUuid { get; set; }
+    public bool SearchHistory { get; set; }
     public bool ExcludeExpired { get; set; }
     public bool IncludeRecycleBin { get; set; }
-    public KdbxGroup? ScopeGroup { get; set; }
+    [JsonIgnore] public KdbxGroup? ScopeGroup { get; set; }
+
+    internal bool SearchesString(string key) => key switch
+    {
+        KdbxConstants.FieldTitle => SearchTitles,
+        KdbxConstants.FieldUserName => SearchUserNames,
+        KdbxConstants.FieldPassword => SearchPasswords,
+        KdbxConstants.FieldUrl => SearchUrls,
+        KdbxConstants.FieldNotes => SearchNotes,
+        _ => SearchCustomFields
+    };
 }
 
 /// <summary>
@@ -32,7 +48,7 @@ public static class EntrySearchService
     public static List<KdbxEntry> Search(KdbxDatabase db, EntrySearchParameters p)
     {
         IEnumerable<KdbxEntry> source = p.ScopeGroup is not null
-            ? EnumerateGroup(p.ScopeGroup)
+            ? EnumerateGroup(p.ScopeGroup).Where(entry => p.IncludeRecycleBin || !db.IsInRecycleBin(entry))
             : db.EnumerateAllEntries(includeRecycleBin: p.IncludeRecycleBin);
 
         if (p.ExcludeExpired)
@@ -42,36 +58,119 @@ public static class EntrySearchService
         if (string.IsNullOrEmpty(query))
             return source.ToList();
 
-        Regex? regex = null;
+        if (p.UseXPath)
+            return SearchXPath(db, p, source, query);
+
         if (p.UseRegex)
         {
             var opts = RegexOptions.CultureInvariant | (p.CaseSensitive ? RegexOptions.None : RegexOptions.IgnoreCase);
-            regex = new Regex(query, opts, TimeSpan.FromSeconds(2));
+            var regex = new Regex(query, opts, TimeSpan.FromSeconds(2));
+            return source.Where(entry => GetSearchValues(entry, p).Any(value => value.Length > 0 && regex.IsMatch(value))).ToList();
         }
 
-        var cmp = p.CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
-        bool Match(string? text)
+        var terms = SplitTerms(query).ToArray();
+        var comparison = p.CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+        return source.Where(entry => MatchesTerms(entry, p, terms, comparison)).ToList();
+    }
+
+    private static List<KdbxEntry> SearchXPath(KdbxDatabase database, EntrySearchParameters parameters,
+        IEnumerable<KdbxEntry> source, string query)
+    {
+        var candidates = source.ToList();
+        var xml = KdbxXmlSerializer.CreateSearchDocument(database, parameters, candidates.ToHashSet());
+        if (xml.XPathEvaluate(query, new KeePassXPathContext()) is not IEnumerable<object> nodes)
+            throw new XPathException("The XPath expression must select nodes.");
+
+        var matches = new HashSet<KdbxEntry>();
+        foreach (var node in nodes)
         {
-            if (string.IsNullOrEmpty(text)) return false;
-            return regex is not null ? regex.IsMatch(text) : text.Contains(query, cmp);
+            // A selected field or history snapshot belongs to the enclosing live entry.
+            for (var element = node as XElement ?? (node as XObject)?.Parent;
+                 element is not null; element = element.Parent)
+            {
+                if (element.Annotation<KdbxEntry>() is not { } entry) continue;
+                matches.Add(entry);
+                break;
+            }
         }
+        return candidates.Where(matches.Contains).ToList();
+    }
 
-        var results = new List<KdbxEntry>();
-        foreach (var e in source)
+    private static bool MatchesTerms(KdbxEntry entry, EntrySearchParameters p, SearchTerm[] terms,
+        StringComparison comparison)
+    {
+        if (terms.Length == 0) return true;
+        if (terms.Length == 1)
         {
-            bool hit =
-                (p.SearchTitles && Match(e.Title)) ||
-                (p.SearchUserNames && Match(e.UserName)) ||
-                (p.SearchPasswords && Match(e.Password)) ||
-                (p.SearchUrls && Match(e.Url)) ||
-                (p.SearchNotes && Match(e.Notes)) ||
-                (p.SearchTags && e.Tags.Any(Match)) ||
-                (p.SearchUuid && (Match(e.Uuid.ToString("N")) || Match(e.Uuid.ToString("D")))) ||
-                (p.SearchCustomFields && e.GetCustomStrings().Any(kv => Match(kv.Key) || Match(kv.Value.ReadString())));
-
-            if (hit) results.Add(e);
+            var term = terms[0];
+            return GetSearchValues(entry, p).Any(value => value.Contains(term.Value, comparison)) != term.Exclude;
         }
-        return results;
+
+        var values = GetSearchValues(entry, p).ToArray();
+        return terms.All(term => values.Any(value => value.Contains(term.Value, comparison)) != term.Exclude);
+    }
+
+    private static IEnumerable<SearchTerm> SplitTerms(string query)
+    {
+        var term = new StringBuilder();
+        bool quoted = false;
+        foreach (char character in query)
+        {
+            if (character == '"')
+                quoted = !quoted;
+            else if (!quoted && char.IsWhiteSpace(character))
+            {
+                if (term.Length > 0)
+                {
+                    yield return SearchTerm.From(term.ToString());
+                    term.Clear();
+                }
+            }
+            else
+                term.Append(character);
+        }
+        if (term.Length > 0)
+            yield return SearchTerm.From(term.ToString());
+    }
+
+    private static IEnumerable<string> GetSearchValues(KdbxEntry entry, EntrySearchParameters parameters)
+    {
+        foreach (var value in GetEntryValues(entry, parameters))
+            yield return value;
+
+        if (parameters.SearchHistory)
+            foreach (var snapshot in entry.History)
+                foreach (var value in GetEntryValues(snapshot, parameters))
+                    yield return value;
+    }
+
+    private static IEnumerable<string> GetEntryValues(KdbxEntry entry, EntrySearchParameters p)
+    {
+        if (p.SearchTitles) yield return entry.Title;
+        if (p.SearchUserNames) yield return entry.UserName;
+        if (p.SearchPasswords) yield return entry.Password;
+        if (p.SearchUrls) yield return entry.Url;
+        if (p.SearchNotes) yield return entry.Notes;
+        if (p.SearchTags)
+            foreach (var tag in entry.Tags)
+                yield return tag;
+        if (p.SearchUuid)
+        {
+            yield return entry.Uuid.ToString("N");
+            yield return entry.Uuid.ToString("D");
+        }
+        if (p.SearchCustomFields)
+            foreach (var (key, value) in entry.GetCustomStrings())
+            {
+                yield return key;
+                yield return value.ReadString();
+            }
+    }
+
+    private readonly record struct SearchTerm(string Value, bool Exclude)
+    {
+        public static SearchTerm From(string value) =>
+            value.Length > 1 && value[0] == '-' ? new SearchTerm(value[1..], true) : new SearchTerm(value, false);
     }
 
     public static List<KdbxEntry> FindExpired(KdbxDatabase db)

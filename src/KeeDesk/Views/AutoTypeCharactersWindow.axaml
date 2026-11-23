@@ -1,0 +1,24 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="KeeDesk.Views.AutoTypeCharactersWindow"
+        Title="{DynamicResource Str_AutoTypePickCharacters}"
+        Width="420" SizeToContent="Height" MinHeight="250" MaxHeight="480" CanResize="False"
+        WindowStartupLocation="CenterScreen" Topmost="True"
+        Background="{DynamicResource WorkspaceBackgroundBrush}"
+        Foreground="{DynamicResource PrimaryTextBrush}">
+    <StackPanel Margin="22,18" Spacing="12">
+        <TextBlock Text="{DynamicResource Str_AutoTypePickCharacters}" FontSize="17" FontWeight="SemiBold" />
+        <TextBlock x:Name="FieldHint" Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap" />
+        <ScrollViewer x:Name="PreviewScroll" MaxHeight="80" HorizontalScrollBarVisibility="Disabled">
+            <TextBlock x:Name="CharacterPreview" FontFamily="monospace" TextWrapping="Wrap" />
+        </ScrollViewer>
+        <TextBox x:Name="Positions" Height="34" PlaceholderText="{DynamicResource Str_AutoTypePositionsExample}"
+                 AutomationProperties.Name="{DynamicResource Str_AutoTypePickCharacters}" />
+        <TextBlock x:Name="ErrorText" Text="{DynamicResource Str_AutoTypeInvalidPositions}"
+                   IsVisible="False" TextWrapping="Wrap" Foreground="{DynamicResource DangerBrush}" />
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+            <Button Height="34" Content="{DynamicResource Str_Cancel}" IsCancel="True" Click="Cancel_Click" />
+            <Button Height="34" Classes="accent" Content="{DynamicResource Str_OK}" IsDefault="True" Click="Select_Click" />
+        </StackPanel>
+    </StackPanel>
+</Window>

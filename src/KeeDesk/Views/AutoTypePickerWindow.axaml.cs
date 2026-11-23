@@ -28,7 +28,7 @@ public partial class AutoTypePickerWindow : Window
         MacTitleBarInsets.AttachTrafficLightsCentering(this, 40);
 
         MatchListBox.ItemsSource = _matches
-            .Select(m => $"{m.Entry.Title}  —  {m.Entry.UserName}  [{DescribeMatch(m)}]")
+            .Select(m => $"{m.Entry.Title}  —  {m.Entry.UserName}  ·  {m.Vault?.Meta.DatabaseName}  [{DescribeMatch(m)}]")
             .ToList();
         if (_matches.Count > 0) MatchListBox.SelectedIndex = 0;
 
@@ -40,7 +40,7 @@ public partial class AutoTypePickerWindow : Window
         AutoTypeMatchKind.Rule => L("Str_RuleMatchFormat", match.MatchValue),
         AutoTypeMatchKind.Title => L("Str_WindowTitleMatch"),
         AutoTypeMatchKind.Domain => L("Str_DomainMatchFormat", match.MatchValue),
-        _ => match.MatchReason
+        _ => L("Str_ManualSelection")
     };
 
     private void Confirm_Click(object? sender, RoutedEventArgs e)

@@ -14,6 +14,7 @@ public sealed class AppSettings
     public bool AutoLockIdleEnabled { get; set; } = true;
     public int AutoLockIdleMinutes { get; set; } = 10;
     public bool MinimizeToTray { get; set; } = true;
+    public DesktopShortcut? AutoTypeShortcut { get; set; }
     public double? MainWindowWidth { get; set; }
     public double? MainWindowHeight { get; set; }
     public List<RecentVaultItem> RecentVaults { get; set; } = new();
@@ -36,6 +37,7 @@ public sealed class AppSettingsService
 {
     private readonly string _settingsPath;
     public AppSettings Settings { get; private set; }
+    internal string RecoveryDirectory => Path.Combine(Path.GetDirectoryName(_settingsPath)!, "Recovery");
 
     public AppSettingsService()
     {

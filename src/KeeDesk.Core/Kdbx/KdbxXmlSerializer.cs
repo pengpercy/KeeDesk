@@ -5,6 +5,7 @@ using System.Text;
 using System.Xml;
 using System.Xml.Linq;
 using KeeDesk.Core.Crypto;
+using KeeDesk.Core.Services;
 
 namespace KeeDesk.Core.Kdbx;
 
@@ -118,6 +119,16 @@ public static class KdbxXmlSerializer
         }
         return ms.ToArray();
     }
+
+    internal static XDocument CreateSearchDocument(KdbxDatabase db, EntrySearchParameters parameters,
+        HashSet<KdbxEntry> candidates)
+    {
+        var search = new SearchProjection(parameters, candidates);
+        return new XDocument(new XElement("KeePassFile",
+            new XElement("Root", WriteGroup(parameters.ScopeGroup ?? db.RootGroup, false, null, new(), search))));
+    }
+
+    private sealed record SearchProjection(EntrySearchParameters Parameters, HashSet<KdbxEntry> Candidates);
 
     private static void CollectBinaries(
         KdbxGroup group,
@@ -345,7 +356,8 @@ public static class KdbxXmlSerializer
         KdbxGroup g,
         bool isKdbx4,
         InnerStreamCipher? cipher,
-        Dictionary<KdbxEntry, Dictionary<string, int>> binaryRefMap)
+        Dictionary<KdbxEntry, Dictionary<string, int>> binaryRefMap,
+        SearchProjection? search = null)
     {
         var el = new XElement("Group",
             new XElement("UUID", EncodeUuid(g.Uuid)),
@@ -373,16 +385,23 @@ public static class KdbxXmlSerializer
 
         if (g.PreviousParentGroup != Guid.Empty)
             el.Add(new XElement("PreviousParentGroup", EncodeUuid(g.PreviousParentGroup)));
-        if (g.Tags.Count > 0)
+        if (g.Tags.Count > 0 && search?.Parameters.SearchTags != false)
             el.Add(new XElement("Tags", string.Join(";", g.Tags)));
         if (g.CustomData.Count > 0)
             el.Add(WriteCustomData(g.CustomData, isKdbx4));
 
         foreach (var entry in g.Entries)
-            el.Add(WriteEntry(entry, isKdbx4, cipher, binaryRefMap, includeHistory: true));
+        {
+            if (search is not null && !search.Candidates.Contains(entry)) continue;
+            var entryElement = WriteEntry(entry, isKdbx4, cipher, binaryRefMap,
+                includeHistory: search?.Parameters.SearchHistory ?? true, search?.Parameters);
+            if (search is not null)
+                entryElement.AddAnnotation(entry);
+            el.Add(entryElement);
+        }
 
         foreach (var sub in g.Groups)
-            el.Add(WriteGroup(sub, isKdbx4, cipher, binaryRefMap));
+            el.Add(WriteGroup(sub, isKdbx4, cipher, binaryRefMap, search));
 
         return el;
     }
@@ -481,7 +500,8 @@ public static class KdbxXmlSerializer
         bool isKdbx4,
         InnerStreamCipher? cipher,
         Dictionary<KdbxEntry, Dictionary<string, int>> binaryRefMap,
-        bool includeHistory)
+        bool includeHistory,
+        EntrySearchParameters? search = null)
     {
         var el = new XElement("Entry",
             new XElement("UUID", EncodeUuid(e.Uuid)),
@@ -494,7 +514,7 @@ public static class KdbxXmlSerializer
             new XElement("ForegroundColor", e.ForegroundColor),
             new XElement("BackgroundColor", e.BackgroundColor),
             new XElement("OverrideURL", e.OverrideUrl),
-            new XElement("Tags", string.Join(";", e.Tags)));
+            new XElement("Tags", search?.SearchTags == false ? string.Empty : string.Join(";", e.Tags)));
 
         if (!e.QualityCheck)
             el.Add(new XElement("QualityCheck", "False"));
@@ -512,7 +532,11 @@ public static class KdbxXmlSerializer
 
         foreach (var (key, ps) in e.Strings)
         {
-            if (ps.IsProtected && cipher is not null)
+            if (search?.SearchesString(key) == false)
+            {
+                el.Add(new XElement("String", new XElement("Key", key), new XElement("Value")));
+            }
+            else if (ps.IsProtected && cipher is not null)
             {
                 byte[] utf8 = ps.ReadUtf8();
                 byte[] enc = cipher.Process(utf8);
@@ -529,7 +553,12 @@ public static class KdbxXmlSerializer
             }
         }
 
-        if (binaryRefMap.TryGetValue(e, out var refs))
+        if (search is not null)
+        {
+            foreach (var name in e.Binaries.Keys)
+                el.Add(new XElement("Binary", new XElement("Key", name), new XElement("Value")));
+        }
+        else if (binaryRefMap.TryGetValue(e, out var refs))
         {
             foreach (var (name, idx) in refs)
             {
@@ -559,7 +588,7 @@ public static class KdbxXmlSerializer
         {
             var histEl = new XElement("History");
             foreach (var h in e.History)
-                histEl.Add(WriteEntry(h, isKdbx4, cipher, binaryRefMap, includeHistory: false));
+                histEl.Add(WriteEntry(h, isKdbx4, cipher, binaryRefMap, includeHistory: false, search));
             el.Add(histEl);
         }
 

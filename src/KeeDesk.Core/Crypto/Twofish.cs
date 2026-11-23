@@ -32,7 +32,9 @@ public sealed class TwofishCipher
     private readonly uint[] _subKeys = new uint[40];
     private readonly uint[,] _sBox = new uint[4, 256];
 
-    public TwofishCipher(ReadOnlySpan<byte> key)
+    public TwofishCipher(ReadOnlySpan<byte> key) : this(key, standardKeyedBoxes: false) { }
+
+    internal TwofishCipher(ReadOnlySpan<byte> key, bool standardKeyedBoxes)
     {
         if (key.Length != 32)
             throw new ArgumentException("Twofish requires a 32-byte key.", nameof(key));
@@ -60,6 +62,16 @@ public sealed class TwofishCipher
         for (int x = 0; x < 256; x++)
         {
             byte b0 = (byte)x;
+            // KeePass 1.x files use the published Twofish key schedule. KeeDesk's prior
+            // KDBX implementation used different keyed boxes and still needs its old reader.
+            if (standardKeyedBoxes)
+            {
+                _sBox[0, x] = HColumn(0, b0, s);
+                _sBox[1, x] = HColumn(1, b0, s);
+                _sBox[2, x] = HColumn(2, b0, s);
+                _sBox[3, x] = HColumn(3, b0, s);
+                continue;
+            }
             byte y0 = Q0Table[Q0Table[Q1Table[b0] ^ B0(s[3])] ^ B0(s[2])];
             y0 = Q1Table[Q0Table[y0 ^ B0(s[1])] ^ B0(s[0])];
             _sBox[0, x] = Mds[0, y0];
@@ -187,6 +199,21 @@ public sealed class TwofishCipher
     }
 
     private uint G(uint x) => _sBox[0, B0(x)] ^ _sBox[1, B1(x)] ^ _sBox[2, B2(x)] ^ _sBox[3, B3(x)];
+
+    private static uint HColumn(int column, byte x, uint[] words)
+    {
+        int shift = column * 8;
+        byte key3 = (byte)(words[3] >> shift);
+        byte key2 = (byte)(words[2] >> shift);
+        byte key1 = (byte)(words[1] >> shift);
+        byte key0 = (byte)(words[0] >> shift);
+        int value = (column is 0 or 3 ? Q1Table : Q0Table)[x] ^ key3;
+        value = (column < 2 ? Q1Table : Q0Table)[value] ^ key2;
+        value = (column % 2 == 0 ? Q0Table : Q1Table)[value] ^ key1;
+        value = (column < 2 ? Q0Table : Q1Table)[value] ^ key0;
+        value = (column % 2 == 0 ? Q1Table : Q0Table)[value];
+        return Mds[column, value];
+    }
 
     private static uint H(uint x, uint[] l)
     {

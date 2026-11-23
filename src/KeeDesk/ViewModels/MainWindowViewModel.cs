@@ -22,6 +22,8 @@ public enum ActiveSection
     CustomFilter
 }
 
+public sealed record SimilarPasswordPairViewModel(EntryItemViewModel First, EntryItemViewModel Second, double Similarity);
+
 public enum ToastSeverity { Information, Success, Error }
 
 /// <summary>
@@ -30,8 +32,12 @@ public enum ToastSeverity { Information, Success, Error }
 public sealed partial class VaultTabSession : ObservableObject
 {
     public Guid Id { get; } = Guid.NewGuid();
-    public KdbxDatabase Database { get; }
+    public KdbxDatabase Database { get; internal set; }
     public CompositeKey MasterKey { get; set; }
+    public string? KeyFilePath { get; set; }
+    public bool HasPendingMasterKeyChange { get; set; }
+    public bool HasFileConflict { get; set; }
+    public RemoteVaultClient? RemoteVault { get; set; }
 
     [ObservableProperty] private string _displayName;
     [ObservableProperty] private bool _isActive;
@@ -53,12 +59,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 {
     public AppSettingsService SettingsService { get; }
     private KdbxDatabase? _database;
-    private CompositeKey? _masterKey;
     private VaultTabSession? _activeSession;
     private DateTimeOffset _lastActivityUtc = DateTimeOffset.UtcNow;
     private readonly DispatcherTimer _tickTimer;
     private readonly DispatcherTimer _toastTimer = new() { Interval = TimeSpan.FromSeconds(4) };
     private CancellationTokenSource? _clipboardClearCts;
+    private CancellationTokenSource? _autoTypeCancellation;
     private string? _lastCopiedSecret;
 
     public ObservableCollection<VaultTabSession> OpenVaults { get; } = new();
@@ -124,7 +130,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     // Workspace properties
     [ObservableProperty] private string _vaultDisplayName = "KeeDesk";
     public bool HasSearchQuery => !string.IsNullOrWhiteSpace(SearchQuery);
-    public string VaultSaveStatus => IsModified ? L("Str_UnsavedChanges") : L("Str_AllChangesSaved");
+    public string VaultSaveStatus => _activeSession?.HasFileConflict == true
+        ? L("Str_VaultChangedOnDiskStatus")
+        : IsModified ? L("Str_UnsavedChanges") : L("Str_AllChangesSaved");
     [ObservableProperty, NotifyPropertyChangedFor(nameof(HasSearchQuery))]
     private string _searchQuery = string.Empty;
     [ObservableProperty] private string _currentFilterTitle = L("Str_AllEntries3");
@@ -161,6 +169,10 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public ObservableCollection<EntryItemViewModel> AuditReusedEntries { get; } = new();
     public ObservableCollection<EntryItemViewModel> AuditExpiringEntries { get; } = new();
     public ObservableCollection<EntryItemViewModel> AuditNo2FaEntries { get; } = new();
+    public ObservableCollection<SimilarPasswordPairViewModel> AuditSimilarPasswords { get; } = new();
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(IsSimilarPasswordScanEmpty))]
+    private bool _hasSimilarPasswordScanResult;
+    public bool IsSimilarPasswordScanEmpty => HasSimilarPasswordScanResult && AuditSimilarPasswords.Count == 0;
 
     // Toast notification
     [ObservableProperty] private string _toastMessage = string.Empty;
@@ -190,8 +202,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public Func<string, string, string, Task<(KdbxDatabase Database, CompositeKey MasterKey, string KeyFilePath)?>>? OpenVaultUnlockPromptAsync { get; set; }
     public Func<KdbxDatabase, KdbxEntry, Task<KdbxGroup?>>? OpenMoveToGroupAsync { get; set; }
     public Func<KdbxDatabase, Task<bool>>? OpenDatabaseMaintenanceAsync { get; set; }
-    public Func<Task<EntrySearchParameters?>>? OpenAdvancedSearchAsync { get; set; }
-    public Func<string, List<AutoTypeMatchResult>, Task<AutoTypeMatchResult?>>? OpenAutoTypePickerAsync { get; set; }
+    public Func<KdbxDatabase, Task<(string Query, List<KdbxEntry> Entries)?>>? OpenAdvancedSearchAsync { get; set; }
+    public Func<string, List<AutoTypeMatchResult>, CancellationToken, Task<AutoTypeMatchResult?>>? OpenAutoTypePickerAsync { get; set; }
+    public Func<AutoTypePickCharactersStep, CancellationToken, Task<IReadOnlyList<int>?>>? OpenAutoTypeCharactersAsync { get; set; }
+    public Func<DesktopShortcut, bool>? RegisterAutoTypeShortcut { get; set; }
+    public bool IsAutoTypeShortcutRegistered { get; set; }
     public Action<string>? OpenUrlExternal { get; set; }
     public Action? MinimizeWindowAction { get; set; }
 
@@ -229,7 +244,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         if (_database is not null)
             AuditCheckedDisplay = L("Str_CheckedEntriesFormat", AllCount, _auditCheckedAt);
         foreach (var entry in FilteredEntries.Concat(AuditWeakEntries).Concat(AuditReusedEntries)
-                     .Concat(AuditExpiringEntries).Concat(AuditNo2FaEntries).Distinct())
+                     .Concat(AuditExpiringEntries).Concat(AuditNo2FaEntries)
+                     .Concat(AuditSimilarPasswords.SelectMany(pair => new[] { pair.First, pair.Second })).Distinct())
             entry.Refresh();
         UnlockError = string.Empty;
         IsToastVisible = false;
@@ -261,10 +277,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             int idleMins = SettingsService.Settings.AutoLockIdleMinutes;
             if (idleMins > 0 && (DateTimeOffset.UtcNow - _lastActivityUtc).TotalMinutes >= idleMins)
             {
-                LockVault();
-                var msg = L("Str_VaultsLockedAfterMinutesOfInactivityFormat", idleMins);
-                ShowToast(msg);
-                NativeNotificationService.Send("KeeDesk", msg);
+                LockAllVaults(L("Str_VaultsLockedAfterMinutesOfInactivityFormat", idleMins));
                 return;
             }
         }
@@ -458,8 +471,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 return (loaded, k);
             });
 
-            ActivateDatabase(db, key);
-            SettingsService.AddRecentVault(vaultPath, string.IsNullOrWhiteSpace(keyFile) ? null : keyFile, db.Meta.DatabaseName);
+            ActivateDatabase(db, key, keyFile);
+            SettingsService.AddRecentVault(db.FilePath!, string.IsNullOrWhiteSpace(keyFile) ? null : keyFile, db.Meta.DatabaseName);
             RefreshRecentVaults();
 
             if (RememberForTouchId && IsTouchIdSupported && !string.IsNullOrEmpty(pwd))
@@ -529,8 +542,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
             var key = CompositeKey.FromPasswordAndKeyFile(UnlockMasterPassword, UnlockKeyFilePath, UnlockUseWindowsUserAccount && IsWindows);
             KdbxFormat.Save(db, savePath, key);
-            ActivateDatabase(db, key);
-            SettingsService.AddRecentVault(savePath, string.IsNullOrWhiteSpace(UnlockKeyFilePath) ? null : UnlockKeyFilePath, db.Meta.DatabaseName);
+            ActivateDatabase(db, key, UnlockKeyFilePath);
+            SettingsService.AddRecentVault(db.FilePath!, string.IsNullOrWhiteSpace(UnlockKeyFilePath) ? null : UnlockKeyFilePath, db.Meta.DatabaseName);
             RefreshRecentVaults();
             UnlockMasterPassword = string.Empty;
             ShowToast(L("Str_CreatedAndSavedEncryptedVaultFormat", Path.GetFileName(savePath)));
@@ -554,7 +567,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         OnPropertyChanged(nameof(HasMultipleVaults));
     }
 
-    private void ActivateDatabase(KdbxDatabase db, CompositeKey key, bool? sortByModified = null)
+    private void ActivateDatabase(KdbxDatabase db, CompositeKey key, string? keyFilePath = null, bool? sortByModified = null)
     {
         // 如果已打开相同路径的密码库，直接切换过去，避免重复打开
         if (!string.IsNullOrWhiteSpace(db.FilePath))
@@ -571,7 +584,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         }
 
         var display = string.IsNullOrWhiteSpace(db.FilePath) ? db.Meta.DatabaseName : Path.GetFileName(db.FilePath);
-        var session = new VaultTabSession(db, key, display) { SavedSortByModified = sortByModified ?? SortByModifiedDesc };
+        var session = new VaultTabSession(db, key, display)
+        {
+            KeyFilePath = string.IsNullOrWhiteSpace(keyFilePath) ? null : keyFilePath,
+            SavedSortByModified = sortByModified ?? SortByModifiedDesc
+        };
         OpenVaults.Add(session);
         OnPropertyChanged(nameof(HasMultipleVaults));
         SwitchVaultTab(session);
@@ -585,7 +602,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         // 保存当前标签页的视图状态
         if (_activeSession is not null)
         {
-            _activeSession.SavedSection = ActiveSection;
+            _activeSession.SavedSection = ActiveSection == ActiveSection.CustomFilter ? ActiveSection.AllEntries : ActiveSection;
             _activeSession.SavedGroupUuid = SelectedGroup?.Model.Uuid;
             _activeSession.SavedEntryUuid = SelectedEntry?.Model.Uuid;
             _activeSession.SavedSortByModified = SortByModifiedDesc;
@@ -595,7 +612,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         _activeSession = session;
         session.IsActive = true;
         _database = session.Database;
-        _masterKey = session.MasterKey;
+        _customFilterEntries = null;
+        _advancedSearchQuery = null;
         VaultDisplayName = session.DisplayName;
         IsUnlocked = true;
         RecordUserActivity();
@@ -604,6 +622,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         SortByModifiedDesc = session.SavedSortByModified;
         IsAuditViewActive = ActiveSection == ActiveSection.SecurityAudit;
         RebuildWorkspace();
+        OnPropertyChanged(nameof(VaultSaveStatus));
 
         if (session.SavedGroupUuid.HasValue)
             SelectedGroup = FindGroupVm(RootGroups, session.SavedGroupUuid.Value);
@@ -628,12 +647,16 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         var target = session ?? _activeSession;
         if (target is null) return;
 
-        if (target.Database.IsModified && !string.IsNullOrEmpty(target.Database.FilePath))
+        if (!TrySavePendingVault(target))
         {
-            try { KdbxFormat.Save(target.Database, target.Database.FilePath, target.MasterKey); } catch { }
+            SwitchVaultTab(target);
+            return;
         }
 
+        _autoTypeCancellation?.Cancel();
+        _remoteVaultOperation?.Cancel();
         var closedName = target.DisplayName;
+        target.RemoteVault?.Dispose();
         target.Database.Dispose();
         target.MasterKey.Dispose();
         OpenVaults.Remove(target);
@@ -652,7 +675,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         {
             _activeSession = null;
             _database = null;
-            _masterKey = null;
+            ClearSensitiveSearchState();
             FilteredEntries.Clear();
             RootGroups.Clear();
             AllTags.Clear();
@@ -666,9 +689,22 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private async Task OpenAnotherVaultAsync()
     {
-        if (PickOpenFileAsync is null || OpenVaultUnlockPromptAsync is null) return;
-        var path = await PickOpenFileAsync("kdbx");
-        if (string.IsNullOrWhiteSpace(path)) return;
+        if (PickOpenFileAsync is null) return;
+        await OpenVaultPathAsync(await PickOpenFileAsync("kdbx"), "Str_OpenAnotherVault2");
+    }
+
+    public Func<bool, Task<string?>>? PickCloudVaultFileAsync { get; set; }
+
+    [RelayCommand]
+    private async Task OpenCloudVaultAsync()
+    {
+        if (PickCloudVaultFileAsync is null) return;
+        await OpenVaultPathAsync(await PickCloudVaultFileAsync(false), "Str_OpenCloudVault");
+    }
+
+    private async Task OpenVaultPathAsync(string? path, string heading)
+    {
+        if (string.IsNullOrWhiteSpace(path) || OpenVaultUnlockPromptAsync is null) return;
 
         var existing = OpenVaults.FirstOrDefault(s =>
             string.Equals(s.Database.FilePath, path, StringComparison.OrdinalIgnoreCase));
@@ -679,11 +715,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             return;
         }
 
-        var res = await OpenVaultUnlockPromptAsync(path, L("Str_OpenAnotherVault2"), L("Str_UnlockAndOpen"));
+        var res = await OpenVaultUnlockPromptAsync(path, L(heading), L("Str_UnlockAndOpen"));
         if (res is null) return;
 
-        ActivateDatabase(res.Value.Database, res.Value.MasterKey);
-        SettingsService.AddRecentVault(path, string.IsNullOrWhiteSpace(res.Value.KeyFilePath) ? null : res.Value.KeyFilePath, res.Value.Database.Meta.DatabaseName);
+        ActivateDatabase(res.Value.Database, res.Value.MasterKey, res.Value.KeyFilePath);
+        SettingsService.AddRecentVault(res.Value.Database.FilePath!, string.IsNullOrWhiteSpace(res.Value.KeyFilePath) ? null : res.Value.KeyFilePath, res.Value.Database.Meta.DatabaseName);
         RefreshRecentVaults();
         ShowToast(L("Str_OpenedInANewTabFormat", Path.GetFileName(path)));
     }
@@ -691,80 +727,183 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private async Task SaveVaultAsAsync()
     {
-        if (_database is null || _masterKey is null || PickSaveFileAsync is null) return;
-        var suggested = string.IsNullOrWhiteSpace(_database.FilePath)
-            ? $"{_database.Meta.DatabaseName}.kdbx"
-            : Path.GetFileName(_database.FilePath);
+        var session = _activeSession;
+        if (session is null || PickSaveFileAsync is null) return;
+        var db = session.Database;
+        var suggested = string.IsNullOrWhiteSpace(db.FilePath)
+            ? $"{db.Meta.DatabaseName}.kdbx"
+            : Path.GetFileName(db.FilePath);
         var path = await PickSaveFileAsync(suggested, "kdbx");
-        if (string.IsNullOrWhiteSpace(path)) return;
+        if (string.IsNullOrWhiteSpace(path) || session != _activeSession) return;
 
         try
         {
-            KdbxFormat.Save(_database, path, _masterKey);
+            KdbxFormat.Save(db, path, session.MasterKey);
+            session.RemoteVault?.Dispose();
+            session.RemoteVault = null;
+            session.HasFileConflict = false;
+            session.HasPendingMasterKeyChange = false;
             IsModified = false;
+            OnPropertyChanged(nameof(VaultSaveStatus));
             VaultDisplayName = Path.GetFileName(path);
-            if (_activeSession is not null) _activeSession.DisplayName = VaultDisplayName;
-            SettingsService.AddRecentVault(path, null, _database.Meta.DatabaseName);
+            session.DisplayName = VaultDisplayName;
+            SettingsService.AddRecentVault(db.FilePath!, session.KeyFilePath, db.Meta.DatabaseName);
             RefreshRecentVaults();
             ShowToast(L("Str_SavedAsFormat", Path.GetFileName(path)));
         }
         catch (Exception ex)
         {
-            ShowToast(L("Str_CouldnTSaveACopyFormat", ex.Message), ToastSeverity.Error);
+            ShowToast(L("Str_CouldnTSaveACopyFormat", DescribeSaveError(ex)), ToastSeverity.Error);
         }
     }
 
     [RelayCommand]
-    private void LockVault()
+    private void LockVault() => LockAllVaults();
+
+    internal void LockAllVaults(string? automaticReason = null)
     {
-        foreach (var session in OpenVaults.ToList())
+        _autoTypeCancellation?.Cancel();
+        _remoteVaultOperation?.Cancel();
+        int recovered = 0;
+        int failed = 0;
+        foreach (var session in OpenVaults)
         {
-            if (session.Database.IsModified && !string.IsNullOrEmpty(session.Database.FilePath))
+            if (!TrySavePendingVault(session, reportError: false))
             {
-                try { KdbxFormat.Save(session.Database, session.Database.FilePath, session.MasterKey); } catch { }
+                if (TrySaveRecoveryCopy(session))
+                    recovered++;
+                else
+                    failed++;
             }
             session.Database.Dispose();
             session.MasterKey.Dispose();
+            session.RemoteVault?.Dispose();
         }
         OpenVaults.Clear();
         OnPropertyChanged(nameof(HasMultipleVaults));
         _activeSession = null;
         _database = null;
-        _masterKey = null;
+        ClearSensitiveSearchState();
         FilteredEntries.Clear();
         RootGroups.Clear();
         AllTags.Clear();
         SelectedEntry = null;
         IsUnlocked = false;
         IsModified = false;
-        ShowToast(L("Str_AllVaultsLockedSensitiveDataClearedFrom"));
+        if (recovered != 0)
+            RefreshRecentVaults();
+        string message = failed > 0
+            ? L("Str_LockedWithRecoveryFailureFormat", failed, recovered)
+            : recovered > 0
+                ? L("Str_LockedWithRecoveryCopiesFormat", recovered)
+                : automaticReason ?? L("Str_AllVaultsLockedSensitiveDataClearedFrom");
+        ShowToast(message, failed > 0 ? ToastSeverity.Error : ToastSeverity.Information);
+        if (automaticReason is not null || recovered > 0 || failed > 0)
+            NativeNotificationService.Send("KeeDesk", message);
     }
 
-    [RelayCommand]
-    private void SaveVault()
+    internal bool TrySaveBeforeClosing()
     {
-        if (_database is null || _masterKey is null) return;
-        if (string.IsNullOrWhiteSpace(_database.FilePath))
+        foreach (var session in OpenVaults)
         {
-            ShowToast(L("Str_ToSaveChangesToTheDemoCreate"));
-            return;
+            if (!TrySavePendingVault(session))
+            {
+                SwitchVaultTab(session);
+                return false;
+            }
         }
+        return true;
+    }
 
+    private bool TrySavePendingVault(VaultTabSession session, bool reportError = true)
+    {
+        if (!session.Database.IsModified || string.IsNullOrEmpty(session.Database.FilePath))
+            return true;
+        return TrySaveOpenVault(session, reportError);
+    }
+
+    private bool TrySaveRecoveryCopy(VaultTabSession session)
+    {
+        var db = session.Database;
         try
         {
-            KdbxFormat.Save(_database, _database.FilePath, _masterKey);
-            IsModified = false;
-            ShowToast(L("Str_VaultSavedSecurelyKDBX4"), ToastSeverity.Success);
+            var folder = SettingsService.RecoveryDirectory;
+            Directory.CreateDirectory(folder);
+            var name = Path.GetFileNameWithoutExtension(db.FilePath);
+            var path = Path.Combine(folder, $"{name}-recovery-{Guid.NewGuid():N}.kdbx");
+            KdbxFormat.Save(db, path, session.MasterKey);
+            SettingsService.AddRecentVault(path, session.KeyFilePath, Path.GetFileName(path));
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private void SaveVault() => TrySaveActiveVault();
+
+    [RelayCommand]
+    private async Task SaveVaultAsync()
+    {
+        if (!TrySaveActiveVault()) return;
+        if (_activeSession is { RemoteVault: { } remote } session)
+            await SynchronizeRemoteVaultAsync(session, remote);
+    }
+
+    private bool TrySaveActiveVault()
+    {
+        if (_activeSession is not { } session) return false;
+        if (string.IsNullOrWhiteSpace(session.Database.FilePath))
+        {
+            ShowToast(L("Str_ToSaveChangesToTheDemoCreate"));
+            return false;
+        }
+
+        if (!TrySaveOpenVault(session)) return false;
+        ShowToast(L(session.RemoteVault is null ? "Str_VaultSavedSecurelyKDBX4" : "Str_RemoteVaultSavedLocally"),
+            ToastSeverity.Success);
+        return true;
+    }
+
+    private bool TrySaveOpenVault(VaultTabSession session, bool reportError = true)
+    {
+        try
+        {
+            KdbxFormat.Save(session.Database, session.Database.FilePath!, session.MasterKey);
+            session.HasFileConflict = false;
+            if (session.HasPendingMasterKeyChange)
+            {
+                session.HasPendingMasterKeyChange = false;
+                SettingsService.AddRecentVault(session.Database.FilePath!, session.KeyFilePath, session.Database.Meta.DatabaseName);
+                RefreshRecentVaults();
+            }
+            return true;
         }
         catch (Exception ex)
         {
-            ShowToast(L("Str_CouldnTSaveChangesFormat", ex.Message), ToastSeverity.Error);
+            session.HasFileConflict = ex is KdbxFileChangedException;
+            if (reportError)
+                ShowToast(L("Str_CouldnTSaveChangesFormat", DescribeSaveError(ex)), ToastSeverity.Error);
+            return false;
+        }
+        finally
+        {
+            if (_activeSession == session)
+            {
+                IsModified = session.Database.IsModified;
+                OnPropertyChanged(nameof(VaultSaveStatus));
+            }
         }
     }
+
+    private static string DescribeSaveError(Exception ex) =>
+        ex is KdbxFileChangedException ? L("Str_VaultChangedOnDisk") : ex.Message;
 
     public void RebuildWorkspace()
     {
         if (_database is null) return;
+        ClearSimilarPasswordReport();
 
         IsModified = _database.IsModified;
         var all = _database.EnumerateAllEntries(includeRecycleBin: false).ToList();
@@ -909,12 +1048,53 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         if (item is null) return;
         ActiveSection = ActiveSection.AllEntries;
         IsAuditViewActive = false;
-        RefreshFilteredEntries();
+        if (!string.IsNullOrEmpty(SearchQuery))
+            SearchQuery = string.Empty;
+        else
+            RefreshFilteredEntries();
         SelectedEntry = FilteredEntries.FirstOrDefault(e => e.Model.Uuid == item.Model.Uuid);
     }
 
     [RelayCommand]
     private void RefreshAudit() => RebuildWorkspace();
+
+    [RelayCommand(IncludeCancelCommand = true)]
+    private async Task ScanSimilarPasswordsAsync(CancellationToken cancellationToken)
+    {
+        if (_database is not { } database) return;
+        if (!IsAuditViewActive)
+            SelectSection(nameof(ActiveSection.SecurityAudit));
+
+        HasSimilarPasswordScanResult = false;
+        AuditSimilarPasswords.Clear();
+        try
+        {
+            var pairs = await SecurityAuditService.FindSimilarPasswordsAsync(database, cancellationToken);
+            if (database != _database || cancellationToken.IsCancellationRequested) return;
+
+            foreach (var pair in pairs)
+                AuditSimilarPasswords.Add(new SimilarPasswordPairViewModel(
+                    new EntryItemViewModel(pair.First, database), new EntryItemViewModel(pair.Second, database), pair.Similarity));
+            HasSimilarPasswordScanResult = true;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
+    }
+
+    private void ClearSimilarPasswordReport()
+    {
+        ScanSimilarPasswordsCommand.Cancel();
+        HasSimilarPasswordScanResult = false;
+        AuditSimilarPasswords.Clear();
+    }
+
+    private void ClearSensitiveSearchState()
+    {
+        _customFilterEntries = null;
+        _advancedSearchQuery = null;
+        SearchQuery = string.Empty;
+        CurrentFilterTitle = L("Str_AllEntries3");
+        ClearSimilarPasswordReport();
+    }
 
     private void RefreshFilteredEntries()
     {
@@ -1301,47 +1481,84 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private async Task PerformAutoTypeAsync(EntryItemViewModel? item)
+    private Task PerformAutoTypeAsync(EntryItemViewModel? item) => WithAutoTypeAsync(async cancellationToken =>
     {
-        var target = item ?? SelectedEntry;
-        if (target is null) return;
-
-        var res = await AutoTypeService.ExecuteAsync(target.Model, _database, MinimizeWindowAction);
-        ShowToast(res.Message);
-    }
-
-    /// <summary>
-    /// 全局 Auto-Type 热键触发：探测当前前台窗口标题，自动匹配条目（单条直接输入，多条弹窗选择）。
-    /// </summary>
-    [RelayCommand]
-    private async Task TriggerGlobalAutoTypeAsync()
-    {
-        if (!IsUnlocked || _database is null) return;
-        var windowTitle = await Task.Run(GlobalHotKeyService.GetForegroundWindowTitle);
-        var matches = AutoTypeMatcher.FindMatches(_database, windowTitle);
-
-        if (matches.Count == 1)
+        var entry = (item ?? SelectedEntry)?.Model;
+        var vault = _database;
+        if (entry is null || vault is null || vault.FindEntryByUuid(entry.Uuid) != entry) return;
+        if (!AutoTypeMatcher.IsEnabled(entry) || vault.IsInRecycleBin(entry))
         {
-            var res = await AutoTypeService.ExecuteAsync(matches[0].Entry, _database);
-            ShowToast(res.Message);
+            ShowToast(L("Str_AutoTypeIsDisabledForThisEntry"), ToastSeverity.Error);
             return;
         }
 
-        if (matches.Count == 0)
+        MinimizeWindowAction?.Invoke();
+        await Task.Delay(300, cancellationToken);
+        using var target = AutoTypeTarget.CaptureManualTarget();
+        if (!IsExternalAutoTypeTarget(target)) return;
+        var match = AutoTypeMatcher.MatchSelectedEntry(vault, entry, target!.Title);
+        if (match is not null)
+            await ExecuteAutoTypeMatchAsync(match, target, cancellationToken);
+    });
+
+    [RelayCommand]
+    private Task TriggerGlobalAutoTypeAsync() => WithAutoTypeAsync(async cancellationToken =>
+    {
+        using var target = AutoTypeTarget.Capture();
+        if (!IsExternalAutoTypeTarget(target)) return;
+
+        var vaults = OpenVaults.Select(session => session.Database).ToArray();
+        var matches = AutoTypeMatcher.FindMatches(vaults, target!.Title);
+        AutoTypeMatchResult? match;
+        if (matches.Count == 1 && !matches[0].RequiresConfirmation)
+            match = matches[0];
+        else
         {
-            // 若无精确标题匹配，列出全部启用了 Auto-Type 的条目供快速选择
-            matches = _database.EnumerateAllEntries(false)
-                .Where(e => !e.IsExpired && e.AutoType.Enabled)
-                .Select(e => new AutoTypeMatchResult(e, AutoTypeSequenceParser.GetEffectiveSequence(e), L("Str_ManualSelection")))
-                .ToList();
+            if (matches.Count == 0)
+                matches = AutoTypeMatcher.FindManualChoices(vaults);
+            if (matches.Count == 0 || OpenAutoTypePickerAsync is null) return;
+            match = await OpenAutoTypePickerAsync(target.Title, matches, cancellationToken);
         }
 
-        if (matches.Count == 0 || OpenAutoTypePickerAsync is null) return;
-        var picked = await OpenAutoTypePickerAsync(windowTitle, matches);
-        if (picked is null) return;
+        if (match is not null)
+            await ExecuteAutoTypeMatchAsync(match, target, cancellationToken);
+    });
 
-        var execRes = await AutoTypeService.ExecuteAsync(picked.Entry, _database);
-        ShowToast(execRes.Message);
+    private async Task WithAutoTypeAsync(Func<CancellationToken, Task> action)
+    {
+        if (!IsUnlocked || _autoTypeCancellation is not null) return;
+        var unavailable = AutoTypeService.CheckAvailability();
+        if (unavailable is not null)
+        {
+            ShowToast(unavailable, ToastSeverity.Error);
+            return;
+        }
+
+        using var cancellation = new CancellationTokenSource();
+        _autoTypeCancellation = cancellation;
+        try { await action(cancellation.Token); }
+        catch (OperationCanceledException) { }
+        finally { _autoTypeCancellation = null; }
+    }
+
+    private bool IsExternalAutoTypeTarget(AutoTypeTarget? target)
+    {
+        if (target is not null && (target.UsesWaylandKeyboard ||
+            (target.ProcessId != Environment.ProcessId && target.Window != 0)))
+            return true;
+        ShowToast(L("Str_AutoTypeNoTargetWindow"), ToastSeverity.Error);
+        return false;
+    }
+
+    private async Task ExecuteAutoTypeMatchAsync(AutoTypeMatchResult match, AutoTypeTarget target,
+        CancellationToken cancellationToken)
+    {
+        if (match.Vault is not { } vault || !OpenVaults.Any(session => session.Database == vault) ||
+            vault.FindEntryByUuid(match.Entry.Uuid) != match.Entry) return;
+        var result = await AutoTypeService.ExecuteAsync(match, target, OpenAutoTypeCharactersAsync,
+            MinimizeWindowAction, cancellationToken);
+        if (!cancellationToken.IsCancellationRequested)
+            ShowToast(result.Message, result.Success ? ToastSeverity.Information : ToastSeverity.Error);
     }
 
     [RelayCommand]
@@ -1377,44 +1594,168 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private async Task OpenDatabaseSettingsAsyncCommand()
     {
-        if (_database is null || OpenDatabaseSettingsAsync is null) return;
-        var (saved, newKey, newKeyFile) = await OpenDatabaseSettingsAsync(_database);
+        var session = _activeSession;
+        if (session is null || OpenDatabaseSettingsAsync is null) return;
+        var (saved, newKey, newKeyFile) = await OpenDatabaseSettingsAsync(session.Database);
         if (!saved) return;
+        if (session != _activeSession)
+        {
+            newKey?.Dispose();
+            return;
+        }
 
         if (newKey is not null)
         {
-            _masterKey?.Dispose();
-            _masterKey = newKey;
-            if (_activeSession is not null) _activeSession.MasterKey = newKey;
-            if (!string.IsNullOrWhiteSpace(_database.FilePath))
-                SettingsService.AddRecentVault(_database.FilePath, newKeyFile, _database.Meta.DatabaseName);
+            session.MasterKey.Dispose();
+            session.MasterKey = newKey;
+            session.KeyFilePath = newKeyFile;
+            session.HasPendingMasterKeyChange = true;
         }
 
-        VaultDisplayName = string.IsNullOrWhiteSpace(_database.FilePath)
-            ? _database.Meta.DatabaseName
-            : Path.GetFileName(_database.FilePath);
-        if (_activeSession is not null) _activeSession.DisplayName = VaultDisplayName;
-        SaveVault();
+        VaultDisplayName = string.IsNullOrWhiteSpace(session.Database.FilePath)
+            ? session.Database.Meta.DatabaseName
+            : Path.GetFileName(session.Database.FilePath);
+        session.DisplayName = VaultDisplayName;
+        bool persisted = TrySaveActiveVault();
         RebuildWorkspace();
-        ShowToast(newKey is not null ? L("Str_VaultSettingsAndMasterKeyUpdatedVault") : L("Str_VaultSettingsUpdatedAndSaved"));
+        if (persisted)
+            ShowToast(newKey is not null ? L("Str_VaultSettingsAndMasterKeyUpdatedVault") : L("Str_VaultSettingsUpdatedAndSaved"));
     }
 
     [RelayCommand]
     private async Task MergeDatabaseAsync()
     {
-        if (_database is null || PickOpenFileAsync is null || OpenVaultUnlockPromptAsync is null) return;
+        var current = _activeSession;
+        if (current is null || PickOpenFileAsync is null || OpenVaultUnlockPromptAsync is null) return;
         var path = await PickOpenFileAsync("kdbx");
-        if (string.IsNullOrWhiteSpace(path)) return;
+        if (string.IsNullOrWhiteSpace(path) || current != _activeSession) return;
 
         var res = await OpenVaultUnlockPromptAsync(path, L("Str_MergeSyncAnotherVault2"), L("Str_DecryptAndMerge"));
         if (res is null) return;
 
         using var sourceDb = res.Value.Database;
         using var sourceKey = res.Value.MasterKey;
-        var summary = DatabaseMergeService.Merge(_database, sourceDb);
-        SaveVault();
+        if (current != _activeSession) return;
+        var summary = DatabaseMergeService.Merge(current.Database, sourceDb);
+        bool persisted = TrySaveActiveVault();
         RebuildWorkspace();
-        ShowToast(L("Str_MergeCompleteEntriesAddedUpdatedGroupsAddedFormat", summary.EntriesAdded, summary.EntriesUpdated, summary.GroupsAdded));
+        if (persisted)
+            ShowToast(L("Str_MergeCompleteEntriesAddedUpdatedGroupsAddedFormat", summary.EntriesAdded, summary.EntriesUpdated, summary.GroupsAdded));
+    }
+
+    [RelayCommand]
+    private Task SynchronizeVaultAsync() => SynchronizeVaultFromAsync(
+        PickOpenFileAsync is { } pick ? () => pick("kdbx") : null, "Str_SyncWithLocalVault");
+
+    [RelayCommand]
+    private Task SynchronizeCloudVaultAsync() => SynchronizeVaultFromAsync(
+        PickCloudVaultFileAsync is { } pick ? () => pick(true) : null, "Str_SyncCloudVault", reconcileSameFile: true);
+
+    private async Task SynchronizeVaultFromAsync(Func<Task<string?>>? pick, string heading, bool reconcileSameFile = false)
+    {
+        var current = _activeSession;
+        if (current is null || pick is null || OpenVaultUnlockPromptAsync is null) return;
+        string? currentPath = current.Database.FilePath;
+        if (currentPath is null)
+        {
+            ShowToast(L("Str_ToSaveChangesToTheDemoCreate"), ToastSeverity.Error);
+            return;
+        }
+
+        var path = await pick();
+        if (string.IsNullOrWhiteSpace(path) || current != _activeSession) return;
+        try
+        {
+            if (DatabaseSynchronizationService.AreSameVaultFile(currentPath, path))
+            {
+                if (reconcileSameFile)
+                {
+                    var merged = DatabaseSynchronizationService.ReconcileFileChanges(current.Database, current.MasterKey);
+                    if (merged is null)
+                        ShowToast(L("Str_SyncVaultsAlreadyUpToDate"));
+                    else
+                    {
+                        ApplySynchronizedVault(current, merged);
+                        ShowToast(L("Str_CloudVaultFileReconciled"), ToastSeverity.Success);
+                    }
+                    return;
+                }
+                ShowToast(L("Str_SyncChooseAnotherVault"), ToastSeverity.Error);
+                return;
+            }
+
+            var other = OpenVaults.FirstOrDefault(session => session != current &&
+                session.Database.FilePath is { } file && DatabaseSynchronizationService.AreSameVaultFile(file, path));
+            if (other is not null)
+            {
+                SynchronizeVaults(current, other.Database, other.MasterKey, other);
+                return;
+            }
+
+            var result = await OpenVaultUnlockPromptAsync(path, L(heading), L("Str_UnlockAndSyncBothVaults"));
+            if (result is null) return;
+            using var otherDatabase = result.Value.Database;
+            using var otherKey = result.Value.MasterKey;
+            if (current != _activeSession || currentPath != current.Database.FilePath) return;
+            SynchronizeVaults(current, otherDatabase, otherKey, null);
+        }
+        catch (Exception ex)
+        {
+            string message = ex switch
+            {
+                KdbxSyncRollbackException recovery => L("Str_SyncRecoveryFileFormat", recovery.RecoveryPath),
+                KdbxFileChangedException => L("Str_SyncFilesChanged"),
+                _ => L("Str_SyncFailedFormat", ex.Message)
+            };
+            ShowToast(message, ToastSeverity.Error);
+        }
+    }
+
+    private void SynchronizeVaults(VaultTabSession current, KdbxDatabase other, CompositeKey key, VaultTabSession? otherSession)
+    {
+        var result = DatabaseSynchronizationService.Synchronize(current.Database, current.MasterKey, other, key);
+        if (!result.Changed)
+        {
+            result.Current.Dispose();
+            result.Other.Dispose();
+            ShowToast(L("Str_SyncVaultsAlreadyUpToDate"));
+            return;
+        }
+
+        ApplySynchronizedVault(current, result.Current);
+        if (otherSession is not null)
+            ApplySynchronizedVault(otherSession, result.Other);
+        else
+            result.Other.Dispose();
+        RecordUserActivity();
+        ShowToast(L("Str_SyncBothVaultsSaved"), ToastSeverity.Success);
+    }
+
+    private void ApplySynchronizedVault(VaultTabSession session, KdbxDatabase synchronized)
+    {
+        using var previous = session.Database;
+        session.Database = synchronized;
+        session.HasFileConflict = false;
+        if (session.HasPendingMasterKeyChange)
+        {
+            session.HasPendingMasterKeyChange = false;
+            SettingsService.AddRecentVault(synchronized.FilePath!, session.KeyFilePath, synchronized.Meta.DatabaseName);
+            RefreshRecentVaults();
+        }
+        if (session != _activeSession) return;
+
+        var selectedGroupId = SelectedGroup?.Model.Uuid;
+        _database = synchronized;
+        SelectedGroup = null;
+        UpdateSelectedEntries(Array.Empty<EntryItemViewModel>());
+        _customFilterEntries = null;
+        _advancedSearchQuery = null;
+        if (ActiveSection is ActiveSection.CustomFilter or ActiveSection.Group)
+            ActiveSection = ActiveSection.AllEntries;
+        RebuildWorkspace();
+        if (selectedGroupId is { } id)
+            SelectedGroup = FindGroupVm(RootGroups, id);
+        OnPropertyChanged(nameof(VaultSaveStatus));
     }
 
     [RelayCommand]
@@ -1465,18 +1806,31 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private async Task OpenAdvancedSearchAsyncCommand()
     {
-        if (_database is null || OpenAdvancedSearchAsync is null) return;
-        var param = await OpenAdvancedSearchAsync();
-        if (param is null) return;
+        if (_database is not { } database || OpenAdvancedSearchAsync is null) return;
+        if (await OpenAdvancedSearchAsync(database) is not { } result || _database != database) return;
 
-        _customFilterEntries = EntrySearchService.Search(_database, param);
-        _advancedSearchQuery = string.IsNullOrWhiteSpace(param.Query) ? null : param.Query;
+        _customFilterEntries = result.Entries;
+        _advancedSearchQuery = string.IsNullOrWhiteSpace(result.Query) ? null : result.Query;
         _customFilterTitleKey = _advancedSearchQuery is null ? "Str_AdvancedSearchResults" : "Str_SearchForFormat";
         ActiveSection = ActiveSection.CustomFilter;
         SelectedGroup = null;
         IsAuditViewActive = false;
-        RefreshFilteredEntries();
+        if (!string.IsNullOrEmpty(SearchQuery))
+            SearchQuery = string.Empty;
+        else
+            RefreshFilteredEntries();
         ShowToast(L("Str_AdvancedSearchMatchedEntriesFormat", _customFilterEntries.Count));
+    }
+
+    internal bool TrySaveSearchProfiles(KdbxDatabase database, SearchProfile[] profiles)
+    {
+        if (_activeSession is not { } session || _database != database ||
+            string.IsNullOrWhiteSpace(database.FilePath))
+            return false;
+
+        var saved = SearchProfileStore.TrySave(database, profiles, () => TrySaveOpenVault(session, reportError: false));
+        IsModified = database.IsModified;
+        return saved;
     }
 
     [RelayCommand]
@@ -1641,16 +1995,91 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         ShowToast(L("Str_ExportedCSVFormat", Path.GetFileName(path)));
     }
 
+    public Func<string, Task<(CsvImportDocument Document, CsvImportField[] Mapping, bool HasHeader)?>>? OpenCsvMappingAsync { get; set; }
+    public Func<Task<VaultPrintOptions?>>? OpenVaultPrintOptionsAsync { get; set; }
+    public Func<string, Task<KdbxDatabase?>>? OpenLegacyKdbAsync { get; set; }
+
     [RelayCommand]
     private async Task ImportCsvAsync()
     {
-        if (_database is null || PickOpenFileAsync is null) return;
+        if (_database is not { } vault || PickOpenFileAsync is null || OpenCsvMappingAsync is null) return;
         var path = await PickOpenFileAsync("csv");
-        if (string.IsNullOrWhiteSpace(path)) return;
-        var text = await File.ReadAllTextAsync(path);
-        int count = ImportExportService.ImportFromCsv(_database, text);
+        if (string.IsNullOrWhiteSpace(path) || _database != vault) return;
+        try
+        {
+            var text = await File.ReadAllTextAsync(path, new System.Text.UTF8Encoding(false, true));
+            if (_database != vault) return;
+            var selection = await OpenCsvMappingAsync(text);
+            if (selection is not { } format || _database != vault) return;
+            int count = ImportExportService.ImportFromCsv(vault, format.Document, format.Mapping, format.HasHeader,
+                untitled: index => L("Str_CsvPreviewEntryFormat", index));
+            bool saved = count == 0 || TrySaveActiveVault();
+            RebuildWorkspace();
+            if (saved) ShowToast(L("Str_ImportedRecordsFromCSVFormat", count));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Text.DecoderFallbackException)
+        {
+            ShowToast(L("Str_CsvReadFailed"), ToastSeverity.Error);
+        }
+    }
+
+    [RelayCommand]
+    private async Task PrintVaultAsync()
+    {
+        if (_database is not { } vault || OpenVaultPrintOptionsAsync is null || PickSaveFileAsync is null) return;
+        var options = await OpenVaultPrintOptionsAsync();
+        if (options is null || _database != vault) return;
+        var path = await PickSaveFileAsync($"{vault.Meta.DatabaseName}.html", "html");
+        if (string.IsNullOrWhiteSpace(path) || _database != vault) return;
+
+        try
+        {
+            var entries = options.CurrentSelection ? FilteredEntries.Select(entry => entry.Model) : vault.EnumerateAllEntries();
+            string html = VaultPrintReport.ExportHtml(vault.Meta.DatabaseName, entries, options);
+            await File.WriteAllTextAsync(path, html);
+            OpenUrlExternal?.Invoke(new Uri(path).AbsoluteUri);
+            ShowToast(L("Str_PrintReportSaved"), ToastSeverity.Success);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or UriFormatException)
+        {
+            ShowToast(L("Str_PrintReportFailed"), ToastSeverity.Error);
+        }
+    }
+
+    [RelayCommand]
+    private async Task ImportLegacyKdbAsync()
+    {
+        if (_database is not { } vault || PickOpenFileAsync is null || OpenLegacyKdbAsync is null) return;
+        var path = await PickOpenFileAsync("kdb");
+        if (string.IsNullOrWhiteSpace(path) || _database != vault) return;
+
+        using var source = await OpenLegacyKdbAsync(path);
+        if (source is null || _database != vault) return;
+        var result = DatabaseMergeService.Merge(vault, source);
+        bool saved = TrySaveActiveVault();
         RebuildWorkspace();
-        ShowToast(L("Str_ImportedRecordsFromCSVFormat", count));
+        if (saved) ShowToast(L("Str_ImportedLegacyKdbFormat", result.EntriesAdded, result.GroupsAdded), ToastSeverity.Success);
+    }
+
+    [RelayCommand]
+    private async Task ExportVaultStylesheetAsync()
+    {
+        if (_database is not { } vault || PickOpenFileAsync is null || PickSaveFileAsync is null) return;
+        var stylesheet = await PickOpenFileAsync("xsl");
+        if (string.IsNullOrWhiteSpace(stylesheet) || _database != vault) return;
+        var output = await PickSaveFileAsync($"{vault.Meta.DatabaseName}.html", "*");
+        if (string.IsNullOrWhiteSpace(output) || _database != vault) return;
+        try
+        {
+            await using var input = File.OpenRead(stylesheet);
+            var bytes = VaultStylesheetExport.Transform(vault, input);
+            await File.WriteAllBytesAsync(output, bytes);
+            ShowToast(L("Str_StylesheetExported"), ToastSeverity.Success);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Xml.XmlException or System.Xml.Xsl.XsltException)
+        {
+            ShowToast(L("Str_StylesheetExportFailed"), ToastSeverity.Error);
+        }
     }
 
     [RelayCommand]

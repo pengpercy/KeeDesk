@@ -317,7 +317,21 @@
                                 <TextBlock Text="{DynamicResource Str_DefaultKeySequenceLeaveBlankToInherit}" FontSize="11.5" Foreground="{DynamicResource SecondaryTextBrush}" />
                                 <TextBox x:Name="AutoTypeSeqBox" Height="32" FontFamily="Consolas,Menlo,monospace" PlaceholderText="{}{USERNAME}{TAB}{PASSWORD}{ENTER}" />
                             </StackPanel>
-                            <CheckBox x:Name="AutoTypeObfuscateCheck" Content="{DynamicResource Str_EnableTwoChannelKeystrokeObfuscation}" FontSize="12.5" />
+                            <StackPanel Spacing="6">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="{DynamicResource Str_AutoTypeAssociations}" FontSize="12" FontWeight="Medium" VerticalAlignment="Center" />
+                                    <Button Grid.Column="1" Classes="subtle chromeCommand" Click="AddAutoTypeAssociation_Click"
+                                            ToolTip.Tip="{DynamicResource Str_AddAutoTypeAssociation}" AutomationProperties.Name="{DynamicResource Str_AddAutoTypeAssociation}">
+                                        <PathIcon Data="{StaticResource IconAdd}" Width="14" Height="14" />
+                                    </Button>
+                                </Grid>
+                                <StackPanel x:Name="AutoTypeAssociationRows" Spacing="6" />
+                                <TextBlock x:Name="AutoTypeAssociationError" IsVisible="False" Text="{DynamicResource Str_AutoTypeAssociationMissingTitle}"
+                                           Foreground="{DynamicResource DangerBrush}" FontSize="11.5" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <TextBlock x:Name="AutoTypeObfuscationNotice" Text="{DynamicResource Str_AutoTypeRequiresObfuscation}"
+                                       IsVisible="False" FontSize="11.5" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource SecondaryTextBrush}" />
                             <Border Height="1" Background="{DynamicResource DividerBrush}" />
                             <CheckBox x:Name="QualityCheckBox" Content="{DynamicResource Str_IncludeInPasswordQualityChecksKDBX4}" FontSize="12.5" IsChecked="True" />
                             <StackPanel Spacing="4">
