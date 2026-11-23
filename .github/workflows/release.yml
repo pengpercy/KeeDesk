@@ -28,10 +28,17 @@ jobs:
     uses: ./.github/workflows/package.yml
     with:
       version: ${{ needs.version.outputs.version }}
+
+  macos:
+    needs: version
+    name: macOS
+    uses: ./.github/workflows/macos.yml
+    with:
+      version: ${{ needs.version.outputs.version }}
     secrets: inherit
 
   release:
-    needs: [package, version]
+    needs: [package, macos, version]
     name: Release
     runs-on: ubuntu-latest
     permissions:

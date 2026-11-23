@@ -1,0 +1,151 @@
+name: macOS
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: KeeDesk package version
+        required: true
+        type: string
+    secrets:
+      MACOS_CERT_P12_BASE64:
+        required: false
+      MACOS_CERT_PASSWORD:
+        required: false
+      MACOS_KEYCHAIN_PASSWORD:
+        required: false
+      MACOS_CODESIGN_IDENTITY:
+        required: false
+      APPLE_ID:
+        required: false
+      APPLE_APP_SPECIFIC_PASSWORD:
+        required: false
+      APPLE_TEAM_ID:
+        required: false
+
+jobs:
+  build-package:
+    # One Apple Silicon runner builds, signs and packages both architectures.
+    name: Build and package
+    runs-on: macos-latest
+    env:
+      NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+      DOTNET_NOLOGO: '1'
+      VERSION: ${{ inputs.version }}
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v7
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+      - name: Cache NuGet packages
+        uses: actions/cache@v5
+        with:
+          path: .nuget/packages
+          key: nuget-macos-${{ hashFiles('src/**/*.csproj') }}
+          restore-keys: |
+            nuget-macos-
+            nuget-osx-arm64-
+      - name: Publish both architectures
+        run: |
+          for runtime in osx-arm64 osx-x64; do
+            output="$RUNNER_TEMP/keedesk-macos/$runtime"
+            mkdir -p "$output/symbols"
+            dotnet publish src/KeeDesk/KeeDesk.csproj -c Release -o "$output/publish" -r "$runtime" \
+              --self-contained -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true
+            find "$output/publish" -maxdepth 1 \( -name '*.dSYM' -o -name '*.dbg' -o -name '*.pdb' \) \
+              -exec mv {} "$output/symbols/" \;
+            tar -cf "$output/keedesk.$runtime.tar" -C "$output/publish" .
+          done
+      - name: Import signing certificate
+        env:
+          MACOS_CERT_P12_BASE64: ${{ secrets.MACOS_CERT_P12_BASE64 }}
+          MACOS_CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+          MACOS_KEYCHAIN_PASSWORD: ${{ secrets.MACOS_KEYCHAIN_PASSWORD }}
+        run: |
+          if [[ -z "$MACOS_CERT_P12_BASE64" ]]; then
+            exit 0
+          fi
+          keychain="$RUNNER_TEMP/build.keychain-db"
+          certificate="$(mktemp "$RUNNER_TEMP/keedesk-cert.XXXXXX")"
+          trap 'rm -f "$certificate"' EXIT
+          printf '%s' "$MACOS_CERT_P12_BASE64" | base64 -D > "$certificate"
+          security create-keychain -p "$MACOS_KEYCHAIN_PASSWORD" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$MACOS_KEYCHAIN_PASSWORD" "$keychain"
+          security import "$certificate" -k "$keychain" -P "$MACOS_CERT_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
+          security list-keychains -d user -s "$keychain"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$MACOS_KEYCHAIN_PASSWORD" "$keychain"
+          security find-identity -v -p codesigning
+      - name: Package ZIPs and DMGs
+        env:
+          CODESIGN_IDENTITY: ${{ secrets.MACOS_CODESIGN_IDENTITY }}
+        run: |
+          for runtime in osx-arm64 osx-x64; do
+            mv "$RUNNER_TEMP/keedesk-macos/$runtime/publish" build/KeeDesk
+            RUNTIME="$runtime" bash ./build/scripts/package.osx-app.sh
+          done
+      - name: Notarize and staple DMGs
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          if [[ -z "$APPLE_ID" || -z "$APPLE_APP_SPECIFIC_PASSWORD" || -z "$APPLE_TEAM_ID" ]]; then
+            exit 0
+          fi
+          for runtime in osx-arm64 osx-x64; do
+            dmg="build/KeeDesk_$VERSION.$runtime.dmg"
+            xcrun notarytool submit "$dmg" --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_APP_SPECIFIC_PASSWORD" --wait
+            xcrun stapler staple "$dmg"
+          done
+      - name: Upload Apple Silicon symbols
+        uses: actions/upload-artifact@v7
+        with:
+          name: symbols.osx-arm64
+          path: ${{ runner.temp }}/keedesk-macos/osx-arm64/symbols/
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Upload Intel symbols
+        uses: actions/upload-artifact@v7
+        with:
+          name: symbols.osx-x64
+          path: ${{ runner.temp }}/keedesk-macos/osx-x64/symbols/
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Upload Apple Silicon build
+        uses: actions/upload-artifact@v7
+        with:
+          name: keedesk.osx-arm64
+          path: ${{ runner.temp }}/keedesk-macos/osx-arm64/keedesk.osx-arm64.tar
+          if-no-files-found: error
+          retention-days: 1
+      - name: Upload Intel build
+        uses: actions/upload-artifact@v7
+        with:
+          name: keedesk.osx-x64
+          path: ${{ runner.temp }}/keedesk-macos/osx-x64/keedesk.osx-x64.tar
+          if-no-files-found: error
+          retention-days: 1
+      - name: Upload Apple Silicon packages
+        uses: actions/upload-artifact@v7
+        with:
+          name: package.osx-arm64
+          path: |
+            build/KeeDesk_${{ inputs.version }}.osx-arm64.zip
+            build/KeeDesk_${{ inputs.version }}.osx-arm64.dmg
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 1
+      - name: Upload Intel packages
+        uses: actions/upload-artifact@v7
+        with:
+          name: package.osx-x64
+          path: |
+            build/KeeDesk_${{ inputs.version }}.osx-x64.zip
+            build/KeeDesk_${{ inputs.version }}.osx-x64.dmg
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 1
