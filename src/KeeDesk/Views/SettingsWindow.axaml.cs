@@ -189,8 +189,8 @@ public partial class SettingsWindow : Window
 
     private void LanguageCombo_Changed(object? sender, SelectionChangedEventArgs e)
     {
-        if (_loading || _vm is null) return;
-        var lang = (LanguageCombo.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "zh-CN";
+        if (_loading || _vm is null || LanguageCombo.SelectedItem is not ComboBoxItem { Tag: string lang } || lang == CurrentLanguage)
+            return;
         _vm.SettingsService.Settings.Language = lang;
         _vm.SettingsService.Save();
         KeeDesk.Services.LocalizationService.Apply(lang);

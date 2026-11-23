@@ -1,9 +1,11 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Media;
 using Avalonia.Styling;
+using Avalonia.VisualTree;
 
 namespace KeeDesk.Helpers;
 
@@ -15,7 +17,39 @@ namespace KeeDesk.Helpers;
 /// </summary>
 public static class Glass
 {
+    private static readonly BoxShadows OverlaySubmenuShadow = BoxShadows.Parse("0 4 12 0 #33000000");
+
     private static bool Supported => OperatingSystem.IsMacOS() || OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000);
+
+    internal static void AttachSubmenuShadows()
+    {
+        MenuItem.TemplateAppliedEvent.AddClassHandler<MenuItem>((_, args) =>
+        {
+            if (args.NameScope.Find<Popup>("PART_Popup") is not { } popup) return;
+
+            popup.SetCurrentValue(Popup.WindowManagerAddShadowHintProperty, true);
+            popup.Opened += ApplySubmenuShadow;
+        });
+    }
+
+    private static void ApplySubmenuShadow(object? sender, EventArgs args)
+    {
+        if (sender is not Popup { Child: Border surface }) return;
+
+        var overlay = surface.FindAncestorOfType<OverlayPopupHost>();
+        surface.SetCurrentValue(Border.BoxShadowProperty, overlay is null ? default : OverlaySubmenuShadow);
+        if (overlay is not null)
+        {
+            overlay.SetCurrentValue(Visual.ClipToBoundsProperty, false);
+            surface.FindAncestorOfType<LayoutTransformControl>()?.SetCurrentValue(Visual.ClipToBoundsProperty, false);
+        }
+        else if (OperatingSystem.IsMacOS() && TopLevel.GetTopLevel(surface) is PopupRoot root
+                 && root.TryGetPlatformHandle()?.Handle is { } handle && handle != IntPtr.Zero)
+        {
+            // Avalonia's macOS popup backend ignores WindowManagerAddShadowHint.
+            EnableMacShadow(handle);
+        }
+    }
 
     public static void Attach(TemplatedControl menu)
     {
@@ -131,6 +165,11 @@ public static class Glass
                 SendBool(viewLayer, Sel("setMasksToBounds:"), true);
             }
         }
+        EnableMacShadow(window);
+    }
+
+    private static void EnableMacShadow(IntPtr window)
+    {
         SendBool(window, Sel("setHasShadow:"), true);
         Send(window, Sel("invalidateShadow"));
     }
@@ -156,6 +195,8 @@ public static class Glass
     {
         var round = 2; // DWMWCP_ROUND: 8px
         DwmSetWindowAttribute(hwnd, 33 /* DWMWA_WINDOW_CORNER_PREFERENCE */, ref round, sizeof(int));
+        var borderColor = unchecked((int)0xFFFFFFFE); // DWMWA_COLOR_NONE
+        DwmSetWindowAttribute(hwnd, 34 /* DWMWA_BORDER_COLOR */, ref borderColor, sizeof(int));
     }
 }
 

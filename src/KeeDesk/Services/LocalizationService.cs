@@ -1,13 +1,15 @@
 using System.Globalization;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Data.Converters;
+using Avalonia.Styling;
 using KeeDesk.Core.Services;
 
 namespace KeeDesk.Services;
 
 /// <summary>
 /// 纯托管、零反射、NativeAOT 友好的中英文实时多语言切换服务。
-/// 通过运行时更新 Application.Current.Resources 中的 Str_* 动态词条，无需重启即可生效。
+/// 在语言切换时一次更新所有 Str_* 动态词条。
 /// </summary>
 public static partial class LocalizationService
 {
@@ -23,6 +25,26 @@ public static partial class LocalizationService
                 return AvaloniaProperty.UnsetValue;
 
             return string.Format(CultureInfo.CurrentCulture, format, values[1]);
+        }
+    }
+
+    private sealed class LocalizedResources(Dictionary<string, string> initialStrings) : ResourceProvider
+    {
+        private Dictionary<string, string> _strings = initialStrings;
+
+        public override bool HasResources => true;
+
+        public override bool TryGetResource(object key, ThemeVariant? theme, out object? value)
+        {
+            value = key is string name && _strings.TryGetValue(name, out var text) ? text : null;
+            return value is not null;
+        }
+
+        public void Update(Dictionary<string, string> strings)
+        {
+            if (ReferenceEquals(_strings, strings)) return;
+            _strings = strings;
+            RaiseResourcesChanged();
         }
     }
 
@@ -169,7 +191,9 @@ public static partial class LocalizationService
     public static void Apply(string? languageCode)
     {
         bool isEn = string.Equals(languageCode, "en-US", StringComparison.OrdinalIgnoreCase);
-        CurrentLanguage = isEn ? "en-US" : "zh-CN";
+        var language = isEn ? "en-US" : "zh-CN";
+        bool changed = CurrentLanguage != language;
+        CurrentLanguage = language;
 
         var culture = new CultureInfo(CurrentLanguage);
         CultureInfo.DefaultThreadCurrentCulture = culture;
@@ -181,10 +205,13 @@ public static partial class LocalizationService
         if (app is not null)
         {
             var map = isEn ? EnUs : ZhCn;
-            foreach (var kv in map)
-                app.Resources[kv.Key] = kv.Value;
+            var dictionaries = app.Resources.MergedDictionaries;
+            if (dictionaries.OfType<LocalizedResources>().FirstOrDefault() is { } localized)
+                localized.Update(map);
+            else
+                dictionaries.Add(new LocalizedResources(map));
         }
 
-        LanguageChanged?.Invoke();
+        if (changed) LanguageChanged?.Invoke();
     }
 }

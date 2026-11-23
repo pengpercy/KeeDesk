@@ -49,6 +49,7 @@ public partial class MainWindow : Window
     {
         _settingsService = settingsService;
         InitializeComponent();
+        MacMenuLocalization.AttachWindowMenu(this);
         TotpProgressFill.RenderTransform = _totpProgressScale;
         TotpProgressTrack.LayoutUpdated += (_, _) => UpdateTotpProgress();
         PropertyChanged += (_, e) =>
@@ -214,6 +215,7 @@ public partial class MainWindow : Window
         if (e.PropertyName == nameof(MainWindowViewModel.IsUnlocked))
         {
             MacVaultPicker.Flyout?.Hide();
+            WelcomeLocationsButton.Flyout?.Hide();
             WelcomeSettingsButton.Flyout?.Hide();
             if (_layoutViewModel?.IsUnlocked == true)
                 BeginWorkspaceTransition();
@@ -244,7 +246,6 @@ public partial class MainWindow : Window
         Classes.Set("compactChrome", compact);
         Classes.Set("rail", rail);
         WorkspaceSidebar.Width = rail ? 64 : 240;
-        UnlockSidebar.Width = width < StackedWidth ? 224 : width < ExpandedWidth ? 248 : 272;
         DesktopSearchSlot.Width = width < StackedWidth ? 244 : compact ? 310 : width < 1280 ? 320 : 360;
         // Windows reserves 139 px for the three caption buttons plus 12 px of clearance.
         double commandInset = OperatingSystem.IsWindows() ? 151 : width < StackedWidth ? 164 : 192;

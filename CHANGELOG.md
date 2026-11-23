@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.1 - 2026-11-23
+
+- **Welcome screen.** Aligned the actions for opening, creating, and connecting to vaults in a compact sidebar. Highlighted the selected recent vault, added tooltips for long names, and aligned the lock icon with the unlock heading.
+- **Menus.** Softened the borders on context menus and flyouts, including quick settings and the vault switcher. Added shadows to nested menus.
+- **Language switching.** Reduced the pause when switching between English and Chinese. macOS menu bar headings now update alongside their menu items.
+- **Windows verification.** Verified screenshot protection on Windows 11 with desktop captures. Verified vault unlock with a temporary Windows account key, both alone and with a master password.
+
 ## 1.3.0 - 2026-11-23
 
 - **Vault synchronization.** Sync two local vaults or work from a local encrypted copy of an HTTPS/WebDAV vault. KeeDesk detects conflicting writes and can merge changes or save a recovery copy.

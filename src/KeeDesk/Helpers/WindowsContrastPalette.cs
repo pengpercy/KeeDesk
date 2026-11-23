@@ -42,8 +42,8 @@ internal static class WindowsContrastPalette
             "InputFocusedBackgroundBrush", "ToastBackgroundBrush", "MenuGlassBrushWindows", "WorkspaceMenuBackgroundBrush", "AttentionBackgroundBrush",
             "BadgePillBackgroundBrush", "MicaTintBrush", "FlyoutSurfaceBrush");
         Add(8, "PrimaryTextBrush", "SecondaryTextBrush", "ToastForegroundBrush", "CardBorderBrush", "DividerBrush",
-            "InputBorderBrush", "StandardButtonBorderBrush", "MenuGlassBorderBrush", "BadgePillForegroundBrush",
-            "WarningBrush", "DangerBrush", "SuccessBrush", "ProgressTrackBrush", "ControlFocusBrush",
+            "InputBorderBrush", "StandardButtonBorderBrush", "MenuSurfaceStrokeBrush", "MenuFlyoutPresenterBorderBrush",
+            "BadgePillForegroundBrush", "WarningBrush", "DangerBrush", "SuccessBrush", "ProgressTrackBrush", "ControlFocusBrush",
             "ControlAccessibleStrokeBrush", "ControlAccessibleStrokeHoverBrush", "ControlAccessibleStrokePressedBrush",
             "StandardButtonHoverBorderBrush", "StandardButtonPressedBorderBrush");
         Add(17, "ControlDisabledForegroundBrush", "ControlDisabledBorderBrush");

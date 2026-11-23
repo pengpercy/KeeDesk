@@ -15,7 +15,7 @@
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
         <ApplicationIcon>Assets/Branding/app_ico.ico</ApplicationIcon>
-        <Version>1.3.0</Version>
+        <Version>1.3.1</Version>
         <InformationalVersion>$(Version)</InformationalVersion>
         <NuGetAudit Condition="'$(CI)' != 'true'">false</NuGetAudit>
         <EffectiveRuntimeIdentifier Condition="'$(RuntimeIdentifier)' != ''">$(RuntimeIdentifier)</EffectiveRuntimeIdentifier>

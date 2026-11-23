@@ -456,7 +456,7 @@
             <Setter Property="MinWidth" Value="138" />
             <Setter Property="CornerRadius" Value="4" />
             <Setter Property="Background" Value="{DynamicResource FlyoutSurfaceBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource MenuSurfaceStrokeBrush}" />
             <Setter Property="BorderThickness" Value="1" />
         </Style>
         <Style Selector="ContextMenu MenuItem, MenuFlyoutPresenter MenuItem">
@@ -467,7 +467,10 @@
         </Style>
         <Style Selector="ContextMenu.glass, MenuFlyoutPresenter.glass">
             <Setter Property="Background" Value="{DynamicResource MenuGlassBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource MenuGlassBorderBrush}" />
+        </Style>
+        <!-- macOS menu material already draws an edge. Keep the inset used by the menu layout. -->
+        <Style Selector="ContextMenu.glass:not(.windows), MenuFlyoutPresenter.glass:not(.windows)">
+            <Setter Property="BorderBrush" Value="Transparent" />
         </Style>
         <Style Selector="ContextMenu.glass.windows, MenuFlyoutPresenter.glass.windows">
             <Setter Property="Background" Value="{DynamicResource MenuGlassBrushWindows}" />
@@ -481,8 +484,6 @@
             <Setter Property="Padding" Value="4,1" />
             <Setter Property="CornerRadius" Value="8" />
             <Setter Property="Background" Value="{DynamicResource WorkspaceMenuBackgroundBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
             <Setter Property="FontFamily" Value="{DynamicResource DesktopFontFamily}" />
         </Style>
         <Style Selector="ContextMenu.workspaceMenu">
@@ -516,7 +517,6 @@
         </Style>
         <Style Selector="ContextMenu.workspaceMenu.glass, MenuFlyoutPresenter.workspaceMenu.glass">
             <Setter Property="Background" Value="{DynamicResource MenuGlassBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource MenuGlassBorderBrush}" />
         </Style>
         <Style Selector="ContextMenu.workspaceMenu.glass.windows, MenuFlyoutPresenter.workspaceMenu.glass.windows">
             <Setter Property="Background" Value="{DynamicResource MenuGlassBrushWindows}" />
@@ -628,6 +628,8 @@
                     <SolidColorBrush x:Key="ControlFocusBrush" Color="#242424" />
                     <SolidColorBrush x:Key="ProgressTrackBrush" Color="#E6E6E6" />
                     <SolidColorBrush x:Key="FlyoutSurfaceBrush" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="MenuSurfaceStrokeBrush" Color="#0C000000" />
+                    <StaticResource x:Key="MenuFlyoutPresenterBorderBrush" ResourceKey="MenuSurfaceStrokeBrush" />
                     <BoxShadows x:Key="PickerShadow">0 0 2 0 #1F000000, 0 8 16 0 #24000000</BoxShadows>
                     <SolidColorBrush x:Key="OptionCardSelectedBackgroundBrush" Color="#E8F0E8" />
                     <SolidColorBrush x:Key="AccentButtonBackgroundBrush" Color="#508252" />
@@ -642,7 +644,6 @@
                     <SolidColorBrush x:Key="BadgePillForegroundBrush" Color="#345E36" />
                     <SolidColorBrush x:Key="MenuGlassBrush" Color="#47FFFFFF" />
                     <SolidColorBrush x:Key="MenuGlassBrushWindows" Color="#A6F5F5F5" />
-                    <SolidColorBrush x:Key="MenuGlassBorderBrush" Color="#1F000000" />
                     <SolidColorBrush x:Key="WorkspaceMenuBackgroundBrush" Color="#FCFCFC" />
                     <SolidColorBrush x:Key="DetailBackgroundBrush" Color="#FFFFFF" />
                     <SolidColorBrush x:Key="MicaTintBrush" Color="#40F3F3F3" />
@@ -693,6 +694,8 @@
                     <SolidColorBrush x:Key="ControlFocusBrush" Color="#FFFFFF" />
                     <SolidColorBrush x:Key="ProgressTrackBrush" Color="#333333" />
                     <SolidColorBrush x:Key="FlyoutSurfaceBrush" Color="#292929" />
+                    <SolidColorBrush x:Key="MenuSurfaceStrokeBrush" Color="#12FFFFFF" />
+                    <StaticResource x:Key="MenuFlyoutPresenterBorderBrush" ResourceKey="MenuSurfaceStrokeBrush" />
                     <BoxShadows x:Key="PickerShadow">0 0 2 0 #3D000000, 0 8 16 0 #47000000</BoxShadows>
                     <SolidColorBrush x:Key="OptionCardSelectedBackgroundBrush" Color="#263C27" />
                     <SolidColorBrush x:Key="AccentButtonBackgroundBrush" Color="#508252" />
@@ -707,7 +710,6 @@
                     <SolidColorBrush x:Key="BadgePillForegroundBrush" Color="#B2CEB2" />
                     <SolidColorBrush x:Key="MenuGlassBrush" Color="#2E1C1C1E" />
                     <SolidColorBrush x:Key="MenuGlassBrushWindows" Color="#A6202022" />
-                    <SolidColorBrush x:Key="MenuGlassBorderBrush" Color="#2EFFFFFF" />
                     <SolidColorBrush x:Key="WorkspaceMenuBackgroundBrush" Color="#2C2C2C" />
                     <SolidColorBrush x:Key="DetailBackgroundBrush" Color="#2C2C2C" />
                     <SolidColorBrush x:Key="MicaTintBrush" Color="#40202020" />

@@ -118,10 +118,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private RecentVaultItem? _selectedRecentVault;
     public ObservableCollection<RecentVaultItem> RecentVaults { get; } = new();
     public bool HasRecentVaults => RecentVaults.Count != 0;
+    public bool HasUnlockVault => !string.IsNullOrWhiteSpace(UnlockVaultPath);
 
     public string UnlockVaultFileName => Path.GetFileName(UnlockVaultPath);
 
-    public string UnlockVaultHeading => string.IsNullOrWhiteSpace(UnlockVaultPath)
+    public string UnlockVaultHeading => !HasUnlockVault
         ? L("Str_WelcomeToKeeDesk")
         : L("Str_UnlockFormat", SelectedRecentVault?.DisplayName ?? Path.GetFileNameWithoutExtension(UnlockVaultPath));
 
@@ -249,7 +250,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         foreach (var entry in FilteredEntries.Concat(AuditWeakEntries).Concat(AuditReusedEntries)
                      .Concat(AuditExpiringEntries).Concat(AuditNo2FaEntries)
                      .Concat(AuditSimilarPasswords.SelectMany(pair => new[] { pair.First, pair.Second })).Distinct())
-            entry.Refresh();
+            entry.RefreshLanguage();
         UnlockError = string.Empty;
         IsToastVisible = false;
     }
@@ -298,6 +299,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     partial void OnUnlockVaultPathChanged(string value)
     {
+        if (SelectedRecentVault is { } recent && !string.Equals(recent.FilePath, value, StringComparison.OrdinalIgnoreCase))
+            SelectedRecentVault = null;
+        OnPropertyChanged(nameof(HasUnlockVault));
         OnPropertyChanged(nameof(UnlockVaultHeading));
         OnPropertyChanged(nameof(UnlockVaultFileName));
         OnPropertyChanged(nameof(CanUnlockWithTouchId));

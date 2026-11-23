@@ -27,6 +27,7 @@ public partial class App : Application
         CultureInfo.CurrentCulture = zhCulture;
         CultureInfo.CurrentUICulture = zhCulture;
 
+        Glass.AttachSubmenuShadows();
         AvaloniaXamlLoader.Load(this);
         Resources["DesktopFontFamily"] = OperatingSystem.IsWindows()
             ? new Avalonia.Media.FontFamily("Segoe UI Variable Text, Segoe UI, Microsoft YaHei UI")

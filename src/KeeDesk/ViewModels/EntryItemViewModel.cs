@@ -18,6 +18,7 @@ public sealed partial class EntryItemViewModel : ViewModelBase
     private readonly KdbxDatabase? _database;
     private DateTimeOffset _totpExpiresAt;
     private int _totpPeriod;
+    private PasswordStrengthResult _strength = null!;
 
     public EntryItemViewModel(KdbxEntry entry, KdbxDatabase? database = null)
     {
@@ -85,10 +86,8 @@ public sealed partial class EntryItemViewModel : ViewModelBase
 
     public void Refresh()
     {
-        Title = string.IsNullOrWhiteSpace(Model.Title) ? L("Str_UntitledEntry") : Model.Title;
         UserName = Model.UserName;
         Password = Model.Password;
-        MaskedPassword = string.IsNullOrEmpty(Password) ? L("Str_EmptyPassword") : new string('•', Math.Clamp(Password.Length, 8, 22));
         Url = Model.Url;
         Notes = Model.Notes;
         IsFavorite = Model.IsFavorite;
@@ -98,16 +97,38 @@ public sealed partial class EntryItemViewModel : ViewModelBase
         GroupPath = _database is not null && fullPath.StartsWith(rootPrefix, StringComparison.Ordinal)
             ? fullPath[rootPrefix.Length..]
             : fullPath;
-        TagsDisplay = Model.Tags.Count > 0 ? string.Join("   ", Model.Tags.Select(t => $"#{t}")) : L("Str_NoTags");
+        _strength = PasswordGenerator.EvaluateStrength(Password);
+        StrengthRatio = Math.Clamp(_strength.EntropyBits / 120.0, 0.05, 1.0);
 
+        HistoryCount = Model.History.Count;
+        AttachmentCount = Model.Binaries.Count;
+        CustomIconBitmap = FaviconFetcherService.TryDecodeCustomIcon(_database, Model.CustomIconUuid);
+        StandardIcon = Model.IconId != 0 ? KeePassIconCatalog.GetGeometry(Model.IconId) : null;
+        OnPropertyChanged(nameof(HasCustomIcon));
+        OnPropertyChanged(nameof(HasStandardIcon));
+        OnPropertyChanged(nameof(ShowInitials));
+        OnPropertyChanged(nameof(StandardIcon));
+
+        RefreshTotp();
+        RefreshLanguage();
+        OnPropertyChanged(nameof(DisplayTags));
+        OnPropertyChanged(nameof(CustomFields));
+        OnPropertyChanged(nameof(HasAnnotations));
+    }
+
+    internal void RefreshLanguage()
+    {
+        var title = Model.Title;
+        Title = string.IsNullOrWhiteSpace(title) ? L("Str_UntitledEntry") : title;
         var words = Title.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         Initials = words.Length >= 2
             ? $"{char.ToUpperInvariant(words[0][0])}{char.ToUpperInvariant(words[1][0])}"
             : Title.Length >= 2 ? Title[..2].ToUpperInvariant() : Title.ToUpperInvariant();
 
-        var strength = PasswordGenerator.EvaluateStrength(Password);
-        StrengthLabel = FormatPasswordStrength(strength, string.IsNullOrEmpty(Password));
-        StrengthRatio = Math.Clamp(strength.EntropyBits / 120.0, 0.05, 1.0);
+        bool emptyPassword = string.IsNullOrEmpty(Password);
+        MaskedPassword = emptyPassword ? L("Str_EmptyPassword") : new string('•', Math.Clamp(Password.Length, 8, 22));
+        StrengthLabel = FormatPasswordStrength(_strength, emptyPassword);
+        TagsDisplay = Model.Tags.Count > 0 ? string.Join("   ", Model.Tags.Select(t => $"#{t}")) : L("Str_NoTags");
 
         if (Model.Expires)
         {
@@ -121,24 +142,12 @@ public sealed partial class EntryItemViewModel : ViewModelBase
             ExpiryBadge = string.Empty;
         }
 
-        HistoryCount = Model.History.Count;
-        AttachmentCount = Model.Binaries.Count;
-        CustomIconBitmap = FaviconFetcherService.TryDecodeCustomIcon(_database, Model.CustomIconUuid);
-        StandardIcon = Model.IconId != 0 ? KeePassIconCatalog.GetGeometry(Model.IconId) : null;
-        OnPropertyChanged(nameof(HasCustomIcon));
-        OnPropertyChanged(nameof(HasStandardIcon));
-        OnPropertyChanged(nameof(ShowInitials));
-        OnPropertyChanged(nameof(StandardIcon));
         FooterMeta = L("Str_ModifiedCreatedUUIDFormat", Model.LastModificationTime.LocalDateTime, Model.CreationTime.LocalDateTime, Model.Uuid.ToString("N")[..8]);
 
-        RefreshTotp();
         OnPropertyChanged(nameof(DisplayedPassword));
         OnPropertyChanged(nameof(EntryKind));
         OnPropertyChanged(nameof(UpdatedDisplay));
-        OnPropertyChanged(nameof(DisplayTags));
-        OnPropertyChanged(nameof(CustomFields));
         OnPropertyChanged(nameof(Attachments));
-        OnPropertyChanged(nameof(HasAnnotations));
     }
 
     public void RefreshTotp(DateTimeOffset? timestamp = null)

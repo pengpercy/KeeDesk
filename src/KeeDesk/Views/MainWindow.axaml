@@ -273,12 +273,43 @@
         <Style Selector="Grid#UnlockStage Button.welcomeAction">
             <Setter Property="Height" Value="36" />
         </Style>
+        <Style Selector="Button.welcomeRailAction">
+            <Setter Property="MinHeight" Value="36" />
+            <Setter Property="Padding" Value="10,6" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="Normal" />
+        </Style>
+        <Style Selector="Button.welcomeRailAction TextBlock">
+            <Setter Property="LineHeight" Value="18" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
         <Style Selector="Grid#UnlockStage Button.unlockAction, Grid#UnlockStage TextBox.unlockField">
             <Setter Property="Height" Value="40" />
             <Setter Property="FontSize" Value="14" />
         </Style>
+        <Style Selector="StackPanel.welcomeForm">
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="StackPanel.welcomeForm.hasVault">
+            <Setter Property="VerticalAlignment" Value="Top" />
+            <Setter Property="Margin" Value="0,96,0,0" />
+        </Style>
         <Style Selector="ListBox.recentList ListBoxItem:selected Border.entryIndicator">
             <Setter Property="IsVisible" Value="True" />
+        </Style>
+        <Style Selector="ListBox.recentList ListBoxItem">
+            <Setter Property="Margin" Value="0,1" />
+        </Style>
+        <Style Selector="ListBox.recentList ListBoxItem Border.entryCard">
+            <Setter Property="CornerRadius" Value="6" />
+        </Style>
+        <Style Selector="ListBox.recentList ListBoxItem:focus-within Button.recentRemoveBtn">
+            <Setter Property="Opacity" Value="1" />
+            <Setter Property="IsHitTestVisible" Value="True" />
         </Style>
         <Style Selector="Button.chromeBack">
             <Setter Property="Width" Value="44" />
@@ -472,100 +503,120 @@
 
         <Grid Grid.Row="1">
             <Grid x:Name="UnlockStage" ColumnDefinitions="Auto,1,*">
-                <Border x:Name="UnlockSidebar" Grid.Column="0" Width="248" Background="{DynamicResource SidebarBackgroundBrush}">
-                    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
+                <Border Grid.Column="0" Width="216" Background="{DynamicResource SidebarBackgroundBrush}">
+                    <Grid RowDefinitions="Auto,Auto,*,Auto">
                         <!-- macOS 顶部 48px 交通灯安全拖动区 -->
                         <Border Grid.Row="0" Height="48" IsVisible="{Binding UsesLeftWindowChrome}" Background="Transparent"
                                 chrome:WindowDecorationProperties.ElementRole="TitleBar"
                                 PointerPressed="TitleBar_PointerPressed" />
 
-                        <StackPanel Grid.Row="1" Margin="20,22,20,6" Spacing="12">
-                            <TextBlock Text="{DynamicResource Str_Vaults}" FontSize="24" FontWeight="SemiBold" />
-                            <WrapPanel ItemSpacing="6" LineSpacing="6">
-                                <Button Classes="welcomeAction" Command="{Binding BrowseVaultFileCommand}" Padding="8,0">
-                                    <StackPanel Orientation="Horizontal" Spacing="6">
-                                        <PathIcon Data="{StaticResource IconFolder}" Width="16" Height="16" />
-                                        <TextBlock Text="{DynamicResource Str_OpenFile}" />
-                                    </StackPanel>
-                                </Button>
-                                <Button Classes="subtle welcomeAction" Command="{Binding CreateNewVaultCommand}" Padding="8,0" Content="{DynamicResource Str_NewVault2}" />
-                                <Button Classes="subtle welcomeAction" Width="32" Padding="0"
-                                        ToolTip.Tip="{DynamicResource Str_VaultLocations}" AutomationProperties.Name="{DynamicResource Str_VaultLocations}">
-                                    <Button.Flyout>
-                                        <helpers:GlassMenuFlyout FlyoutPresenterClasses="compactMenu" Placement="BottomEdgeAlignedLeft">
-                                            <MenuItem Header="{DynamicResource Str_CloudDriveOpen}" Command="{Binding OpenCloudDriveCommand}" />
-                                            <MenuItem Header="{DynamicResource Str_OpenCloudVault}" Command="{Binding OpenCloudVaultCommand}" />
-                                            <MenuItem Header="{DynamicResource Str_OpenRemoteVault}" Command="{Binding OpenRemoteVaultCommand}" />
-                                        </helpers:GlassMenuFlyout>
-                                    </Button.Flyout>
-                                    <PathIcon Data="{StaticResource IconGlobe}" Width="15" Height="15" />
-                                </Button>
-                            </WrapPanel>
-                            <Border Height="1" Margin="0,4,0,0" Background="{DynamicResource DividerBrush}" />
-                            <TextBlock Text="{DynamicResource Str_RecentVaults2}" FontWeight="SemiBold" Foreground="{DynamicResource SecondaryTextBrush}" />
-                        </StackPanel>
-
-                        <!-- 最近打开的密码库列表（悬停右侧显示移除图标，支持右键移除/清空） -->
-                        <ListBox Grid.Row="2" Classes="entryList workspaceList recentList" ItemsSource="{Binding RecentVaults}" SelectedItem="{Binding SelectedRecentVault}"
-                                 IsVisible="{Binding HasRecentVaults}" MaxHeight="264" Background="Transparent" BorderThickness="0" Padding="12,0">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Classes="entryCard" Height="52">
-                                        <Border.ContextMenu>
-                                            <helpers:GlassContextMenu>
-                                                <MenuItem Header="{DynamicResource Str_RemoveFromRecents}"
-                                                          Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).RemoveRecentVaultCommand}"
-                                                          CommandParameter="{Binding}">
-                                                    <MenuItem.Icon>
-                                                        <PathIcon Data="{StaticResource IconClose}" Width="12" Height="12" />
-                                                    </MenuItem.Icon>
-                                                </MenuItem>
-                                                <Separator />
-                                                <MenuItem Header="{DynamicResource Str_ClearAllRecentVaults}"
-                                                          Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ClearRecentVaultsCommand}">
-                                                    <MenuItem.Icon>
-                                                        <PathIcon Data="{StaticResource IconTrash}" Width="13" Height="13" />
-                                                    </MenuItem.Icon>
-                                                </MenuItem>
-                                            </helpers:GlassContextMenu>
-                                        </Border.ContextMenu>
-                                        <Grid ColumnDefinitions="6,28,*,Auto">
-                                            <Border Grid.Column="0" Classes="entryIndicator" Width="3" Height="24" CornerRadius="2"
-                                                    Background="{DynamicResource SystemControlHighlightAccentBrush}"
-                                                    HorizontalAlignment="Left" VerticalAlignment="Center" />
-                                            <PathIcon Grid.Column="1" Data="{StaticResource IconVault}" Width="16" Height="16" />
-                                            <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="2" Margin="4,0,6,0">
-                                                <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" FontSize="14" TextTrimming="CharacterEllipsis" />
-                                                <TextBlock Text="{Binding FileName}" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" TextTrimming="CharacterEllipsis" />
-                                            </StackPanel>
-                                            <Button Grid.Column="3" Classes="subtle recentRemoveBtn" Width="26" Height="26" MinHeight="26" Padding="0" Margin="0,0,8,0"
-                                                    VerticalAlignment="Center" ToolTip.Tip="{DynamicResource Str_RemoveFromRecentsKeepTheLocalFile}"
-                                                    Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).RemoveRecentVaultCommand}"
-                                                    CommandParameter="{Binding}">
-                                                <PathIcon Data="{StaticResource IconClose}" Width="10" Height="10" Foreground="{DynamicResource SecondaryTextBrush}" />
-                                            </Button>
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-
-                        <TextBlock Grid.Row="2" Margin="20,8,20,12" IsVisible="{Binding !HasRecentVaults}"
-                                   Text="{DynamicResource Str_NoRecentlyOpenedVaults}" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
-                        <StackPanel Grid.Row="3" VerticalAlignment="Top" Spacing="4" Margin="12,12,12,0">
-                            <Button Classes="subtle welcomeAction" HorizontalAlignment="Left" Command="{Binding OpenDemoVaultCommand}">
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <PathIcon Data="{StaticResource IconBook}" Width="16" Height="16" />
-                                    <TextBlock Text="{DynamicResource Str_OpenDemoVault}" />
-                                </StackPanel>
+                        <StackPanel Grid.Row="1" Margin="16,16,16,0" Spacing="4">
+                            <TextBlock Text="{DynamicResource Str_Vaults}" Margin="4,0,4,8" FontSize="18" LineHeight="26"
+                                       FontWeight="SemiBold" AutomationProperties.HeadingLevel="1" />
+                            <Button Classes="subtle welcomeRailAction" Command="{Binding BrowseVaultFileCommand}"
+                                    AutomationProperties.Name="{DynamicResource Str_OpenFile}">
+                                <Grid ColumnDefinitions="16,*" ColumnSpacing="8">
+                                    <PathIcon Data="{StaticResource IconFolderOpen}" Width="16" Height="16" />
+                                    <TextBlock Grid.Column="1" Text="{DynamicResource Str_OpenFile}" />
+                                </Grid>
                             </Button>
-                            <TextBlock Text="{DynamicResource Str_DropAKdbxFileHereToOpen}" Margin="8,0" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                            <Button Classes="subtle welcomeRailAction" Command="{Binding CreateNewVaultCommand}"
+                                    AutomationProperties.Name="{DynamicResource Str_NewVault2}">
+                                <Grid ColumnDefinitions="16,*" ColumnSpacing="8">
+                                    <PathIcon Data="{StaticResource IconAdd}" Width="16" Height="16" />
+                                    <TextBlock Grid.Column="1" Text="{DynamicResource Str_NewVault2}" />
+                                </Grid>
+                            </Button>
+                            <Button x:Name="WelcomeLocationsButton" Classes="subtle welcomeRailAction"
+                                    ToolTip.Tip="{DynamicResource Str_VaultLocations}" AutomationProperties.Name="{DynamicResource Str_WelcomeVaultLocations}">
+                                <Button.Flyout>
+                                    <helpers:GlassMenuFlyout FlyoutPresenterClasses="workspaceMenu compactMenu" Placement="BottomEdgeAlignedLeft" VerticalOffset="4">
+                                        <MenuItem Header="{DynamicResource Str_CloudDriveOpen}" Command="{Binding OpenCloudDriveCommand}" />
+                                        <MenuItem Header="{DynamicResource Str_OpenCloudVault}" Command="{Binding OpenCloudVaultCommand}" />
+                                        <MenuItem Header="{DynamicResource Str_OpenRemoteVault}" Command="{Binding OpenRemoteVaultCommand}" />
+                                    </helpers:GlassMenuFlyout>
+                                </Button.Flyout>
+                                <Grid ColumnDefinitions="16,*,10" ColumnSpacing="8">
+                                    <PathIcon Data="{StaticResource IconGlobe}" Width="16" Height="16" />
+                                    <TextBlock Grid.Column="1" Text="{DynamicResource Str_WelcomeVaultLocations}" />
+                                    <PathIcon Grid.Column="2" Data="{StaticResource IconChevronDown}" Width="10" Height="10"
+                                              Foreground="{DynamicResource SecondaryTextBrush}" />
+                                </Grid>
+                            </Button>
                         </StackPanel>
-                        <StackPanel Grid.Row="4" Spacing="8" Margin="8,0,8,12">
-                            <Border Height="1" Background="{DynamicResource DividerBrush}" />
+
+                        <Grid Grid.Row="2" RowDefinitions="Auto,*" Margin="16,24,16,12">
+                            <TextBlock Text="{DynamicResource Str_RecentVaults2}" Margin="4,0,4,8" FontSize="12" LineHeight="18"
+                                       FontWeight="SemiBold" Foreground="{DynamicResource SecondaryTextBrush}"
+                                       AutomationProperties.HeadingLevel="2" />
+                            <ListBox Grid.Row="1" Classes="entryList workspaceList recentList" ItemsSource="{Binding RecentVaults}" SelectedItem="{Binding SelectedRecentVault}"
+                                     IsVisible="{Binding HasRecentVaults}" VerticalAlignment="Top" Background="Transparent" BorderThickness="0" Padding="0"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                     AutomationProperties.Name="{DynamicResource Str_RecentVaults2}">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Classes="entryCard" MinHeight="48" Padding="0,5">
+                                            <Border.ContextMenu>
+                                                <helpers:GlassContextMenu>
+                                                    <MenuItem Header="{DynamicResource Str_RemoveFromRecents}"
+                                                              Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).RemoveRecentVaultCommand}"
+                                                              CommandParameter="{Binding}">
+                                                        <MenuItem.Icon>
+                                                            <PathIcon Data="{StaticResource IconClose}" Width="12" Height="12" />
+                                                        </MenuItem.Icon>
+                                                    </MenuItem>
+                                                    <Separator />
+                                                    <MenuItem Header="{DynamicResource Str_ClearAllRecentVaults}"
+                                                              Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ClearRecentVaultsCommand}">
+                                                        <MenuItem.Icon>
+                                                            <PathIcon Data="{StaticResource IconTrash}" Width="13" Height="13" />
+                                                        </MenuItem.Icon>
+                                                    </MenuItem>
+                                                </helpers:GlassContextMenu>
+                                            </Border.ContextMenu>
+                                            <Grid ColumnDefinitions="6,24,*,Auto">
+                                                <Border Grid.Column="0" Classes="entryIndicator" Width="3" Height="20" CornerRadius="2"
+                                                        Background="{DynamicResource SystemControlHighlightAccentBrush}"
+                                                        HorizontalAlignment="Left" VerticalAlignment="Center" />
+                                                <PathIcon Grid.Column="1" Data="{StaticResource IconVault}" Width="16" Height="16"
+                                                          Foreground="{DynamicResource SecondaryTextBrush}" />
+                                                <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="4,0,4,0" ToolTip.Tip="{Binding FileName}">
+                                                    <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" FontSize="13" LineHeight="18"
+                                                               TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding DisplayName}" />
+                                                    <TextBlock Text="{Binding FileName}" FontSize="11" LineHeight="16" Foreground="{DynamicResource SecondaryTextBrush}"
+                                                               TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+                                                </StackPanel>
+                                                <Button Grid.Column="3" Classes="subtle recentRemoveBtn" Width="24" Height="24" MinHeight="0" Padding="0" Margin="0,0,4,0"
+                                                        VerticalAlignment="Center" ToolTip.Tip="{DynamicResource Str_RemoveFromRecentsKeepTheLocalFile}"
+                                                        AutomationProperties.Name="{DynamicResource Str_RemoveFromRecents}"
+                                                        Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).RemoveRecentVaultCommand}"
+                                                        CommandParameter="{Binding}">
+                                                    <PathIcon Data="{StaticResource IconClose}" Width="10" Height="10" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                                </Button>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+
+                            <TextBlock Grid.Row="1" Margin="4,2,4,0" IsVisible="{Binding !HasRecentVaults}"
+                                       Text="{DynamicResource Str_NoRecentlyOpenedVaults}" FontSize="12" LineHeight="18"
+                                       Foreground="{DynamicResource SecondaryTextBrush}" />
+                        </Grid>
+
+                        <StackPanel Grid.Row="3" Spacing="4" Margin="16,0,16,12">
+                            <Button Classes="subtle welcomeRailAction" Command="{Binding OpenDemoVaultCommand}"
+                                    AutomationProperties.Name="{DynamicResource Str_OpenDemoVault}">
+                                <Grid ColumnDefinitions="16,*" ColumnSpacing="8">
+                                    <PathIcon Data="{StaticResource IconBook}" Width="16" Height="16" />
+                                    <TextBlock Grid.Column="1" Text="{DynamicResource Str_OpenDemoVault}" />
+                                </Grid>
+                            </Button>
+                            <Border Height="1" Margin="0,4" Background="{DynamicResource DividerBrush}" />
                             <Button x:Name="WelcomeSettingsButton" Classes="subtle sidebarSettings" Flyout="{StaticResource SidebarSettingsMenu}"
+                                    Padding="10,0" FontSize="13" FontWeight="Normal"
                                     ToolTip.Tip="{DynamicResource Str_SettingsTitle}" AutomationProperties.Name="{DynamicResource Str_SettingsTitle}">
-                                <StackPanel Orientation="Horizontal" Spacing="12">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
                                     <PathIcon Classes="settingsGear" Data="{StaticResource IconSettings}" Width="16" Height="16" />
                                     <TextBlock Text="{DynamicResource Str_SettingsTitle}" />
                                 </StackPanel>
@@ -584,89 +635,113 @@
                             chrome:WindowDecorationProperties.ElementRole="TitleBar"
                             PointerPressed="TitleBar_PointerPressed" />
 
-                    <ScrollViewer Grid.Row="1" Padding="24,60,24,24">
-                    <StackPanel MaxWidth="400" Spacing="12">
-                        <Border x:Name="UnlockBadge" Width="44" Height="44" CornerRadius="8" HorizontalAlignment="Left"
-                                Background="{DynamicResource BadgePillBackgroundBrush}">
-                            <PathIcon Data="{StaticResource IconLock}" Width="20" Height="20" Foreground="{DynamicResource AccentTextBrush}" />
-                        </Border>
-                        <StackPanel Spacing="2" Margin="0,0,0,8">
-                            <TextBlock Text="{Binding UnlockVaultHeading}" FontSize="24" FontWeight="SemiBold" />
-                            <TextBlock Text="{Binding UnlockVaultFileName}" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
-                        </StackPanel>
-
-                        <!-- 主密码（解锁失败时触发 macOS 风格水平微颤动画） -->
-                        <StackPanel x:Name="UnlockPasswordContainer" Spacing="4">
-                            <TextBlock Text="{DynamicResource Str_MasterPassword2}" FontSize="14" Foreground="{DynamicResource SecondaryTextBrush}" />
-                            <TextBox x:Name="UnlockPasswordBox" Classes="unlockField" Text="{Binding UnlockMasterPassword}" PasswordChar="•"
-                                     AutomationProperties.Name="{DynamicResource Str_MasterPassword2}" PlaceholderText="{DynamicResource Str_EnterMasterPassword}" KeyDown="UnlockPassword_KeyDown" IsEnabled="{Binding !IsUnlocking}" />
-                            <TextBlock Text="{Binding UnlockError}" Foreground="{DynamicResource DangerBrush}" FontSize="12"
-                                       AutomationProperties.LiveSetting="Polite"
-                                       IsVisible="{Binding UnlockError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-                        </StackPanel>
-
-                        <Expander x:Name="UnlockKeyOptions" Classes="disclosure unlockOptions" HorizontalAlignment="Stretch"
-                                  AutomationProperties.Name="{DynamicResource Str_UseAKeyFile}">
-                            <Expander.Header>
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <PathIcon Classes="disclosureChevron" Data="{StaticResource IconChevronDown}" Width="12" Height="12" />
-                                    <TextBlock Classes="keyDisclosureLabel" FontSize="14" VerticalAlignment="Center" />
-                                </StackPanel>
-                            </Expander.Header>
-                            <Border Height="44" Margin="0,4,0,0" Padding="12,0,3,0" CornerRadius="4"
-                                    Background="{DynamicResource InputBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-                                <Grid ColumnDefinitions="20,*,Auto,Auto,Auto" ColumnSpacing="6">
-                                    <PathIcon Data="{StaticResource IconKey}" Width="20" Height="20" Foreground="{DynamicResource SecondaryTextBrush}" />
-                                    <TextBlock Grid.Column="1" Text="{Binding UnlockKeyFileDisplay}" FontSize="14" Margin="4,0,0,0"
-                                               Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center"
-                                               TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding UnlockKeyFileDisplay}" />
-                                    <Button Grid.Column="2" Classes="welcomeAction subtle" Width="32" Padding="0" VerticalAlignment="Center"
-                                            AutomationProperties.Name="{DynamicResource Str_RemoveSelectedKeyFile}" ToolTip.Tip="{DynamicResource Str_RemoveSelectedKeyFile}"
-                                            IsVisible="{Binding HasUnlockKeyFile}" Command="{Binding ClearKeyFileCommand}">
-                                        <PathIcon Data="{StaticResource IconClose}" Width="14" Height="14" />
-                                    </Button>
-                                    <Button Grid.Column="3" Classes="welcomeAction" MinWidth="78" Content="{DynamicResource Str_Browse2}" VerticalAlignment="Center"
-                                            AutomationProperties.Name="{DynamicResource Str_BrowseForKeyFile}" Command="{Binding BrowseKeyFileCommand}" />
-                                    <Button Grid.Column="4" Classes="welcomeAction subtle" MinWidth="92" Content="{DynamicResource Str_GenerateKeyx}" VerticalAlignment="Center"
-                                            ToolTip.Tip="{DynamicResource Str_GenerateANewXMLV20Key}" Command="{Binding GenerateKeyFileCommand}" />
+                    <ScrollViewer Grid.Row="1" Padding="32,24,32,56" HorizontalScrollBarVisibility="Disabled">
+                        <Grid>
+                            <StackPanel Classes="welcomeForm" Classes.hasVault="{Binding HasUnlockVault}" MaxWidth="400"
+                                        Spacing="24">
+                                <Grid ColumnDefinitions="44,*" ColumnSpacing="12">
+                                    <Border x:Name="UnlockBadge" Width="44" Height="44" CornerRadius="8" VerticalAlignment="Top"
+                                            Background="{DynamicResource BadgePillBackgroundBrush}">
+                                        <PathIcon Data="{StaticResource IconLock}" Width="20" Height="20" Foreground="{DynamicResource AccentTextBrush}" />
+                                    </Border>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                                        <TextBlock Text="{Binding UnlockVaultHeading}" FontSize="22" LineHeight="30"
+                                                   FontWeight="SemiBold" AutomationProperties.HeadingLevel="1" />
+                                        <TextBlock Text="{Binding UnlockVaultFileName}" IsVisible="{Binding HasUnlockVault}"
+                                                   FontSize="12" LineHeight="18" Foreground="{DynamicResource SecondaryTextBrush}"
+                                                   TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding UnlockVaultFileName}" />
+                                        <TextBlock Text="{DynamicResource Str_WelcomeChooseVault}" IsVisible="{Binding !HasUnlockVault}"
+                                                   FontSize="13" LineHeight="19" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                    </StackPanel>
                                 </Grid>
-                            </Border>
-                        </Expander>
 
-                        <!-- Windows 专属：使用当前 Windows 用户账户（DPAPI，100% 互通原版 KeePass 2.x） -->
-                        <CheckBox Content="{DynamicResource Str_UseWindowsUserAccountDPAPI}" FontSize="14"
-                                  IsVisible="{Binding IsWindows}"
-                                  IsChecked="{Binding UnlockUseWindowsUserAccount}" />
-
-                        <!-- macOS 专属：启用 Touch ID 快速解锁（主密码安全托管于 macOS 钥匙串） -->
-                        <CheckBox Content="{DynamicResource Str_EnableQuickUnlockWithTouchID}" FontSize="14" ToolTip.Tip="{DynamicResource Str_UnlockCredentialsAreStoredInTheMacOS}"
-                                  IsVisible="{Binding CanEnableTouchId}"
-                                  IsChecked="{Binding RememberForTouchId}" />
-
-                        <!-- 通栏解锁主按钮 + Touch ID 快速解锁 + 丝滑解密进度条 -->
-                        <StackPanel Spacing="8" Margin="0,4,0,0">
-                            <Button Classes="accent unlockAction" HorizontalAlignment="Stretch" Command="{Binding UnlockVaultCommand}" IsEnabled="{Binding !IsUnlocking}">
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <TextBlock Text="{DynamicResource Str_UnlockVault}" FontSize="14" FontWeight="SemiBold" IsVisible="{Binding !IsUnlocking}" />
-                                    <TextBlock Text="{DynamicResource Str_DecryptingVault}" FontSize="14" FontWeight="SemiBold" IsVisible="{Binding IsUnlocking}" />
+                                <StackPanel IsVisible="{Binding !HasUnlockVault}" Spacing="12">
+                                    <Button Classes="accent unlockAction" HorizontalAlignment="Left" Command="{Binding BrowseVaultFileCommand}"
+                                            AutomationProperties.Name="{DynamicResource Str_OpenFile}">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <PathIcon Data="{StaticResource IconFolderOpen}" Width="16" Height="16" />
+                                            <TextBlock Text="{DynamicResource Str_OpenFile}" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                    <TextBlock Text="{DynamicResource Str_DropAKdbxFileHereToOpen}" FontSize="12" LineHeight="18"
+                                               Foreground="{DynamicResource SecondaryTextBrush}" />
                                 </StackPanel>
-                            </Button>
-                            <Button Classes="unlockAction" HorizontalAlignment="Stretch"
-                                    Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource InputBorderBrush}" BorderThickness="1"
-                                    IsVisible="{Binding CanUnlockWithTouchId}" IsEnabled="{Binding !IsUnlocking}"
-                                    Command="{Binding UnlockWithTouchIdCommand}">
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <PathIcon Data="{StaticResource IconShield}" Width="14" Height="14" Foreground="{DynamicResource BrandEmeraldBrush}" />
-                                    <TextBlock Text="{DynamicResource Str_UseTouchID}" FontSize="14" FontWeight="Medium" />
-                                </StackPanel>
-                            </Button>
-                            <ProgressBar IsIndeterminate="True" Height="2" HorizontalAlignment="Stretch"
-                                         Foreground="{DynamicResource AccentButtonBackgroundBrush}"
-                                         IsVisible="{Binding IsUnlocking}" />
-                        </StackPanel>
 
-                        <TextBlock Text="{DynamicResource Str_UnlockOnThisDeviceYourFilesStay}" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
-                    </StackPanel>
+                                <StackPanel IsVisible="{Binding HasUnlockVault}" Spacing="12">
+                                    <!-- 主密码（解锁失败时触发 macOS 风格水平微颤动画） -->
+                                    <StackPanel x:Name="UnlockPasswordContainer" Spacing="4">
+                                        <TextBlock Text="{DynamicResource Str_MasterPassword2}" FontSize="14" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                        <TextBox x:Name="UnlockPasswordBox" Classes="unlockField" Text="{Binding UnlockMasterPassword}" PasswordChar="•"
+                                                 AutomationProperties.Name="{DynamicResource Str_MasterPassword2}" PlaceholderText="{DynamicResource Str_EnterMasterPassword}" KeyDown="UnlockPassword_KeyDown" IsEnabled="{Binding !IsUnlocking}" />
+                                        <TextBlock Text="{Binding UnlockError}" Foreground="{DynamicResource DangerBrush}" FontSize="12"
+                                                   AutomationProperties.LiveSetting="Polite"
+                                                   IsVisible="{Binding UnlockError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                    </StackPanel>
+
+                                    <Expander x:Name="UnlockKeyOptions" Classes="disclosure unlockOptions" HorizontalAlignment="Stretch"
+                                              AutomationProperties.Name="{DynamicResource Str_UseAKeyFile}">
+                                        <Expander.Header>
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <PathIcon Classes="disclosureChevron" Data="{StaticResource IconChevronDown}" Width="12" Height="12" />
+                                                <TextBlock Classes="keyDisclosureLabel" FontSize="14" VerticalAlignment="Center" />
+                                            </StackPanel>
+                                        </Expander.Header>
+                                        <Border Height="44" Margin="0,4,0,0" Padding="12,0,3,0" CornerRadius="4"
+                                                Background="{DynamicResource InputBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                            <Grid ColumnDefinitions="20,*,Auto,Auto,Auto" ColumnSpacing="6">
+                                                <PathIcon Data="{StaticResource IconKey}" Width="20" Height="20" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                                <TextBlock Grid.Column="1" Text="{Binding UnlockKeyFileDisplay}" FontSize="14" Margin="4,0,0,0"
+                                                           Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center"
+                                                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding UnlockKeyFileDisplay}" />
+                                                <Button Grid.Column="2" Classes="welcomeAction subtle" Width="32" Padding="0" VerticalAlignment="Center"
+                                                        AutomationProperties.Name="{DynamicResource Str_RemoveSelectedKeyFile}" ToolTip.Tip="{DynamicResource Str_RemoveSelectedKeyFile}"
+                                                        IsVisible="{Binding HasUnlockKeyFile}" Command="{Binding ClearKeyFileCommand}">
+                                                    <PathIcon Data="{StaticResource IconClose}" Width="14" Height="14" />
+                                                </Button>
+                                                <Button Grid.Column="3" Classes="welcomeAction" MinWidth="78" Content="{DynamicResource Str_Browse2}" VerticalAlignment="Center"
+                                                        AutomationProperties.Name="{DynamicResource Str_BrowseForKeyFile}" Command="{Binding BrowseKeyFileCommand}" />
+                                                <Button Grid.Column="4" Classes="welcomeAction subtle" MinWidth="92" Content="{DynamicResource Str_GenerateKeyx}" VerticalAlignment="Center"
+                                                        ToolTip.Tip="{DynamicResource Str_GenerateANewXMLV20Key}" Command="{Binding GenerateKeyFileCommand}" />
+                                            </Grid>
+                                        </Border>
+                                    </Expander>
+
+                                    <!-- Windows 专属：使用当前 Windows 用户账户（DPAPI，100% 互通原版 KeePass 2.x） -->
+                                    <CheckBox Content="{DynamicResource Str_UseWindowsUserAccountDPAPI}" FontSize="14"
+                                              IsVisible="{Binding IsWindows}"
+                                              IsChecked="{Binding UnlockUseWindowsUserAccount}" />
+
+                                    <!-- macOS 专属：启用 Touch ID 快速解锁（主密码安全托管于 macOS 钥匙串） -->
+                                    <CheckBox Content="{DynamicResource Str_EnableQuickUnlockWithTouchID}" FontSize="14" ToolTip.Tip="{DynamicResource Str_UnlockCredentialsAreStoredInTheMacOS}"
+                                              IsVisible="{Binding CanEnableTouchId}"
+                                              IsChecked="{Binding RememberForTouchId}" />
+
+                                    <!-- 通栏解锁主按钮 + Touch ID 快速解锁 + 丝滑解密进度条 -->
+                                    <StackPanel Spacing="8" Margin="0,4,0,0">
+                                        <Button Classes="accent unlockAction" HorizontalAlignment="Stretch" Command="{Binding UnlockVaultCommand}" IsEnabled="{Binding !IsUnlocking}">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="{DynamicResource Str_UnlockVault}" FontSize="14" FontWeight="SemiBold" IsVisible="{Binding !IsUnlocking}" />
+                                                <TextBlock Text="{DynamicResource Str_DecryptingVault}" FontSize="14" FontWeight="SemiBold" IsVisible="{Binding IsUnlocking}" />
+                                            </StackPanel>
+                                        </Button>
+                                        <Button Classes="unlockAction" HorizontalAlignment="Stretch"
+                                                Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource InputBorderBrush}" BorderThickness="1"
+                                                IsVisible="{Binding CanUnlockWithTouchId}" IsEnabled="{Binding !IsUnlocking}"
+                                                Command="{Binding UnlockWithTouchIdCommand}">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <PathIcon Data="{StaticResource IconShield}" Width="14" Height="14" Foreground="{DynamicResource BrandEmeraldBrush}" />
+                                                <TextBlock Text="{DynamicResource Str_UseTouchID}" FontSize="14" FontWeight="Medium" />
+                                            </StackPanel>
+                                        </Button>
+                                        <ProgressBar IsIndeterminate="True" Height="2" HorizontalAlignment="Stretch"
+                                                     Foreground="{DynamicResource AccentButtonBackgroundBrush}"
+                                                     IsVisible="{Binding IsUnlocking}" />
+                                    </StackPanel>
+
+                                    <TextBlock Text="{DynamicResource Str_UnlockOnThisDeviceYourFilesStay}" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Grid>
                     </ScrollViewer>
                 </Grid>
             </Grid>
