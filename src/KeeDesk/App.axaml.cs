@@ -16,6 +16,8 @@ namespace KeeDesk;
 public partial class App : Application
 {
     private TrayIcon? _trayIcon;
+    internal Win32PlatformOptions? WindowsOptions { get; init; }
+    internal WindowsCaptureProtection? CaptureProtection { get; private set; }
 
     public override void Initialize()
     {
@@ -60,6 +62,17 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             var vm = new MainWindowViewModel(settingsService);
+            if (WindowsOptions is { } windowsOptions)
+            {
+                var protection = new WindowsCaptureProtection(desktop, windowsOptions,
+                    settingsService.Settings.ExcludeWindowsFromCapture);
+                CaptureProtection = protection;
+                protection.StatusChanged += () =>
+                {
+                    if (protection.HasFailures)
+                        vm.ShowToast(L("Str_WindowCaptureProtectionFailed"), ToastSeverity.Error);
+                };
+            }
             DataContext = vm;
             var mainWindow = new MainWindow(settingsService) { DataContext = vm };
             desktop.MainWindow = mainWindow;

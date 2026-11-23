@@ -14,6 +14,7 @@ public sealed class AppSettings
     public bool AutoLockIdleEnabled { get; set; } = true;
     public int AutoLockIdleMinutes { get; set; } = 10;
     public bool MinimizeToTray { get; set; } = true;
+    public bool ExcludeWindowsFromCapture { get; set; }
     public DesktopShortcut? AutoTypeShortcut { get; set; }
     public double? MainWindowWidth { get; set; }
     public double? MainWindowHeight { get; set; }

@@ -13,7 +13,8 @@ sealed class Program
 
     public static AppBuilder BuildAvaloniaApp()
     {
-        var builder = AppBuilder.Configure<App>()
+        var windowsOptions = OperatingSystem.IsWindows() ? new Win32PlatformOptions() : null;
+        var builder = AppBuilder.Configure(() => new App { WindowsOptions = windowsOptions })
             .UsePlatformDetect()
             .WithInterFont()
             .LogToTrace()
@@ -23,6 +24,9 @@ sealed class Program
                 DisableSetProcessName = true,
                 DisableAvaloniaAppDelegate = false
             });
+
+        if (windowsOptions is not null)
+            builder.With(windowsOptions);
 
         if (DesktopWindowChrome.LinuxButtonSide is not null)
         {

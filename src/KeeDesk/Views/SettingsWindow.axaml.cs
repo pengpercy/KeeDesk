@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -13,6 +14,7 @@ namespace KeeDesk.Views;
 public partial class SettingsWindow : Window
 {
     private readonly MainWindowViewModel? _vm;
+    private readonly WindowsCaptureProtection? _captureProtection;
     private bool _loading = true;
     private bool _recordingAutoTypeShortcut;
 
@@ -22,6 +24,15 @@ public partial class SettingsWindow : Window
     {
         InitializeComponent();
         _vm = vm;
+        _captureProtection = (Application.Current as App)?.CaptureProtection;
+        CaptureProtectionCard.IsVisible = vm is not null && _captureProtection is not null;
+        if (_captureProtection is { } captureProtection)
+        {
+            CaptureProtectionStatus.IsVisible = captureProtection.HasFailures;
+            void UpdateCaptureStatus() => CaptureProtectionStatus.IsVisible = captureProtection.HasFailures;
+            captureProtection.StatusChanged += UpdateCaptureStatus;
+            Closed += (_, _) => captureProtection.StatusChanged -= UpdateCaptureStatus;
+        }
         DesktopSettingsChrome.IsVisible = !DesktopWindowChrome.ButtonsOnLeft;
         MacTitleBarInsets.AttachTrafficLightsCentering(this, ExtendClientAreaTitleBarHeightHint);
         InitializeShortcutReference();
@@ -38,6 +49,7 @@ public partial class SettingsWindow : Window
             AutoLockEnabledSwitch.IsChecked = s.AutoLockIdleEnabled;
             AutoLockNumeric.Value = s.AutoLockIdleMinutes;
             AutoLockNumeric.IsEnabled = s.AutoLockIdleEnabled;
+            CaptureProtectionSwitch.IsChecked = s.ExcludeWindowsFromCapture;
             LanguageCombo.SelectedIndex = string.Equals(s.Language, "en-US", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
             ThemeCombo.SelectedIndex = s.ThemeMode switch { "Light" => 1, "Dark" => 2, _ => 0 };
             DensityCombo.SelectedIndex = s.UiDensity switch { "Compact" => 0, "Comfortable" => 2, _ => 1 };
@@ -265,6 +277,15 @@ public partial class SettingsWindow : Window
         _vm.SettingsService.Settings.AutoLockIdleMinutes = (int)(AutoLockNumeric.Value ?? 10);
         _vm.SettingsService.Save();
         _vm.RecordUserActivity();
+    }
+
+    private void CaptureProtection_Changed(object? sender, RoutedEventArgs e)
+    {
+        if (_loading || _vm is null || _captureProtection is null) return;
+        var enabled = CaptureProtectionSwitch.IsChecked == true;
+        _captureProtection.SetEnabled(enabled);
+        _vm.SettingsService.Settings.ExcludeWindowsFromCapture = enabled;
+        _vm.SettingsService.Save();
     }
 
     private async void ImportCsv_Click(object? sender, RoutedEventArgs e)

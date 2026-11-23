@@ -438,6 +438,21 @@
                                 </Grid>
                             </StackPanel>
                         </Border>
+                        <Border x:Name="CaptureProtectionCard" Classes="fluentCard settingsCard" IsVisible="False">
+                            <Grid ColumnDefinitions="16,*,Auto" ColumnSpacing="10">
+                                <PathIcon Classes="settingIcon" Data="{StaticResource IconShield}" />
+                                <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                    <TextBlock Classes="settingLabel" Text="{DynamicResource Str_WindowCaptureProtection}" />
+                                    <TextBlock Classes="settingDescription" Text="{DynamicResource Str_WindowCaptureProtectionDescription}" />
+                                    <TextBlock x:Name="CaptureProtectionStatus" Classes="settingDescription" IsVisible="False"
+                                               Foreground="{DynamicResource DangerBrush}"
+                                               Text="{DynamicResource Str_WindowCaptureProtectionFailed}" />
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="2" x:Name="CaptureProtectionSwitch" OnContent="" OffContent=""
+                                              VerticalAlignment="Center" IsCheckedChanged="CaptureProtection_Changed"
+                                              AutomationProperties.Name="{DynamicResource Str_WindowCaptureProtection}" />
+                            </Grid>
+                        </Border>
                     </StackPanel>
 
                     <StackPanel x:Name="PageAutoType" Spacing="12" IsVisible="False">

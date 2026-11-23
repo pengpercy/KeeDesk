@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.3.0 - 2026-11-23
+
+- **Vault synchronization.** Sync two local vaults or work from a local encrypted copy of an HTTPS/WebDAV vault. KeeDesk detects conflicting writes and can merge changes or save a recovery copy.
+- **Google Drive and OneDrive Personal.** Open a vault, upload an encrypted copy, and sync across devices using the same account. KeeDesk merges encrypted revisions while preserving the original cloud file. Direct connections require OAuth client configuration. Sync has been tested with simulated providers, and live-account verification is pending. [Setup and usage](https://github.com/pengpercy/KeeDesk/blob/v1.3.0/docs/cloud-drive.md)
+- **Migration, printing, and attachments.** Import KeePass 1.x, Bitwarden unencrypted JSON, and 1Password 1PUX. Preview CSV imports and map fields before importing. Print vault reports, use XSLT to customize XML exports, and preview images or edit text attachments inside KeeDesk.
+- **Search and audit.** Combine search terms, quoted phrases, and exclusions, or use regex and XPath. Save search profiles in the vault and check for similar passwords.
+- **Auto-Type.** Customize the global shortcut, match entries across open vaults, and use window-specific sequences or selected password characters.
+- **Platform fixes.** Fixed a crash when using Touch ID on the macOS welcome screen. Added an optional Windows setting to hide KeeDesk windows from supported screenshot, recording, and screen-sharing tools. The Windows desktop capture behavior is pending verification.
+
 ## 1.2.1 - 2026-11-23
 
 - **Language switching** — Completed English translations across the workspace and dialogs. Selected drop-down labels refresh immediately when the language changes, and the macOS application menu follows the in-app language.

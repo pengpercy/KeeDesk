@@ -21,4 +21,5 @@
 - [ ] **网盘直连**。Google Drive 和 OneDrive 个人版已接入浏览器授权、打开加密本地副本和上传新副本。已实现同一账号下对同一云端 KDBX 的跨设备同步。并发提交分别发布为加密修订版，后续同步合并分支，云端原文件保留。已验证模拟并发、条目历史、无改动重复同步、损坏修订版、上传失败重试和本地外部修改防护。真实账号的端到端验收仍待完成。 [账号配置与使用](cloud-drive.md)
 - [x] **扩展迁移格式**。新增 Bitwarden 明文 JSON 和 1Password 1PUX。导入前确认数量，保留分组、账号密码、TOTP、自定义字段及 1PUX 附件。密码历史和可读取的 Bitwarden Passkey 数据保留为受保护的自定义字段。
 - [ ] **平台安全能力**。逐平台验证安全输入、防截屏、内存保护和无障碍使用。Windows 安全桌面与其他平台的保护能力分别验收。
+  - Windows「设置 → 安全与锁定」已加入「截图与录屏保护」，默认关闭，切换即时生效。开启后，在支持此设置的截图、录屏和共享工具中排除 KeeDesk 窗口。旧版 Windows 在支持的捕获工具中隐藏窗口内容。主窗口、对话框及窗口内弹层统一应用设置，系统拒绝应用时会提示。Windows 桌面截图与共享实测待完成。 [Windows 窗口捕获接口](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowdisplayaffinity)
 - [ ] **自动化与扩展**。先定义受控的触发器和脚本权限，再评估浏览器集成、Passkeys、硬件密钥与插件接口。验收覆盖权限边界、禁用和撤销。 [原版插件目录](https://keepass.info/plugins.html)
