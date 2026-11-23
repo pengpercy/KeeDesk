@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.3 - 2026-11-23
+
+- **Windows menus.** Softened submenu shadows in the quick settings menu and context menus in both light and dark themes.
+- **Window dragging.** Drag the window from empty space in the welcome or workspace sidebar. Sidebar buttons and list items remain clickable.
+
 ## 1.3.2 - 2026-11-23
 
 - **Window placement.** KeeDesk windows open at the center of the screen's usable area. Dialogs open on the same display as their parent window.

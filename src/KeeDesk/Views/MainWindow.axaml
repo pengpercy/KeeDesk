@@ -407,7 +407,7 @@
     <Grid x:Name="PresentationRoot" RowDefinitions="Auto,*">
         <Border Grid.Row="0" Height="48" IsVisible="{Binding !UsesLeftWindowChrome}" Classes="desktopTitleSurface"
                 BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,0,0,1"
-                chrome:WindowDecorationProperties.ElementRole="TitleBar" PointerPressed="TitleBar_PointerPressed">
+                chrome:WindowDecorationProperties.ElementRole="TitleBar" PointerPressed="WindowDragRegion_PointerPressed">
             <Grid ColumnDefinitions="*,Auto,*">
                 <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                     <Button x:Name="WorkspaceBackButton" Classes="subtle chromeBack" IsVisible="False" Click="WorkspaceBack_Click"
@@ -503,12 +503,13 @@
 
         <Grid Grid.Row="1">
             <Grid x:Name="UnlockStage" ColumnDefinitions="Auto,1,*">
-                <Border Grid.Column="0" Width="216" Background="{DynamicResource SidebarBackgroundBrush}">
+                <Border Grid.Column="0" Width="216" Background="{DynamicResource SidebarBackgroundBrush}"
+                        PointerPressed="WindowDragRegion_PointerPressed">
                     <Grid RowDefinitions="Auto,Auto,*,Auto">
                         <!-- macOS 顶部 48px 交通灯安全拖动区 -->
                         <Border Grid.Row="0" Height="48" IsVisible="{Binding UsesLeftWindowChrome}" Background="Transparent"
                                 chrome:WindowDecorationProperties.ElementRole="TitleBar"
-                                PointerPressed="TitleBar_PointerPressed" />
+                                PointerPressed="WindowDragRegion_PointerPressed" />
 
                         <StackPanel Grid.Row="1" Margin="16,16,16,0" Spacing="4">
                             <TextBlock Text="{DynamicResource Str_Vaults}" Margin="4,0,4,8" FontSize="18" LineHeight="26"
@@ -633,7 +634,7 @@
                     <!-- 右侧顶部透明拖动区 -->
                     <Border Grid.Row="0" Height="48" IsVisible="{Binding UsesLeftWindowChrome}" Background="Transparent"
                             chrome:WindowDecorationProperties.ElementRole="TitleBar"
-                            PointerPressed="TitleBar_PointerPressed" />
+                            PointerPressed="WindowDragRegion_PointerPressed" />
 
                     <ScrollViewer Grid.Row="1" Padding="32,24,32,56" HorizontalScrollBarVisibility="Disabled">
                         <Grid>
@@ -747,10 +748,10 @@
             </Grid>
 
             <Grid x:Name="WorkspaceStage" IsVisible="False" ColumnDefinitions="Auto, 1, *" ClipToBounds="True">
-                <Border x:Name="WorkspaceSidebar" Grid.Column="0" Width="240">
+                <Border x:Name="WorkspaceSidebar" Grid.Column="0" Width="240" PointerPressed="WindowDragRegion_PointerPressed">
                     <Grid RowDefinitions="Auto, *, Auto, 1, Auto">
                         <Border Height="48" IsVisible="{Binding UsesLeftWindowChrome}" Background="Transparent"
-                                chrome:WindowDecorationProperties.ElementRole="TitleBar" PointerPressed="TitleBar_PointerPressed">
+                                chrome:WindowDecorationProperties.ElementRole="TitleBar" PointerPressed="WindowDragRegion_PointerPressed">
                             <Grid ColumnDefinitions="Auto,*">
                                 <Border Width="{Binding LeftCaptionPadding}" />
                                 <Border Grid.Column="1" Margin="4,0,16,0" VerticalAlignment="Center">
@@ -1042,7 +1043,7 @@
                     <Grid Grid.Row="1" IsVisible="{Binding IsAuditViewActive}" RowDefinitions="Auto,*" Background="{DynamicResource ListPaneBackgroundBrush}">
                         <Border Height="48" Padding="12,0" IsVisible="{Binding UsesLeftWindowChrome}"
                                 Background="Transparent" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,0,0,1"
-                                chrome:WindowDecorationProperties.ElementRole="TitleBar" PointerPressed="TitleBar_PointerPressed">
+                                chrome:WindowDecorationProperties.ElementRole="TitleBar" PointerPressed="WindowDragRegion_PointerPressed">
                             <Grid ColumnDefinitions="*,Auto">
                                 <Button HorizontalAlignment="Left" Command="{Binding RefreshAuditCommand}" Content="{DynamicResource Str_ScanAgain}"
                                         chrome:WindowDecorationProperties.ElementRole="User" />
@@ -1208,7 +1209,7 @@
                             <Grid RowDefinitions="Auto, Auto, Auto, *">
                                 <Border Grid.Row="0" IsVisible="{Binding UsesLeftWindowChrome}" Height="48" Padding="12,0"
                                         Background="Transparent" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,0,0,1"
-                                        chrome:WindowDecorationProperties.ElementRole="TitleBar" PointerPressed="TitleBar_PointerPressed">
+                                        chrome:WindowDecorationProperties.ElementRole="TitleBar" PointerPressed="WindowDragRegion_PointerPressed">
                                     <Grid ColumnDefinitions="*,10,Auto" VerticalAlignment="Center">
                                         <Grid chrome:WindowDecorationProperties.ElementRole="User">
                                             <TextBox x:Name="MacGlobalSearchBox" Text="{Binding SearchQuery}" PlaceholderText="{DynamicResource Str_SearchThisVault}"
@@ -1474,7 +1475,7 @@
                         <Grid x:Name="EntryDetail" Grid.Column="2" RowDefinitions="Auto,*" Background="{DynamicResource DetailBackgroundBrush}">
                             <Border Grid.Row="0" Height="48" Padding="20,0" IsVisible="{Binding UsesLeftWindowChrome}" Background="Transparent"
                                     BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,0,0,1"
-                                    chrome:WindowDecorationProperties.ElementRole="TitleBar" PointerPressed="TitleBar_PointerPressed">
+                                    chrome:WindowDecorationProperties.ElementRole="TitleBar" PointerPressed="WindowDragRegion_PointerPressed">
                                 <Grid ColumnDefinitions="*,Auto">
                                     <TextBlock Text="{Binding SelectedEntry.GroupPath}" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}"
                                                TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />

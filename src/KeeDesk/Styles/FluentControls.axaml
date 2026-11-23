@@ -641,6 +641,13 @@
                      MenuFlyoutPresenter MenuItem:disabled /template/ Border#PART_LayoutRoot">
         <Setter Property="Background" Value="Transparent" />
     </Style>
+    <Style Selector="Border.windowsSubmenuShadow">
+        <Setter Property="BoxShadow" Value="{DynamicResource PickerShadow}" />
+    </Style>
+    <Style Selector="Border.nativeSubmenuShadow">
+        <!-- Avalonia positions the menu by its surface and adds the margin outside it. -->
+        <Setter Property="Margin" Value="24,16,24,32" />
+    </Style>
     <Style Selector="MenuItem:disabled /template/ ContentPresenter#PART_HeaderPresenter">
         <Setter Property="Foreground" Value="{DynamicResource ControlDisabledForegroundBrush}" />
     </Style>

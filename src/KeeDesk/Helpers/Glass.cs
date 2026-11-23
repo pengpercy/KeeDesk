@@ -25,11 +25,31 @@ public static class Glass
     {
         MenuItem.TemplateAppliedEvent.AddClassHandler<MenuItem>((_, args) =>
         {
-            if (args.NameScope.Find<Popup>("PART_Popup") is not { } popup) return;
+            if (args.NameScope.Find<Popup>("PART_Popup") is not { Child: Border surface } popup) return;
 
-            popup.SetCurrentValue(Popup.WindowManagerAddShadowHintProperty, true);
+            var isWindows = OperatingSystem.IsWindows();
+            popup.SetCurrentValue(Popup.WindowManagerAddShadowHintProperty, !isWindows);
+            if (isWindows)
+                surface.AttachedToVisualTree += PrepareWindowsSubmenu;
             popup.Opened += ApplySubmenuShadow;
         });
+    }
+
+    private static void PrepareWindowsSubmenu(object? sender, VisualTreeAttachmentEventArgs args)
+    {
+        if (sender is not Border surface) return;
+
+        var root = TopLevel.GetTopLevel(surface) as PopupRoot;
+        if (root is not null)
+        {
+            root.TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
+            if (root.ActualTransparencyLevel == WindowTransparencyLevel.Transparent)
+                root.Background = Brushes.Transparent;
+        }
+
+        var hasTransparentWindow = root?.ActualTransparencyLevel == WindowTransparencyLevel.Transparent;
+        surface.Classes.Set("windowsSubmenuShadow", root is null || hasTransparentWindow);
+        surface.Classes.Set("nativeSubmenuShadow", hasTransparentWindow);
     }
 
     private static void ApplySubmenuShadow(object? sender, EventArgs args)
@@ -37,7 +57,8 @@ public static class Glass
         if (sender is not Popup { Child: Border surface }) return;
 
         var overlay = surface.FindAncestorOfType<OverlayPopupHost>();
-        surface.SetCurrentValue(Border.BoxShadowProperty, overlay is null ? default : OverlaySubmenuShadow);
+        if (!OperatingSystem.IsWindows())
+            surface.SetCurrentValue(Border.BoxShadowProperty, overlay is null ? default : OverlaySubmenuShadow);
         if (overlay is not null)
         {
             overlay.SetCurrentValue(Visual.ClipToBoundsProperty, false);

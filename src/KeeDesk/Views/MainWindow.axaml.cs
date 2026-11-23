@@ -937,21 +937,23 @@ public partial class MainWindow : Window
             vm.UnlockVaultCommand.Execute(null);
     }
 
-    private void TitleBar_PointerPressed(object? sender, PointerPressedEventArgs e)
+    private void WindowDragRegion_PointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (_enteringWorkspace || e.ClickCount != 1 || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+        if (_enteringWorkspace || e.ClickCount != 1
+            || e.GetCurrentPoint(this).Properties.PointerUpdateKind != PointerUpdateKind.LeftButtonPressed)
             return;
 
-        // 避免点击标题栏内的输入框或按钮时误触发窗口拖动
-        var src = e.Source as Avalonia.Visual;
-        while (src is not null)
+        for (var source = e.Source as Visual; source is not null; source = source.GetVisualParent())
         {
-            if (src is Button or TextBox or CheckBox or ComboBox)
+            if (source == sender)
+            {
+                e.Handled = true;
+                BeginMoveDrag(e);
                 return;
-            src = src.GetVisualParent();
+            }
+            if (source is Button or TextBox or CheckBox or ComboBox or ListBoxItem or TreeViewItem or ScrollBar or MenuItem)
+                return;
         }
-
-        BeginMoveDrag(e);
     }
 
     private void OpenUrl_Click(object? sender, RoutedEventArgs e)
