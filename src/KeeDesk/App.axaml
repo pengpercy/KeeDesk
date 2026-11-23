@@ -23,8 +23,8 @@
     </Application.DataTemplates>
 
     <Application.Styles>
-        <FluentTheme />
-        <StyleInclude Source="avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml" />
+        <Fluent2Theme />
+        <StyleInclude Source="avares://Avalonia.Controls.ColorPicker/Themes/Fluent2.axaml" />
 
         <Style Selector=":is(Window)">
             <Setter Property="FontFamily" Value="{DynamicResource DesktopFontFamily}" />
@@ -43,156 +43,14 @@
             <Setter Property="TextWrapping" Value="WrapWithOverflow" />
         </Style>
 
-        <!-- Fluent 2 Input：2px 焦点底线从中心向两侧展开。 -->
-        <Style Selector=":is(TextBox)">
-            <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="FontSize" Value="14" />
-            <Setter Property="Padding" Value="10,5" />
-            <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="MinHeight" Value="32" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-            <Setter Property="Template">
-                <ControlTemplate>
-                    <Panel>
-                        <Border Name="PART_BorderElement"
-                                Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="{TemplateBinding CornerRadius}"
-                                MinWidth="{TemplateBinding MinWidth}"
-                                MinHeight="{TemplateBinding MinHeight}" />
-                        <DockPanel Margin="{TemplateBinding BorderThickness}">
-                            <ContentPresenter DockPanel.Dock="Left" Content="{TemplateBinding InnerLeftContent}" />
-                            <ContentPresenter DockPanel.Dock="Right" Content="{TemplateBinding InnerRightContent}" />
-                            <ScrollViewer Name="PART_ScrollViewer"
-                                          HorizontalScrollBarVisibility="{TemplateBinding (ScrollViewer.HorizontalScrollBarVisibility)}"
-                                          VerticalScrollBarVisibility="{TemplateBinding (ScrollViewer.VerticalScrollBarVisibility)}"
-                                          AllowAutoHide="{TemplateBinding (ScrollViewer.AllowAutoHide)}">
-                                <Panel Margin="{TemplateBinding Padding}">
-                                    <TextBlock Name="PART_Watermark"
-                                               Opacity="0.55"
-                                               Text="{TemplateBinding PlaceholderText}"
-                                               TextAlignment="{TemplateBinding TextAlignment}"
-                                               TextWrapping="{TemplateBinding TextWrapping}"
-                                               VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                                               HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                               IsVisible="{TemplateBinding Text, Converter={x:Static StringConverters.IsNullOrEmpty}}"
-                                               IsHitTestVisible="False" />
-                                    <TextPresenter Name="PART_TextPresenter"
-                                                   Text="{TemplateBinding Text, Mode=TwoWay}"
-                                                   CaretIndex="{TemplateBinding CaretIndex}"
-                                                   SelectionStart="{TemplateBinding SelectionStart}"
-                                                   SelectionEnd="{TemplateBinding SelectionEnd}"
-                                                   TextAlignment="{TemplateBinding TextAlignment}"
-                                                   TextWrapping="{TemplateBinding TextWrapping}"
-                                                   LineHeight="{TemplateBinding LineHeight}"
-                                                   PasswordChar="{TemplateBinding PasswordChar}"
-                                                   RevealPassword="{TemplateBinding RevealPassword}"
-                                                   SelectionBrush="{TemplateBinding SelectionBrush}"
-                                                   SelectionForegroundBrush="{TemplateBinding SelectionForegroundBrush}"
-                                                   CaretBrush="{TemplateBinding CaretBrush}"
-                                                   VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                                                   HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" />
-                                </Panel>
-                            </ScrollViewer>
-                        </DockPanel>
-                        <controls:TextInputFocusIndicator Name="PART_FocusIndicator"
-                                                          IsInputFocused="{TemplateBinding IsKeyboardFocusWithin}"
-                                                          Height="2" VerticalAlignment="Bottom" Margin="1,0,1,0"
-                                                          CornerRadius="0,0,4,4"
-                                                          Background="{DynamicResource AccentButtonBackgroundBrush}"
-                                                          RenderTransformOrigin="50%,50%" IsHitTestVisible="False" />
-                    </Panel>
-                </ControlTemplate>
-            </Setter>
-        </Style>
-        <Style Selector=":is(TextBox):pointerover /template/ Border#PART_BorderElement">
-            <Setter Property="Background" Value="{DynamicResource TextControlBackgroundPointerOver}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}" />
-        </Style>
-        <Style Selector=":is(TextBox):focus /template/ Border#PART_BorderElement">
-            <Setter Property="Background" Value="{DynamicResource InputFocusedBackgroundBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}" />
-            <!-- The focus indicator draws the thicker bottom edge. Keep the outline at its normal width. -->
-            <Setter Property="BorderThickness" Value="{TemplateBinding BorderThickness}" />
-        </Style>
-        <Style Selector="NumericUpDown">
-            <Setter Property="MinHeight" Value="28" />
-            <Setter Property="Padding" Value="8,0" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-        </Style>
-        <Style Selector="NumericUpDown /template/ TextBox#PART_TextBox, NumericUpDown /template/ ButtonSpinner#PART_Spinner">
-            <Setter Property="MinHeight" Value="0" />
-        </Style>
-        <Style Selector="Calendar.entryCalendar">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="CornerRadius" Value="8" />
-            <Setter Property="FontSize" Value="12" />
-        </Style>
-        <Style Selector="Calendar.entryCalendar CalendarItem /template/ Border > Grid">
-            <Setter Property="MinWidth" Value="0" />
-            <Setter Property="Margin" Value="6,2,6,6" />
-        </Style>
-        <Style Selector="Calendar.entryCalendar CalendarItem /template/ Grid#PART_MonthView, Calendar.entryCalendar CalendarItem /template/ Grid#PART_YearView">
-            <Setter Property="MinHeight" Value="230" />
-            <Setter Property="Background" Value="Transparent" />
-        </Style>
-        <Style Selector="Calendar.entryCalendar CalendarItem /template/ Border#BackgroundLayer">
-            <Setter Property="Background" Value="Transparent" />
-        </Style>
-        <Style Selector="Calendar.entryCalendar CalendarItem /template/ Button#PART_HeaderButton">
-            <Setter Property="FontSize" Value="13" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-        </Style>
-        <Style Selector="Calendar.entryCalendar CalendarItem /template/ Button#PART_PreviousButton, Calendar.entryCalendar CalendarItem /template/ Button#PART_NextButton">
-            <Setter Property="Width" Value="28" />
-            <Setter Property="Height" Value="28" />
-            <Setter Property="MinHeight" Value="28" />
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="HorizontalAlignment" Value="Center" />
-        </Style>
-        <Style Selector="Calendar.entryCalendar CalendarItem /template/ Button > Path">
-            <Setter Property="RenderTransform" Value="scale(0.65)" />
-        </Style>
-        <Style Selector="Calendar.entryCalendar CalendarDayButton">
-            <Setter Property="MinWidth" Value="30" />
-            <Setter Property="MinHeight" Value="30" />
-            <Setter Property="FontSize" Value="12" />
-        </Style>
-        <Style Selector="Calendar.entryCalendar CalendarDayButton /template/ Border#Root, Calendar.entryCalendar CalendarDayButton /template/ Border#Border">
-            <Setter Property="CornerRadius" Value="4" />
-        </Style>
-        <Style Selector="Calendar.entryCalendar CalendarDayButton /template/ Border#Border">
-            <Setter Property="BorderThickness" Value="1" />
-        </Style>
-        <Style Selector="Calendar.entryCalendar CalendarDayButton:not(:selected):not(:today) /template/ Border#Root">
-            <Setter Property="Background" Value="Transparent" />
-        </Style>
-        <Style Selector="Calendar.entryCalendar CalendarDayButton:pointerover:not(:selected):not(:today) /template/ Border#Root">
-            <Setter Property="Background" Value="{DynamicResource SidebarItemHoverBackgroundBrush}" />
-        </Style>
-        <Style Selector="Calendar.entryCalendar CalendarDayButton:inactive:not(:selected) /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}" />
-            <Setter Property="Opacity" Value="0.65" />
-        </Style>
-        <!-- Fluent 2 标准次级按钮 -->
         <Style Selector="Button">
-            <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="FontSize" Value="14" />
-            <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="MinHeight" Value="{DynamicResource DensityControlHeight}" />
             <Setter Property="HorizontalContentAlignment" Value="Center" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
-            <Setter Property="Padding" Value="12,0" />
-            <Setter Property="Background" Value="{DynamicResource StandardButtonBackgroundBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource StandardButtonBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
+        </Style>
+
+        <Style Selector=":is(TextBox)">
+            <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
 
         <!-- Fluent 2 选项卡片按钮（偏好设置：外观模式 / 界面密度，选中态用柔和底色 + 1.5px 强调色边框，副标题清晰可读） -->
@@ -286,43 +144,6 @@
         <Style Selector="ToggleButton.chipToggle:checked TextBlock">
             <Setter Property="Foreground" Value="{DynamicResource BadgePillForegroundBrush}" />
             <Setter Property="FontWeight" Value="SemiBold" />
-        </Style>
-        <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="{DynamicResource StandardButtonHoverBackgroundBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource StandardButtonHoverBorderBrush}" />
-            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
-        </Style>
-        <Style Selector="Button:pressed /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="{DynamicResource StandardButtonPressedBackgroundBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource StandardButtonPressedBorderBrush}" />
-            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
-        </Style>
-
-        <!-- Fluent 2 主操作按钮（无外描边、4px 圆角、饱满强调色 + 高对比文字/图标，覆盖全部模板状态） -->
-        <Style Selector="Button.accent">
-            <Setter Property="Background" Value="{DynamicResource AccentButtonBackgroundBrush}" />
-            <Setter Property="BorderBrush" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="Foreground" Value="{DynamicResource AccentActionForegroundBrush}" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-        </Style>
-        <Style Selector="Button.accent /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="{DynamicResource AccentButtonBackgroundBrush}" />
-            <Setter Property="BorderBrush" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="Foreground" Value="{DynamicResource AccentActionForegroundBrush}" />
-        </Style>
-        <Style Selector="Button.accent:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="{DynamicResource AccentButtonHoverBackgroundBrush}" />
-            <Setter Property="BorderBrush" Value="Transparent" />
-            <Setter Property="Foreground" Value="{DynamicResource AccentActionHoverForegroundBrush}" />
-        </Style>
-        <Style Selector="Button.accent:pressed /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="{DynamicResource AccentButtonPressedBackgroundBrush}" />
-            <Setter Property="BorderBrush" Value="Transparent" />
-            <Setter Property="Foreground" Value="{DynamicResource AccentActionPressedForegroundBrush}" />
         </Style>
 
         <Style Selector="Button.subtle">
@@ -452,20 +273,6 @@
         </Style>
 
         <!-- 右键菜单与悬浮菜单的默认样式 -->
-        <Style Selector="ContextMenu, MenuFlyoutPresenter">
-            <Setter Property="Padding" Value="4" />
-            <Setter Property="MinWidth" Value="138" />
-            <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="Background" Value="{DynamicResource FlyoutSurfaceBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource MenuSurfaceStrokeBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-        </Style>
-        <Style Selector="ContextMenu MenuItem, MenuFlyoutPresenter MenuItem">
-            <Setter Property="FontSize" Value="14" />
-            <Setter Property="Padding" Value="8,0" />
-            <Setter Property="MinHeight" Value="32" />
-            <Setter Property="CornerRadius" Value="4" />
-        </Style>
         <Style Selector="ContextMenu.glass, MenuFlyoutPresenter.glass">
             <Setter Property="Background" Value="{DynamicResource MenuGlassBrush}" />
         </Style>
@@ -479,12 +286,9 @@
         <Style Selector="ContextMenu Separator, MenuFlyoutPresenter Separator">
             <Setter Property="Margin" Value="8,3" />
         </Style>
-        <!-- V3 工作区菜单表面与亚克力回退色 -->
         <Style Selector="ContextMenu.workspaceMenu, MenuFlyoutPresenter.workspaceMenu">
             <Setter Property="MinWidth" Value="232" />
             <Setter Property="Padding" Value="4,1" />
-            <Setter Property="CornerRadius" Value="8" />
-            <Setter Property="Background" Value="{DynamicResource WorkspaceMenuBackgroundBrush}" />
             <Setter Property="FontFamily" Value="{DynamicResource DesktopFontFamily}" />
         </Style>
         <Style Selector="ContextMenu.workspaceMenu">

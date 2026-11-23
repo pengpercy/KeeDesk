@@ -1,4 +1,4 @@
 <linker>
-  <assembly fullname="Avalonia.Themes.Fluent" preserve="all" />
+  <assembly fullname="Avalonia.Themes.Fluent2" preserve="all" />
   <assembly fullname="Avalonia.Controls.ColorPicker" preserve="all" />
 </linker>

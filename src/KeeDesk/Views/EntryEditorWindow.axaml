@@ -1,6 +1,5 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:controls="using:KeeDesk.Controls"
         xmlns:helpers="using:KeeDesk.Helpers"
         xmlns:chrome="clr-namespace:Avalonia.Controls.Chrome;assembly=Avalonia.Controls"
         x:Class="KeeDesk.Views.EntryEditorWindow"
@@ -13,52 +12,6 @@
         ExtendClientAreaTitleBarHeightHint="40"
         Background="{DynamicResource WorkspaceBackgroundBrush}"
         Foreground="{DynamicResource PrimaryTextBrush}">
-
-    <Window.Styles>
-        <Style Selector="CalendarDatePicker.entryExpiry">
-            <Setter Property="Template">
-                <ControlTemplate>
-                    <DataValidationErrors>
-                        <Border x:Name="DateFieldSurface" Background="{DynamicResource InputBackgroundBrush}" BorderBrush="{DynamicResource InputBorderBrush}"
-                                BorderThickness="1" CornerRadius="4">
-                            <Grid ColumnDefinitions="*,30">
-                                <TextBox x:Name="PART_TextBox" Classes="compositeInput" Background="Transparent" BorderThickness="0"
-                                         MinHeight="0" FontSize="13" Padding="8,0" PlaceholderText="{TemplateBinding PlaceholderText}" />
-                                <Button x:Name="PART_Button" Grid.Column="1" Classes="subtle" Focusable="False"
-                                        Width="30" MinWidth="0" MinHeight="0" Padding="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-                                        AutomationProperties.Name="{DynamicResource Str_OpenCalendar}" ToolTip.Tip="{DynamicResource Str_OpenCalendar}">
-                                    <PathIcon Data="{StaticResource IconCalendar}" Width="14" Height="14" Foreground="{DynamicResource SecondaryTextBrush}" />
-                                </Button>
-                                <controls:TextInputFocusIndicator x:Name="DateFocusIndicator" Grid.ColumnSpan="2" Height="2"
-                                                                  VerticalAlignment="Bottom" CornerRadius="0,0,4,4"
-                                                                  IsInputFocused="{TemplateBinding IsKeyboardFocusWithin}" IsHitTestVisible="False"
-                                                                  Background="{DynamicResource AccentButtonBackgroundBrush}" RenderTransformOrigin="50%,50%" />
-                                <Popup x:Name="PART_Popup" PlacementTarget="{TemplateBinding}" Placement="BottomEdgeAlignedLeft"
-                                       VerticalOffset="4" IsLightDismissEnabled="True" ShouldUseOverlayLayer="True">
-                                    <controls:PickerSurface x:Name="CalendarSurface">
-                                        <Calendar x:Name="PART_Calendar" Classes="entryCalendar"
-                                                  FirstDayOfWeek="{TemplateBinding FirstDayOfWeek}" IsTodayHighlighted="{TemplateBinding IsTodayHighlighted}"
-                                                  SelectedDate="{TemplateBinding SelectedDate, Mode=TwoWay}" DisplayDate="{TemplateBinding DisplayDate}"
-                                                  DisplayDateStart="{TemplateBinding DisplayDateStart}" DisplayDateEnd="{TemplateBinding DisplayDateEnd}" />
-                                    </controls:PickerSurface>
-                                </Popup>
-                            </Grid>
-                        </Border>
-                    </DataValidationErrors>
-                </ControlTemplate>
-            </Setter>
-        </Style>
-        <Style Selector="CalendarDatePicker[IsDropDownOpen=True].entryExpiry /template/ controls|TextInputFocusIndicator#DateFocusIndicator">
-            <Setter Property="IsInputFocused" Value="True" />
-        </Style>
-        <Style Selector="CalendarDatePicker.entryExpiry:pointerover /template/ Border#DateFieldSurface">
-            <Setter Property="BorderBrush" Value="{DynamicResource StandardButtonHoverBorderBrush}" />
-        </Style>
-        <Style Selector="CalendarDatePicker.entryExpiry:disabled /template/ Border#DateFieldSurface">
-            <Setter Property="Background" Value="{DynamicResource ControlDisabledBackgroundBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource ControlDisabledBorderBrush}" />
-        </Style>
-    </Window.Styles>
 
     <Grid RowDefinitions="Auto, *, 1, Auto">
         <!-- 顶部 Header（支持拖动） -->
@@ -296,7 +249,7 @@
                             </StackPanel>
                             <CheckBox x:Name="ExpiresCheck" Content="{DynamicResource Str_SetAnExpirationDateForThisEntry}" FontSize="12.5" IsCheckedChanged="UpdateExpanderSummaries" />
                             <WrapPanel ItemSpacing="6" LineSpacing="6">
-                                <CalendarDatePicker x:Name="ExpiryPicker" Classes="entryExpiry" Width="146" Height="32" MinHeight="32" SelectedDateFormat="Custom" CustomDateFormatString="yyyy-MM-dd"
+                                <CalendarDatePicker x:Name="ExpiryPicker" Width="146" Height="32" MinHeight="32" SelectedDateFormat="Custom" CustomDateFormatString="yyyy-MM-dd"
                                                     PlaceholderText="{DynamicResource Str_ChooseExpirationDate}" SelectedDateChanged="ExpiryPicker_Changed" />
                                 <Button Height="32" MinHeight="32" FontSize="12" Content="{DynamicResource Str_1Month}" Click="ExpiryPreset_Click" Tag="30" />
                                 <Button Height="32" MinHeight="32" FontSize="12" Content="{DynamicResource Str_3Months}" Click="ExpiryPreset_Click" Tag="90" />
