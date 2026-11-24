@@ -171,6 +171,54 @@
                 <MenuItem.Icon><PathIcon Data="{StaticResource IconInfo}" /></MenuItem.Icon>
             </MenuItem>
         </helpers:GlassMenuFlyout>
+        <helpers:GlassMenuFlyout x:Key="MoreVaultCommandsMenu" Placement="BottomEdgeAlignedRight"
+                                 FlyoutPresenterClasses="workspaceMenu compactMenu">
+            <MenuItem Header="{DynamicResource Str_OpenVault}" InputGesture="Ctrl+O" Command="{Binding OpenAnotherVaultCommand}">
+                <MenuItem.Icon><PathIcon Data="{StaticResource IconFolderOpen}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="{DynamicResource Str_OpenRemoteVault}" Command="{Binding OpenRemoteVaultCommand}">
+                <MenuItem.Icon><PathIcon Data="{StaticResource IconGlobe}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="{DynamicResource Str_CloudDriveOpen}" Command="{Binding OpenCloudDriveCommand}">
+                <MenuItem.Icon><PathIcon Data="{StaticResource IconGlobe}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="{DynamicResource Str_OpenCloudVault}" Command="{Binding OpenCloudVaultCommand}">
+                <MenuItem.Icon><PathIcon Data="{StaticResource IconFolderOpen}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="{DynamicResource Str_SaveAs}" Command="{Binding SaveVaultAsCommand}">
+                <MenuItem.Icon><PathIcon Data="{StaticResource IconSave}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="{DynamicResource Str_CloudDriveUpload}" Command="{Binding UploadCloudDriveCopyCommand}">
+                <MenuItem.Icon><PathIcon Data="{StaticResource IconSave}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="{DynamicResource Str_AdvancedSearch2}" Command="{Binding OpenAdvancedSearchAsyncCommandCommand}">
+                <MenuItem.Icon><PathIcon Data="{StaticResource IconSearch}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="{DynamicResource Str_DatabaseSettings}" Command="{Binding OpenDatabaseSettingsAsyncCommandCommand}">
+                <MenuItem.Icon><PathIcon Data="{StaticResource IconSettings}" /></MenuItem.Icon>
+            </MenuItem>
+            <Separator />
+            <MenuItem Header="{DynamicResource Str_VaultMaintenance}" Command="{Binding OpenDatabaseMaintenanceAsyncCommandCommand}">
+                <MenuItem.Icon><PathIcon Data="{StaticResource IconRefresh}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="{DynamicResource Str_MergeSyncAnotherVault}" Command="{Binding MergeDatabaseCommand}">
+                <MenuItem.Icon><PathIcon Data="{StaticResource IconMerge}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="{DynamicResource Str_SyncWithLocalVaultMenu}" Command="{Binding SynchronizeVaultCommand}">
+                <MenuItem.Icon><PathIcon Data="{StaticResource IconRefresh}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="{DynamicResource Str_SyncRemoteVault}" Command="{Binding SynchronizeRemoteVaultCommand}">
+                <MenuItem.Icon><PathIcon Data="{StaticResource IconGlobe}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="{DynamicResource Str_CloudDriveSync}" Command="{Binding SynchronizeCloudDriveCommand}">
+                <MenuItem.Icon><PathIcon Data="{StaticResource IconRefresh}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="{DynamicResource Str_SyncCloudVault}" Command="{Binding SynchronizeCloudVaultCommand}">
+                <MenuItem.Icon><PathIcon Data="{StaticResource IconRefresh}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="{DynamicResource Str_MigrationImport}" Command="{Binding ImportVaultMigrationCommand}" />
+            <MenuItem Header="{DynamicResource Str_PrintVault}" Command="{Binding PrintVaultCommand}" />
+        </helpers:GlassMenuFlyout>
         <DataTemplate x:Key="SearchSuggestionTemplate" x:DataType="vm:EntryItemViewModel">
             <StackPanel Spacing="2" Margin="4,2">
                 <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
@@ -754,7 +802,7 @@
                                 chrome:WindowDecorationProperties.ElementRole="TitleBar" PointerPressed="WindowDragRegion_PointerPressed">
                             <Grid ColumnDefinitions="Auto,*">
                                 <Border Width="{Binding LeftCaptionPadding}" />
-                                <Border Grid.Column="1" Margin="4,0,16,0" VerticalAlignment="Center">
+                                <Border Grid.Column="1" Margin="4,0,12,0" VerticalAlignment="Center">
                                     <Button x:Name="MacVaultPicker" Classes="subtle vaultPicker" HorizontalAlignment="Stretch" IsVisible="{Binding IsUnlocked}"
                                             ToolTip.Tip="{Binding VaultDisplayName}" AutomationProperties.Name="{DynamicResource Str_SwitchVaults}"
                                             Flyout="{StaticResource VaultSwitcherMenu}" chrome:WindowDecorationProperties.ElementRole="User">
@@ -985,56 +1033,8 @@
                                 </Button>
                             </StackPanel>
                             <Button IsVisible="{Binding IsAuditViewActive}" Command="{Binding RefreshAuditCommand}" HorizontalAlignment="Left" Content="{DynamicResource Str_ScanAgain}" />
-                            <Button Grid.Column="1" Classes="subtle chromeCommand" ToolTip.Tip="{DynamicResource Str_MoreVaultCommands}" AutomationProperties.Name="{DynamicResource Str_MoreVaultCommands}">
-                                <Button.Flyout>
-                                    <helpers:GlassMenuFlyout FlyoutPresenterClasses="workspaceMenu compactMenu" Placement="BottomEdgeAlignedRight">
-                                        <MenuItem Header="{DynamicResource Str_OpenVault}" InputGesture="Ctrl+O" Command="{Binding OpenAnotherVaultCommand}">
-                                            <MenuItem.Icon><PathIcon Data="{StaticResource IconFolderOpen}" /></MenuItem.Icon>
-                                        </MenuItem>
-                                        <MenuItem Header="{DynamicResource Str_OpenRemoteVault}" Command="{Binding OpenRemoteVaultCommand}">
-                                            <MenuItem.Icon><PathIcon Data="{StaticResource IconGlobe}" /></MenuItem.Icon>
-                                        </MenuItem>
-                                        <MenuItem Header="{DynamicResource Str_CloudDriveOpen}" Command="{Binding OpenCloudDriveCommand}">
-                                            <MenuItem.Icon><PathIcon Data="{StaticResource IconGlobe}" /></MenuItem.Icon>
-                                        </MenuItem>
-                                        <MenuItem Header="{DynamicResource Str_OpenCloudVault}" Command="{Binding OpenCloudVaultCommand}">
-                                            <MenuItem.Icon><PathIcon Data="{StaticResource IconFolderOpen}" /></MenuItem.Icon>
-                                        </MenuItem>
-                                        <MenuItem Header="{DynamicResource Str_SaveAs}" Command="{Binding SaveVaultAsCommand}">
-                                            <MenuItem.Icon><PathIcon Data="{StaticResource IconSave}" /></MenuItem.Icon>
-                                        </MenuItem>
-                                        <MenuItem Header="{DynamicResource Str_CloudDriveUpload}" Command="{Binding UploadCloudDriveCopyCommand}">
-                                            <MenuItem.Icon><PathIcon Data="{StaticResource IconSave}" /></MenuItem.Icon>
-                                        </MenuItem>
-                                        <MenuItem Header="{DynamicResource Str_AdvancedSearch2}" Command="{Binding OpenAdvancedSearchAsyncCommandCommand}">
-                                            <MenuItem.Icon><PathIcon Data="{StaticResource IconSearch}" /></MenuItem.Icon>
-                                        </MenuItem>
-                                        <MenuItem Header="{DynamicResource Str_DatabaseSettings}" Command="{Binding OpenDatabaseSettingsAsyncCommandCommand}">
-                                            <MenuItem.Icon><PathIcon Data="{StaticResource IconSettings}" /></MenuItem.Icon>
-                                        </MenuItem>
-                                        <Separator />
-                                        <MenuItem Header="{DynamicResource Str_VaultMaintenance}" Command="{Binding OpenDatabaseMaintenanceAsyncCommandCommand}">
-                                            <MenuItem.Icon><PathIcon Data="{StaticResource IconRefresh}" /></MenuItem.Icon>
-                                        </MenuItem>
-                                        <MenuItem Header="{DynamicResource Str_MergeSyncAnotherVault}" Command="{Binding MergeDatabaseCommand}">
-                                            <MenuItem.Icon><PathIcon Data="{StaticResource IconMerge}" /></MenuItem.Icon>
-                                        </MenuItem>
-                                        <MenuItem Header="{DynamicResource Str_SyncWithLocalVaultMenu}" Command="{Binding SynchronizeVaultCommand}">
-                                            <MenuItem.Icon><PathIcon Data="{StaticResource IconRefresh}" /></MenuItem.Icon>
-                                        </MenuItem>
-                                        <MenuItem Header="{DynamicResource Str_SyncRemoteVault}" Command="{Binding SynchronizeRemoteVaultCommand}">
-                                            <MenuItem.Icon><PathIcon Data="{StaticResource IconGlobe}" /></MenuItem.Icon>
-                                        </MenuItem>
-                                        <MenuItem Header="{DynamicResource Str_CloudDriveSync}" Command="{Binding SynchronizeCloudDriveCommand}">
-                                            <MenuItem.Icon><PathIcon Data="{StaticResource IconRefresh}" /></MenuItem.Icon>
-                                        </MenuItem>
-                                        <MenuItem Header="{DynamicResource Str_SyncCloudVault}" Command="{Binding SynchronizeCloudVaultCommand}">
-                                            <MenuItem.Icon><PathIcon Data="{StaticResource IconRefresh}" /></MenuItem.Icon>
-                                        </MenuItem>
-                                        <MenuItem Header="{DynamicResource Str_MigrationImport}" Command="{Binding ImportVaultMigrationCommand}" />
-                                        <MenuItem Header="{DynamicResource Str_PrintVault}" Command="{Binding PrintVaultCommand}" />
-                                    </helpers:GlassMenuFlyout>
-                                </Button.Flyout>
+                            <Button Grid.Column="1" Classes="subtle chromeCommand" ToolTip.Tip="{DynamicResource Str_MoreVaultCommands}" AutomationProperties.Name="{DynamicResource Str_MoreVaultCommands}"
+                                    Flyout="{StaticResource MoreVaultCommandsMenu}">
                                 <PathIcon Data="{StaticResource IconMore}" Width="16" Height="16" />
                             </Button>
                         </Grid>
@@ -1076,6 +1076,11 @@
                                             </MultiBinding>
                                         </ToolTip.Tip>
                                         <PathIcon Data="{StaticResource IconLock}" Width="16" Height="16" />
+                                    </Button>
+                                    <Button Classes="subtle chromeCommand" IsVisible="{Binding ShowInlineMoreVaultCommands}"
+                                            ToolTip.Tip="{DynamicResource Str_MoreVaultCommands}" AutomationProperties.Name="{DynamicResource Str_MoreVaultCommands}"
+                                            Flyout="{StaticResource MoreVaultCommandsMenu}">
+                                        <PathIcon Data="{StaticResource IconMore}" Width="16" Height="16" />
                                     </Button>
                                 </StackPanel>
                             </Grid>
@@ -1515,6 +1520,11 @@
                                                 </MultiBinding>
                                             </ToolTip.Tip>
                                             <PathIcon Data="{StaticResource IconLock}" Width="16" Height="16" />
+                                        </Button>
+                                        <Button Classes="subtle chromeCommand" IsVisible="{Binding ShowInlineMoreVaultCommands}"
+                                                ToolTip.Tip="{DynamicResource Str_MoreVaultCommands}" AutomationProperties.Name="{DynamicResource Str_MoreVaultCommands}"
+                                                Flyout="{StaticResource MoreVaultCommandsMenu}">
+                                            <PathIcon Data="{StaticResource IconMore}" Width="16" Height="16" />
                                         </Button>
                                     </StackPanel>
                                 </Grid>

@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Media;
 using KeeDesk.Helpers;
 
 namespace KeeDesk;
@@ -27,6 +28,14 @@ sealed class Program
 
         if (windowsOptions is not null)
             builder.With(windowsOptions);
+
+        if (OperatingSystem.IsLinux())
+        {
+            builder.With(new FontManagerOptions
+            {
+                DefaultFamilyName = "fonts:Inter#Inter"
+            });
+        }
 
         if (DesktopWindowChrome.LinuxButtonSide is not null)
         {

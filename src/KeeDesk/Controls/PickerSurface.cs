@@ -26,7 +26,7 @@ internal sealed class PickerSurface : Border
         }
     }
 
-    private static void AllowOverlayShadow(Visual? surface)
+    internal static void AllowOverlayShadow(Visual? surface)
     {
         var overlay = surface?.FindAncestorOfType<OverlayPopupHost>();
         if (overlay is null)

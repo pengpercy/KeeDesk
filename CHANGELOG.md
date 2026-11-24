@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.5 - 2026-11-24
+
+- **Linux window chrome.** Redesigned client-side caption buttons with circular controls, added rounded window corners with a subtle border when compositing is enabled (falling back cleanly to square corners when maximized or uncomposited), and refined left-side button layouts so the vault switcher and inline vault commands fit without truncation.
+- **Linux font startup.** Set the bundled Inter font as Linux's default UI family to avoid Avalonia 12.2 startup crashes on systems where fontconfig resolves Type 1 fonts, while preserving system CJK fallback.
+- **Windows menus.** Restored drop shadows on context menus, flyouts, and nested submenus under the Fluent 2 theme.
+
 ## 1.3.4 - 2026-11-24
 
 - **Fluent 2 interface.** Updated the desktop controls and retained KeeDesk’s olive green accent, light and dark themes, and compact layouts.

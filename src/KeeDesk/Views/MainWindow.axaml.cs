@@ -245,10 +245,10 @@ public partial class MainWindow : Window
 
         Classes.Set("compactChrome", compact);
         Classes.Set("rail", rail);
-        WorkspaceSidebar.Width = rail ? 64 : 240;
+        WorkspaceSidebar.Width = rail ? 64 : DesktopWindowChrome.LinuxButtonSide == CaptionButtonSide.Left ? 256 : 240;
         DesktopSearchSlot.Width = width < StackedWidth ? 244 : compact ? 310 : width < 1280 ? 320 : 360;
-        // Windows reserves 139 px for the three caption buttons plus 12 px of clearance.
-        double commandInset = OperatingSystem.IsWindows() ? 151 : width < StackedWidth ? 164 : 192;
+        // Windows reserves 139 px for three caption buttons plus 12 px clearance; Linux reserves 98 px plus 14 px.
+        double commandInset = OperatingSystem.IsWindows() ? 151 : OperatingSystem.IsLinux() ? 112 : width < StackedWidth ? 164 : 192;
         DesktopCommands.Margin = new Thickness(0, 0, commandInset, 0);
         WorkspaceBackButton.IsVisible = _stacked && _detailOpen && _layoutViewModel?.IsUnlocked == true;
 

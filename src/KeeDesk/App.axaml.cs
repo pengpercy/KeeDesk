@@ -41,6 +41,8 @@ public partial class App : Application
 
         if (DesktopWindowChrome.LinuxButtonSide is { } side)
         {
+            DesktopWindowChrome.AttachLinuxWindowChrome();
+            Styles.Add((Styles)this.FindResource("LinuxWindowChromeStyles")!);
             var key = side == CaptionButtonSide.Left ? "LinuxCaptionOnLeft" : "LinuxCaptionOnRight";
             Styles.Add(new Style(selector => selector.Is<Window>())
             {

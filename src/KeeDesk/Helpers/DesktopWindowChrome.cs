@@ -1,5 +1,10 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Xml;
+using System.Xml.Linq;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 
 namespace KeeDesk.Helpers;
 
@@ -11,10 +16,41 @@ internal enum CaptionButtonSide
 
 internal static class DesktopWindowChrome
 {
-    private static readonly Lazy<CaptionButtonSide?> LinuxSide = new(DetectLinuxButtonSide);
+    private static readonly Lazy<CaptionButtonSide> LinuxSide = new(() =>
+        DetectLinuxButtonSide() ?? CaptionButtonSide.Right);
+    private static bool _linuxChromeAttached;
 
     public static CaptionButtonSide? LinuxButtonSide => OperatingSystem.IsLinux() ? LinuxSide.Value : null;
     public static bool ButtonsOnLeft => OperatingSystem.IsMacOS() || LinuxButtonSide == CaptionButtonSide.Left;
+
+    internal static void AttachLinuxWindowChrome()
+    {
+        if (LinuxButtonSide is null || _linuxChromeAttached)
+            return;
+
+        _linuxChromeAttached = true;
+        TemplatedControl.TemplateAppliedEvent.AddClassHandler<Window>((window, _) => UpdateLinuxWindowChrome(window));
+        Control.LoadedEvent.AddClassHandler<Window>((window, _) => UpdateLinuxWindowChrome(window));
+        TopLevel.ActualTransparencyLevelProperty.Changed.AddClassHandler<Window>((window, _) => UpdateLinuxWindowChrome(window));
+        Window.WindowStateProperty.Changed.AddClassHandler<Window>((window, _) => UpdateLinuxWindowChrome(window));
+        Window.ExtendClientAreaToDecorationsHintProperty.Changed.AddClassHandler<Window>((window, _) => UpdateLinuxWindowChrome(window));
+    }
+
+    private static void UpdateLinuxWindowChrome(Window window)
+    {
+        bool csd = window.ExtendClientAreaToDecorationsHint && window.WindowDecorations != WindowDecorations.None;
+        window.Classes.Set("linuxCsd", csd);
+
+        if (csd && window.TransparencyLevelHint.Count == 0)
+        {
+            window.TransparencyLevelHint = [WindowTransparencyLevel.Transparent, WindowTransparencyLevel.None];
+        }
+
+        bool rounded = csd
+            && window.ActualTransparencyLevel == WindowTransparencyLevel.Transparent
+            && window.WindowState == WindowState.Normal;
+        window.CornerRadius = rounded ? new CornerRadius(10) : default;
+    }
 
     private static CaptionButtonSide? DetectLinuxButtonSide()
     {
@@ -37,6 +73,10 @@ internal static class DesktopWindowChrome
             return GetSide(columns[0], columns.Length == 2 ? columns[1] : "", "C", "HM");
         }
 
+        if ((desktop.Contains("openbox") || desktop.Contains("lxde")) &&
+            ReadOpenboxButtonSide() is { } openboxSide)
+            return openboxSide;
+
         var schema = desktop switch
         {
             var name when name.Contains("cinnamon") => "org.cinnamon.desktop.wm.preferences",
@@ -47,7 +87,37 @@ internal static class DesktopWindowChrome
             _ => null
         };
         var preference = schema is null ? null : ReadSetting("gsettings", "get", schema, "button-layout");
-        return ParseGSettingsLayout(preference ?? ReadConfig("gtk-3.0/settings.ini", "Settings", "gtk-decoration-layout"));
+        return ParseGSettingsLayout(
+            preference
+            ?? ReadConfig("gtk-4.0/settings.ini", "Settings", "gtk-decoration-layout")
+            ?? ReadConfig("gtk-3.0/settings.ini", "Settings", "gtk-decoration-layout"));
+    }
+
+    private static CaptionButtonSide? ReadOpenboxButtonSide()
+    {
+        const string layoutFile = "openbox/rc.xml";
+        foreach (var path in new[] { Path.Combine(ConfigHome, layoutFile), Path.Combine("/etc/xdg", layoutFile) })
+        {
+            try
+            {
+                var theme = XDocument.Load(path).Root?.Elements()
+                    .FirstOrDefault(element => element.Name.LocalName == "theme");
+                var layout = theme?.Elements().FirstOrDefault(element => element.Name.LocalName == "titleLayout")?.Value;
+                if (ParseOpenboxLayout(layout) is { } side)
+                    return side;
+            }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+            catch (XmlException) { }
+        }
+        return null;
+    }
+
+    internal static CaptionButtonSide? ParseOpenboxLayout(string? layout)
+    {
+        if (layout is null || layout.IndexOf('L') is not (var label and >= 0))
+            return null;
+        return GetSide(layout[..label], layout[(label + 1)..], "C", "IM");
     }
 
     internal static CaptionButtonSide? ParseGSettingsLayout(string? layout)
@@ -78,16 +148,16 @@ internal static class DesktopWindowChrome
             : buttons.Select(button => button.ToString());
     }
 
+    private static string ConfigHome => Environment.GetEnvironmentVariable("XDG_CONFIG_HOME") is { Length: > 0 } configHome
+        ? configHome
+        : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".config");
+
     private static string? ReadConfig(string file, string group, string key)
     {
-        var configHome = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME");
-        if (string.IsNullOrEmpty(configHome))
-            configHome = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".config");
-
         try
         {
             var inGroup = false;
-            foreach (var entry in File.ReadLines(Path.Combine(configHome, file)))
+            foreach (var entry in File.ReadLines(Path.Combine(ConfigHome, file)))
             {
                 var line = entry.Trim();
                 if (line.StartsWith('['))

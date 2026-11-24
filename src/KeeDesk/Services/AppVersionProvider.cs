@@ -24,6 +24,6 @@ public static class AppVersionProvider
         if (v is not null)
             return new Version(v.Major, v.Minor, Math.Max(0, v.Build)).ToString();
 
-        return "1.3.4";
+        return "1.3.5";
     }
 }

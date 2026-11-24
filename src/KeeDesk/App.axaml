@@ -325,6 +325,7 @@
             <Setter Property="Background" Value="{DynamicResource MenuGlassBrushWindows}" />
         </Style>
         <Style Selector="ContextMenu.workspaceMenu:not(.glass) /template/ Border, MenuFlyoutPresenter.workspaceMenu:not(.glass) /template/ Border#LayoutRoot">
+            <Setter Property="BackgroundSizing" Value="CenterBorder" />
             <Setter Property="BoxShadow" Value="0 5 20 0 #32000000" />
         </Style>
         <Style Selector="ContextMenu.workspaceMenu Separator, MenuFlyoutPresenter.workspaceMenu Separator">
@@ -454,6 +455,12 @@
                     <SolidColorBrush x:Key="AccentActionHoverForegroundBrush" Color="#FFFFFF" />
                     <SolidColorBrush x:Key="AccentActionPressedForegroundBrush" Color="#FFFFFF" />
                     <SolidColorBrush x:Key="AttentionBackgroundBrush" Color="#FFF4CE" />
+                    <SolidColorBrush x:Key="LinuxCaptionButtonBackgroundBrush" Color="#0D000000" />
+                    <SolidColorBrush x:Key="LinuxCaptionButtonHoverBackgroundBrush" Color="#1A000000" />
+                    <SolidColorBrush x:Key="LinuxCaptionButtonPressedBackgroundBrush" Color="#26000000" />
+                    <SolidColorBrush x:Key="LinuxCaptionCloseHoverBackgroundBrush" Color="#D93829" />
+                    <SolidColorBrush x:Key="LinuxCaptionClosePressedBackgroundBrush" Color="#B8281B" />
+                    <SolidColorBrush x:Key="LinuxCaptionGlyphBrush" Color="#2E2E2E" />
                 </ResourceDictionary>
 
                 <!-- Fluent 2 Dark Palette (严格对齐 FigCraft 画板 03 / 11) -->
@@ -520,6 +527,12 @@
                     <SolidColorBrush x:Key="AccentActionHoverForegroundBrush" Color="#FFFFFF" />
                     <SolidColorBrush x:Key="AccentActionPressedForegroundBrush" Color="#FFFFFF" />
                     <SolidColorBrush x:Key="AttentionBackgroundBrush" Color="#433519" />
+                    <SolidColorBrush x:Key="LinuxCaptionButtonBackgroundBrush" Color="#14FFFFFF" />
+                    <SolidColorBrush x:Key="LinuxCaptionButtonHoverBackgroundBrush" Color="#24FFFFFF" />
+                    <SolidColorBrush x:Key="LinuxCaptionButtonPressedBackgroundBrush" Color="#33FFFFFF" />
+                    <SolidColorBrush x:Key="LinuxCaptionCloseHoverBackgroundBrush" Color="#D93829" />
+                    <SolidColorBrush x:Key="LinuxCaptionClosePressedBackgroundBrush" Color="#B8281B" />
+                    <SolidColorBrush x:Key="LinuxCaptionGlyphBrush" Color="#E6E6E6" />
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
         </ResourceDictionary>

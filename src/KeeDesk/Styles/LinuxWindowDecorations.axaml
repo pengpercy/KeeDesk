@@ -2,34 +2,47 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:chrome="using:Avalonia.Controls.Chrome">
     <ControlTheme x:Key="LinuxCaptionButton" TargetType="Button">
-        <Setter Property="Width" Value="46" />
-        <Setter Property="Height" Value="32" />
+        <Setter Property="Width" Value="24" />
+        <Setter Property="Height" Value="24" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="CornerRadius" Value="12" />
         <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Background" Value="{DynamicResource LinuxCaptionButtonBackgroundBrush}" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
         <Setter Property="(chrome:WindowDecorationProperties.ElementRole)" Value="DecorationsElement" />
         <Setter Property="Template">
             <ControlTemplate>
                 <ContentPresenter x:Name="CaptionFace"
                                   Background="{TemplateBinding Background}"
-                                  Foreground="{TemplateBinding Foreground}"
+                                  BorderBrush="{TemplateBinding BorderBrush}"
+                                  BorderThickness="{TemplateBinding BorderThickness}"
                                   CornerRadius="{TemplateBinding CornerRadius}"
                                   Content="{TemplateBinding Content}"
                                   HorizontalContentAlignment="Center"
-                                  VerticalContentAlignment="Center" />
+                                  VerticalContentAlignment="Center">
+                    <ContentPresenter.Transitions>
+                        <Transitions>
+                            <BrushTransition Property="Background" Duration="0:0:0.12" />
+                        </Transitions>
+                    </ContentPresenter.Transitions>
+                </ContentPresenter>
             </ControlTemplate>
         </Setter>
     </ControlTheme>
 
     <ControlTheme x:Key="LinuxCaptionOnRight" TargetType="chrome:WindowDrawnDecorations">
         <Setter Property="DefaultTitleBarHeight" Value="40" />
-        <Setter Property="DefaultFrameThickness" Value="1" />
-        <Setter Property="DefaultShadowThickness" Value="8" />
+        <!-- Avalonia uses the frame thickness for hit testing the resize grips. -->
+        <Setter Property="DefaultFrameThickness" Value="5" />
+        <Setter Property="DefaultShadowThickness" Value="0" />
         <Setter Property="Template">
             <WindowDrawnDecorationsTemplate>
                 <chrome:WindowDrawnDecorationsContent>
                     <chrome:WindowDrawnDecorationsContent.Underlay>
                         <Panel x:Name="ChromeUnderlay">
-                            <Border x:Name="ChromeFrame" BorderThickness="{TemplateBinding FrameThickness}"
-                                    BorderBrush="{DynamicResource CardBorderBrush}" IsHitTestVisible="False" />
                             <Panel x:Name="PART_TitleBar" VerticalAlignment="Top" Background="Transparent"
                                    Height="{TemplateBinding TitleBarHeight}" IsVisible="{TemplateBinding HasTitleBar}"
                                    chrome:WindowDecorationProperties.ElementRole="TitleBar" />
@@ -42,18 +55,22 @@
                                        LastChildFill="False">
                                 <Button x:Name="PART_CloseButton" Classes="linuxCaption"
                                         Theme="{StaticResource LinuxCaptionButton}" ToolTip.Tip="{DynamicResource Str_Close}"
+                                        AutomationProperties.Name="{DynamicResource Str_Close}"
                                         chrome:WindowDecorationProperties.ElementRole="CloseButton">
-                                    <PathIcon Data="M1,0 L5,4 9,0 10,1 6,5 10,9 9,10 5,6 1,10 0,9 4,5 0,1 Z" />
+                                    <Path Data="M 1.5,1.5 L 8.5,8.5 M 8.5,1.5 L 1.5,8.5" />
                                 </Button>
                                 <Button x:Name="PART_MinimizeButton" Classes="linuxCaption"
                                         Theme="{StaticResource LinuxCaptionButton}" ToolTip.Tip="{DynamicResource Str_Minimize}"
+                                        AutomationProperties.Name="{DynamicResource Str_Minimize}"
                                         chrome:WindowDecorationProperties.ElementRole="MinimizeButton">
-                                    <PathIcon Data="M0,4.5 H10 V5.5 H0 Z" />
+                                    <Path Data="M 1.5,5.25 L 8.5,5.25" />
                                 </Button>
                                 <Button x:Name="PART_MaximizeButton" Classes="linuxCaption"
                                         Theme="{StaticResource LinuxCaptionButton}" ToolTip.Tip="{DynamicResource Str_Maximize}"
+                                        AutomationProperties.Name="{DynamicResource Str_Maximize}"
                                         chrome:WindowDecorationProperties.ElementRole="MaximizeButton">
-                                    <PathIcon x:Name="MaximizeGlyph" Data="M0,0 H10 V10 H0 Z M1,1 V9 H9 V1 Z" />
+                                    <Path x:Name="MaximizeGlyph"
+                                          Data="M 2.2,1.5 H 7.8 A 0.7,0.7 0 0 1 8.5,2.2 V 7.8 A 0.7,0.7 0 0 1 7.8,8.5 H 2.2 A 0.7,0.7 0 0 1 1.5,7.8 V 2.2 A 0.7,0.7 0 0 1 2.2,1.5 Z" />
                                 </Button>
                             </DockPanel>
                         </Panel>
@@ -61,49 +78,65 @@
                 </chrome:WindowDrawnDecorationsContent>
             </WindowDrawnDecorationsTemplate>
         </Setter>
-        <Style Selector="^:has-shadow /template/ Panel#ChromeUnderlay, ^:has-shadow /template/ Panel#ChromeOverlay">
-            <Setter Property="Margin" Value="8" />
-        </Style>
-        <Style Selector="^:has-shadow /template/ Border#ChromeFrame">
-            <Setter Property="BoxShadow" Value="0 2 10 2 #80000000" />
-        </Style>
         <Style Selector="^ /template/ Button.linuxCaption">
             <Setter Property="MinWidth" Value="0" />
             <Setter Property="MinHeight" Value="0" />
             <Setter Property="Padding" Value="0" />
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
-            <Setter Property="CornerRadius" Value="4" />
+        </Style>
+        <Style Selector="^ /template/ Button.linuxCaption Path">
+            <Setter Property="Width" Value="10" />
+            <Setter Property="Height" Value="10" />
+            <Setter Property="Stretch" Value="None" />
+            <Setter Property="Stroke" Value="{DynamicResource LinuxCaptionGlyphBrush}" />
+            <Setter Property="StrokeThickness" Value="1.3" />
+            <Setter Property="StrokeLineCap" Value="Round" />
+            <Setter Property="StrokeJoin" Value="Round" />
+            <Setter Property="IsHitTestVisible" Value="False" />
         </Style>
         <Style Selector="^ /template/ DockPanel#CaptionButtons">
             <Setter Property="HorizontalAlignment" Value="Right" />
-            <Setter Property="Margin" Value="0,0,4,0" />
+            <Setter Property="Margin" Value="0,0,12,0" />
         </Style>
         <Style Selector="^ /template/ Button#PART_CloseButton">
             <Setter Property="DockPanel.Dock" Value="Right" />
+            <Setter Property="Margin" Value="0" />
         </Style>
-        <Style Selector="^ /template/ PathIcon">
-            <Setter Property="Width" Value="10" />
-            <Setter Property="Height" Value="10" />
+        <Style Selector="^ /template/ Button#PART_MinimizeButton">
+            <Setter Property="DockPanel.Dock" Value="Left" />
+            <Setter Property="Margin" Value="0,0,7,0" />
+        </Style>
+        <Style Selector="^ /template/ Button#PART_MaximizeButton">
+            <Setter Property="DockPanel.Dock" Value="Left" />
+            <Setter Property="Margin" Value="0,0,7,0" />
         </Style>
         <Style Selector="^ /template/ Button.linuxCaption:pointerover">
-            <Setter Property="Background" Value="{DynamicResource SidebarItemHoverBackgroundBrush}" />
+            <Setter Property="Background" Value="{DynamicResource LinuxCaptionButtonHoverBackgroundBrush}" />
         </Style>
         <Style Selector="^ /template/ Button.linuxCaption:pressed">
-            <Setter Property="Background" Value="{DynamicResource SidebarItemSelectedBackgroundBrush}" />
+            <Setter Property="Background" Value="{DynamicResource LinuxCaptionButtonPressedBackgroundBrush}" />
+        </Style>
+        <Style Selector="^ /template/ Button.linuxCaption:focus-visible">
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlFocusBrush}" />
+            <Setter Property="BorderThickness" Value="1.5" />
         </Style>
         <Style Selector="^ /template/ Button#PART_CloseButton:pointerover">
-            <Setter Property="Background" Value="#E81123" />
-            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Background" Value="{DynamicResource LinuxCaptionCloseHoverBackgroundBrush}" />
+        </Style>
+        <Style Selector="^ /template/ Button#PART_CloseButton:pressed">
+            <Setter Property="Background" Value="{DynamicResource LinuxCaptionClosePressedBackgroundBrush}" />
+        </Style>
+        <Style Selector="^ /template/ Button#PART_CloseButton:pointerover Path, ^ /template/ Button#PART_CloseButton:pressed Path">
+            <Setter Property="Stroke" Value="White" />
         </Style>
         <Style Selector="^:not(:has-minimize) /template/ Button#PART_MinimizeButton, ^:not(:has-maximize) /template/ Button#PART_MaximizeButton">
             <Setter Property="IsVisible" Value="False" />
         </Style>
         <Style Selector="^:maximized /template/ Button#PART_MaximizeButton">
             <Setter Property="ToolTip.Tip" Value="{DynamicResource Str_Restore}" />
+            <Setter Property="AutomationProperties.Name" Value="{DynamicResource Str_Restore}" />
         </Style>
-        <Style Selector="^:maximized /template/ PathIcon#MaximizeGlyph">
-            <Setter Property="Data" Value="M2,0 H10 V8 H8 V10 H0 V2 H2 Z M3,1 V2 H8 V7 H9 V1 Z M1,3 V9 H7 V3 Z" />
+        <Style Selector="^:maximized /template/ Path#MaximizeGlyph">
+            <Setter Property="Data" Value="M 1.5,3.7 A 0.7,0.7 0 0 1 2.2,3 H 6.3 A 0.7,0.7 0 0 1 7,3.7 V 7.8 A 0.7,0.7 0 0 1 6.3,8.5 H 2.2 A 0.7,0.7 0 0 1 1.5,7.8 Z M 3.2,3 V 2.2 A 0.7,0.7 0 0 1 3.9,1.5 H 7.8 A 0.7,0.7 0 0 1 8.5,2.2 V 6.1 A 0.7,0.7 0 0 1 7.8,6.8 H 7" />
         </Style>
     </ControlTheme>
 
@@ -113,39 +146,58 @@
             <Setter Property="HorizontalAlignment" Value="Left" />
             <Setter Property="Margin" Value="12,0,0,0" />
         </Style>
-        <Style Selector="^ /template/ Button.linuxCaption">
-            <Setter Property="Width" Value="14" />
-            <Setter Property="Height" Value="14" />
-            <Setter Property="Margin" Value="0,0,6,0" />
-            <Setter Property="CornerRadius" Value="7" />
-            <Setter Property="Foreground" Value="#66000000" />
-        </Style>
         <Style Selector="^ /template/ Button#PART_CloseButton">
             <Setter Property="DockPanel.Dock" Value="Left" />
-            <Setter Property="Background" Value="#FF6159" />
+            <Setter Property="Margin" Value="0,0,7,0" />
         </Style>
         <Style Selector="^ /template/ Button#PART_MinimizeButton">
-            <Setter Property="Background" Value="#FFBD2E" />
+            <Setter Property="DockPanel.Dock" Value="Left" />
+            <Setter Property="Margin" Value="0,0,7,0" />
         </Style>
         <Style Selector="^ /template/ Button#PART_MaximizeButton">
-            <Setter Property="Background" Value="#28C840" />
-        </Style>
-        <Style Selector="^ /template/ PathIcon">
-            <Setter Property="Width" Value="7" />
-            <Setter Property="Height" Value="7" />
-        </Style>
-        <Style Selector="^ /template/ Button.linuxCaption:pointerover">
-            <Setter Property="Foreground" Value="#66000000" />
-            <Setter Property="Opacity" Value="0.85" />
-        </Style>
-        <Style Selector="^ /template/ Button#PART_CloseButton:pointerover, ^ /template/ Button#PART_CloseButton:pressed">
-            <Setter Property="Background" Value="#FF6159" />
-        </Style>
-        <Style Selector="^ /template/ Button#PART_MinimizeButton:pointerover, ^ /template/ Button#PART_MinimizeButton:pressed">
-            <Setter Property="Background" Value="#FFBD2E" />
-        </Style>
-        <Style Selector="^ /template/ Button#PART_MaximizeButton:pointerover, ^ /template/ Button#PART_MaximizeButton:pressed">
-            <Setter Property="Background" Value="#28C840" />
+            <Setter Property="DockPanel.Dock" Value="Left" />
+            <Setter Property="Margin" Value="0" />
         </Style>
     </ControlTheme>
+
+    <Styles x:Key="LinuxWindowChromeStyles">
+        <Style Selector="Window">
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Panel>
+                        <Border Name="PART_TransparencyFallback" IsHitTestVisible="False" />
+                        <Border x:Name="PART_LinuxWindowFrame"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="{TemplateBinding CornerRadius}"
+                                ClipToBounds="True">
+                            <Panel>
+                                <Panel Background="Transparent" Margin="{TemplateBinding WindowDecorationMargin}" />
+                                <VisualLayerManager Name="PART_VisualLayerManager">
+                                    <ContentPresenter Name="PART_ContentPresenter"
+                                                      ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                      Content="{TemplateBinding Content}"
+                                                      Margin="{TemplateBinding Padding}"
+                                                      HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                      VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+                                </VisualLayerManager>
+                            </Panel>
+                        </Border>
+                        <Border x:Name="PART_LinuxWindowOutline"
+                                BorderThickness="1"
+                                BorderBrush="{DynamicResource CardBorderBrush}"
+                                CornerRadius="{TemplateBinding CornerRadius}"
+                                IsHitTestVisible="False"
+                                IsVisible="False" />
+                    </Panel>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="Window.linuxCsd /template/ Border#PART_LinuxWindowOutline">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+        <Style Selector="Window.linuxCsd:maximized /template/ Border#PART_LinuxWindowOutline,
+                         Window.linuxCsd:fullscreen /template/ Border#PART_LinuxWindowOutline">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+    </Styles>
 </ResourceDictionary>

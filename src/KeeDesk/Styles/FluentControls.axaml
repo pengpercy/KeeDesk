@@ -258,6 +258,7 @@
     </Style>
 
     <Style Selector="Border.windowsSubmenuShadow">
+        <Setter Property="BackgroundSizing" Value="CenterBorder" />
         <Setter Property="BoxShadow" Value="{DynamicResource PickerShadow}" />
     </Style>
     <Style Selector="Border.nativeSubmenuShadow">

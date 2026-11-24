@@ -75,6 +75,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public bool IsMacOS { get; } = OperatingSystem.IsMacOS();
     public bool IsWindows { get; } = OperatingSystem.IsWindows();
     public bool UsesLeftWindowChrome => DesktopWindowChrome.ButtonsOnLeft;
+    public bool ShowInlineMoreVaultCommands => UsesLeftWindowChrome && !IsMacOS;
     public bool IsTouchIdSupported { get; } = MacTouchIdService.IsSupported();
     public string ShortcutModifier => IsMacOS ? "⌘" : "Ctrl+";
     public string SearchShortcutHint => ShortcutModifier + "K";
@@ -90,7 +91,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private bool _sortByModifiedDesc;
     public string SortButtonLabel => SortByModifiedDesc ? L("Str_LastModified") : L("Str_ByName");
 
-    [ObservableProperty] private double _leftCaptionPadding = 76;
+    [ObservableProperty] private double _leftCaptionPadding = DesktopWindowChrome.LinuxButtonSide == CaptionButtonSide.Left ? 104 : 76;
     [ObservableProperty] private bool _isUnlocked;
     [ObservableProperty] private bool _isUnlocking;
     [ObservableProperty] private bool _isAuditViewActive;

@@ -6,6 +6,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.VisualTree;
+using KeeDesk.Controls;
 
 namespace KeeDesk.Helpers;
 
@@ -40,14 +41,16 @@ public static class Glass
         if (sender is not Border surface) return;
 
         var root = TopLevel.GetTopLevel(surface) as PopupRoot;
+        var hasTransparentWindow = false;
         if (root is not null)
         {
             root.TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
-            if (root.ActualTransparencyLevel == WindowTransparencyLevel.Transparent)
+            hasTransparentWindow = root.ActualTransparencyLevel == WindowTransparencyLevel.Transparent;
+            if (hasTransparentWindow)
                 root.Background = Brushes.Transparent;
+            root.WindowManagerAddShadowHint = !hasTransparentWindow;
         }
 
-        var hasTransparentWindow = root?.ActualTransparencyLevel == WindowTransparencyLevel.Transparent;
         surface.Classes.Set("windowsSubmenuShadow", root is null || hasTransparentWindow);
         surface.Classes.Set("nativeSubmenuShadow", hasTransparentWindow);
     }
@@ -58,11 +61,14 @@ public static class Glass
 
         var overlay = surface.FindAncestorOfType<OverlayPopupHost>();
         if (!OperatingSystem.IsWindows())
+        {
+            if (overlay is not null)
+                surface.SetCurrentValue(Border.BackgroundSizingProperty, BackgroundSizing.CenterBorder);
             surface.SetCurrentValue(Border.BoxShadowProperty, overlay is null ? default : OverlaySubmenuShadow);
+        }
         if (overlay is not null)
         {
-            overlay.SetCurrentValue(Visual.ClipToBoundsProperty, false);
-            surface.FindAncestorOfType<LayoutTransformControl>()?.SetCurrentValue(Visual.ClipToBoundsProperty, false);
+            PickerSurface.AllowOverlayShadow(surface);
         }
         else if (OperatingSystem.IsMacOS() && TopLevel.GetTopLevel(surface) is PopupRoot root
                  && root.TryGetPlatformHandle()?.Handle is { } handle && handle != IntPtr.Zero)
@@ -74,14 +80,15 @@ public static class Glass
 
     public static void Attach(TemplatedControl menu)
     {
-        if (!Supported) return;
         menu.AttachedToVisualTree += (_, _) =>
         {
-            if (TopLevel.GetTopLevel(menu) is not PopupRoot root) return;
+            PickerSurface.AllowOverlayShadow(menu);
+            if (!Supported || TopLevel.GetTopLevel(menu) is not PopupRoot root) return;
             root.Background = Brushes.Transparent;
             root.TransparencyLevelHint = [WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.Blur];
             Frost(root, menu);
         };
+        if (!Supported) return;
         menu.Loaded += (_, _) =>
         {
             if (TopLevel.GetTopLevel(menu) is PopupRoot root)
