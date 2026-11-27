@@ -229,6 +229,51 @@
         <Setter Property="TextElement.Foreground" Value="{DynamicResource ControlDisabledForegroundBrush}" />
     </Style>
 
+    <!-- Fluent 2 transparent tabs keep the label centered above an overlaid indicator. -->
+    <Style Selector="TabControl.auditTabs TabItem">
+        <Setter Property="MinHeight" Value="40" />
+        <Setter Property="Padding" Value="8,0" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Panel Background="Transparent" TemplatedControl.IsTemplateFocusTarget="True">
+                    <ContentPresenter Name="PART_ContentPresenter"
+                                      Margin="{TemplateBinding Padding}"
+                                      Content="{TemplateBinding Header}"
+                                      ContentTemplate="{TemplateBinding HeaderTemplate}"
+                                      Foreground="{TemplateBinding Foreground}"
+                                      FontFamily="{TemplateBinding FontFamily}"
+                                      FontSize="{TemplateBinding FontSize}"
+                                      FontWeight="{TemplateBinding FontWeight}"
+                                      HorizontalContentAlignment="Center"
+                                      VerticalContentAlignment="Center" />
+                    <Border Name="SelectionIndicator" Height="3" CornerRadius="1.5"
+                            Margin="{TemplateBinding Padding}" VerticalAlignment="Bottom"
+                            IsHitTestVisible="False" />
+                </Panel>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="TabControl.auditTabs TabItem:pointerover:not(:disabled), TabControl.auditTabs TabItem:selected">
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
+    </Style>
+    <Style Selector="TabControl.auditTabs TabItem:selected">
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="TabControl.auditTabs TabItem:pointerover:not(:selected):not(:disabled) /template/ Border#SelectionIndicator">
+        <Setter Property="Background" Value="{DynamicResource StandardButtonBorderBrush}" />
+    </Style>
+    <Style Selector="TabControl.auditTabs TabItem:selected /template/ Border#SelectionIndicator">
+        <Setter Property="Background" Value="{DynamicResource AccentButtonBackgroundBrush}" />
+    </Style>
+    <Style Selector="TabControl.auditTabs TabItem:disabled">
+        <Setter Property="Foreground" Value="{DynamicResource ControlDisabledForegroundBrush}" />
+    </Style>
+    <Style Selector="TabControl.auditTabs TabItem:selected:disabled /template/ Border#SelectionIndicator">
+        <Setter Property="Background" Value="{DynamicResource ControlDisabledForegroundBrush}" />
+    </Style>
+
     <Style Selector="ListBox:not(.entryList) ListBoxItem">
         <Setter Property="MinHeight" Value="{DynamicResource DensityControlHeight}" />
         <Setter Property="Padding" Value="8,2" />

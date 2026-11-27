@@ -115,7 +115,7 @@ KeeDesk 将密码库以加密文件保存在本地。已有的 KeePass 密码库
 
 ## 开发与测试
 
-本地运行和测试需要安装项目使用的 [SDK](https://dotnet.microsoft.com/download/dotnet/10.0)。各平台的打包入口见 [发布工作流](.github/workflows/release.yml)。
+构建需要 [.NET 11 SDK](https://dotnet.microsoft.com/download/dotnet/11.0)，本地运行和测试需要 [.NET 10 Runtime](https://dotnet.microsoft.com/download/dotnet/10.0)。各平台的打包入口见 [发布工作流](.github/workflows/release.yml)。
 
 ```bash
 dotnet test KeeDesk.sln

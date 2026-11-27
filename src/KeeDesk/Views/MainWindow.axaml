@@ -1152,56 +1152,59 @@
                                         </StackPanel>
                                     </StackPanel>
                                 </Border>
-                                <TextBlock Text="{DynamicResource Str_ViewByRisk}" FontSize="20" FontWeight="SemiBold" />
-                                <TabControl Classes="compactTabs">
-                                    <TabItem>
-                                        <TabItem.Header>
-                                            <MultiBinding Converter="{x:Static services:LocalizationService.FormatConverter}">
-                                                <DynamicResource ResourceKey="Str_WeakPasswordsFormat" />
-                                                <Binding Path="AuditWeakEntries.Count" />
-                                            </MultiBinding>
-                                        </TabItem.Header>
-                                        <Border Classes="fluentCard" Margin="0,12,0,0">
-                                            <ItemsControl ItemsSource="{Binding AuditWeakEntries}" ItemTemplate="{StaticResource AuditFindingTemplate}" />
-                                        </Border>
-                                    </TabItem>
-                                    <TabItem>
-                                        <TabItem.Header>
-                                            <MultiBinding Converter="{x:Static services:LocalizationService.FormatConverter}">
-                                                <DynamicResource ResourceKey="Str_ReusedPasswordsFormat" />
-                                                <Binding Path="AuditReusedEntries.Count" />
-                                            </MultiBinding>
-                                        </TabItem.Header>
-                                        <Border Classes="fluentCard" Margin="0,12,0,0">
-                                            <ItemsControl ItemsSource="{Binding AuditReusedEntries}" ItemTemplate="{StaticResource AuditFindingTemplate}" />
-                                        </Border>
-                                    </TabItem>
-                                    <TabItem>
-                                        <TabItem.Header>
-                                            <MultiBinding Converter="{x:Static services:LocalizationService.FormatConverter}">
-                                                <DynamicResource ResourceKey="Str_ExpiredOrExpiringFormat" />
-                                                <Binding Path="AuditExpiringEntries.Count" />
-                                            </MultiBinding>
-                                        </TabItem.Header>
-                                        <Border Classes="fluentCard" Margin="0,12,0,0">
-                                            <ItemsControl ItemsSource="{Binding AuditExpiringEntries}" ItemTemplate="{StaticResource AuditFindingTemplate}" />
-                                        </Border>
-                                    </TabItem>
-                                    <TabItem>
-                                        <TabItem.Header>
-                                            <MultiBinding Converter="{x:Static services:LocalizationService.FormatConverter}">
-                                                <DynamicResource ResourceKey="Str_VerificationCodesConfiguredFormat" />
-                                                <Binding Path="TotpCount" />
-                                            </MultiBinding>
-                                        </TabItem.Header>
-                                        <StackPanel Spacing="8" Margin="0,12,0,0">
-                                            <TextBlock Text="{DynamicResource Str_SignInEntriesWithoutVerificationCodes}" FontWeight="SemiBold" />
+                                <StackPanel Spacing="8">
+                                    <TextBlock Text="{DynamicResource Str_ViewByRisk}" FontSize="20" FontWeight="SemiBold" />
+                                    <TabControl Classes="auditTabs" Padding="0,12,0,0"
+                                                AutomationProperties.Name="{DynamicResource Str_ViewByRisk}">
+                                        <TabItem>
+                                            <TabItem.Header>
+                                                <MultiBinding Converter="{x:Static services:LocalizationService.FormatConverter}">
+                                                    <DynamicResource ResourceKey="Str_WeakPasswordsFormat" />
+                                                    <Binding Path="AuditWeakEntries.Count" />
+                                                </MultiBinding>
+                                            </TabItem.Header>
                                             <Border Classes="fluentCard">
-                                                <ItemsControl ItemsSource="{Binding AuditNo2FaEntries}" ItemTemplate="{StaticResource AuditFindingTemplate}" />
+                                                <ItemsControl ItemsSource="{Binding AuditWeakEntries}" ItemTemplate="{StaticResource AuditFindingTemplate}" />
                                             </Border>
-                                        </StackPanel>
-                                    </TabItem>
-                                </TabControl>
+                                        </TabItem>
+                                        <TabItem>
+                                            <TabItem.Header>
+                                                <MultiBinding Converter="{x:Static services:LocalizationService.FormatConverter}">
+                                                    <DynamicResource ResourceKey="Str_ReusedPasswordsFormat" />
+                                                    <Binding Path="AuditReusedEntries.Count" />
+                                                </MultiBinding>
+                                            </TabItem.Header>
+                                            <Border Classes="fluentCard">
+                                                <ItemsControl ItemsSource="{Binding AuditReusedEntries}" ItemTemplate="{StaticResource AuditFindingTemplate}" />
+                                            </Border>
+                                        </TabItem>
+                                        <TabItem>
+                                            <TabItem.Header>
+                                                <MultiBinding Converter="{x:Static services:LocalizationService.FormatConverter}">
+                                                    <DynamicResource ResourceKey="Str_ExpiredOrExpiringFormat" />
+                                                    <Binding Path="AuditExpiringEntries.Count" />
+                                                </MultiBinding>
+                                            </TabItem.Header>
+                                            <Border Classes="fluentCard">
+                                                <ItemsControl ItemsSource="{Binding AuditExpiringEntries}" ItemTemplate="{StaticResource AuditFindingTemplate}" />
+                                            </Border>
+                                        </TabItem>
+                                        <TabItem>
+                                            <TabItem.Header>
+                                                <MultiBinding Converter="{x:Static services:LocalizationService.FormatConverter}">
+                                                    <DynamicResource ResourceKey="Str_VerificationCodesConfiguredFormat" />
+                                                    <Binding Path="TotpCount" />
+                                                </MultiBinding>
+                                            </TabItem.Header>
+                                            <StackPanel Spacing="8">
+                                                <TextBlock Text="{DynamicResource Str_SignInEntriesWithoutVerificationCodes}" FontWeight="SemiBold" />
+                                                <Border Classes="fluentCard">
+                                                    <ItemsControl ItemsSource="{Binding AuditNo2FaEntries}" ItemTemplate="{StaticResource AuditFindingTemplate}" />
+                                                </Border>
+                                            </StackPanel>
+                                        </TabItem>
+                                    </TabControl>
+                                </StackPanel>
                             </StackPanel>
                         </ScrollViewer>
                     </Grid>

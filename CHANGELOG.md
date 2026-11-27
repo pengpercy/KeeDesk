@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.6 - 2026-11-28
+
+- **Security audit.** Refined the risk tabs with centered labels, an accent underline for the selected tab, and shorter captions that retain the counts.
+- **Build tools.** Updated Roslyn and the test dependencies. Builds now use the .NET 11 SDK and target .NET 10.
+
 ## 1.3.5 - 2026-11-24
 
 - **Linux window chrome.** Redesigned client-side caption buttons with circular controls, added rounded window corners with a subtle border when compositing is enabled (falling back cleanly to square corners when maximized or uncomposited), and refined left-side button layouts so the vault switcher and inline vault commands fit without truncation.
